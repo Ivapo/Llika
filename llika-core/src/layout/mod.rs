@@ -124,7 +124,7 @@ pub fn run_layout(network: &Network, params: &LayoutParams) -> SchematicLayout {
         None => typical,
     };
 
-    let positions = snap_to_grid(&projected, grid_spacing);
+    let (positions, _occupancy) = snap_to_grid(&projected, grid_spacing);
 
     SchematicLayout {
         positions,

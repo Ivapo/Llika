@@ -143,6 +143,32 @@ impl GridOccupancy {
         self.by_cell.is_empty()
     }
 
+    /// Move `station` from one cell to another, which is what the layout
+    /// search does on every accepted move.
+    ///
+    /// The counterpart to [`claim`](Self::claim), and the reason this type
+    /// survives the snap rather than being built and dropped inside
+    /// [`snap_to_grid`]: a search that kept its own free-cell index would be a
+    /// second structure answering "which cells are taken", which is how the two
+    /// come to disagree.
+    ///
+    /// Both preconditions are the caller's to hold — the search checks
+    /// [`is_free`](Self::is_free) before it scores a candidate at all — so they
+    /// are debug assertions rather than a `Result` nothing would ever handle.
+    pub fn relocate(&mut self, station: usize, from: GridPoint, to: GridPoint) {
+        debug_assert_eq!(
+            self.by_cell.get(&from),
+            Some(&station),
+            "relocating station {station} from a cell it does not hold"
+        );
+        debug_assert!(
+            to == from || self.is_free(to),
+            "relocating station {station} onto an occupied cell"
+        );
+        self.by_cell.remove(&from);
+        self.by_cell.insert(to, station);
+    }
+
     /// Claim `preferred` for `station`, or the first free cell in spiral order
     /// around it. Returns the cell actually claimed.
     ///
@@ -168,13 +194,18 @@ impl GridOccupancy {
 }
 
 /// Snap projected points onto the grid, in input order, one station per cell.
-pub fn snap_to_grid(points: &[Point2], g: f64) -> Vec<GridPoint> {
+///
+/// Returns the occupancy alongside the positions rather than dropping it: the
+/// layout search moves stations between cells and needs the same structure that
+/// decided where they started. See [`GridOccupancy::relocate`].
+pub fn snap_to_grid(points: &[Point2], g: f64) -> (Vec<GridPoint>, GridOccupancy) {
     let mut occupancy = GridOccupancy::new();
-    points
+    let positions = points
         .iter()
         .enumerate()
         .map(|(station, p)| occupancy.claim(station, raw_cell(*p, g)))
-        .collect()
+        .collect();
+    (positions, occupancy)
 }
 
 #[cfg(test)]
@@ -240,5 +271,19 @@ mod tests {
         assert_eq!(occupancy.claim(1, cell), GridPoint::new(5, 7));
         // Then north-east.
         assert_eq!(occupancy.claim(2, cell), GridPoint::new(5, 8));
+    }
+
+    #[test]
+    fn relocating_frees_the_old_cell_and_takes_the_new_one() {
+        let mut occupancy = GridOccupancy::new();
+        let (from, to) = (GridPoint::new(0, 0), GridPoint::new(3, -2));
+        occupancy.claim(7, from);
+
+        occupancy.relocate(7, from, to);
+
+        assert!(occupancy.is_free(from), "the vacated cell is free again");
+        assert_eq!(occupancy.station_at(to), Some(7));
+        // One station in, one station out — a relocation is not a claim.
+        assert_eq!(occupancy.len(), 1);
     }
 }
