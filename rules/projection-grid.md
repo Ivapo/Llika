@@ -1,7 +1,6 @@
 ---
 title: projection-grid
 sources:
-  - llika-core/src/geometry.rs
   - llika-core/src/projection.rs
   - llika-core/src/grid.rs
   - llika-core/src/layout/mod.rs
@@ -22,8 +21,8 @@ on the arithmetic mean of the station latitudes and longitudes, summed in input
 order. `llika-core/src/projection.rs:project` is
 `x = (lon - lon_c) * 111_320 * cos(lat_c)`, `y = (lat - lat_c) * 111_320`, with `y`
 increasing **north**. `llika-core/src/geometry.rs:Point2` is the point type and
-carries `distance`; segment intersection and angle math do not exist yet — they
-arrive with the cost criteria.
+carries `distance`. The rest of `geometry.rs` — segment intersection and angle math
+— works on grid cells rather than this plane and belongs to `rules/layout-cost.md`.
 
 An empty station list takes centroid `(0, 0)` rather than the `NaN` the mean would
 give.
@@ -52,6 +51,7 @@ is confined to the pre-snap plane.
 
 **`run_layout`.** `llika-core/src/layout/mod.rs:run_layout` projects, derives `g`,
 snaps, and is infallible. `llika-core/src/layout/mod.rs:SchematicLayout` holds
-`positions`, `projected` and `grid_spacing`, all indexed by station index. Read `g`
-back from **there**, never from `LayoutParams`: the default is a function of the
-parameters *and* the network. There is no iteration loop yet.
+`positions` and `projected` — both indexed by station index — plus `grid_spacing`
+and `target_edge_cells`, the length `c2` wants an edge to be (`rules/layout-cost.md`).
+Read both scalars back from **there**, never from `LayoutParams`: each is a function
+of the parameters *and* the network. There is no iteration loop yet.

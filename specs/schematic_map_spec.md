@@ -16,7 +16,7 @@ phases:
     by: null
   - name: "Phase 2 — the five cost criteria"
     reviewed: 2026-08-14
-    shipped: null
+    shipped: 2026-08-14
     cut: null
     by: null
   - name: "Phase 3 — single-station hill-climbing"
@@ -283,6 +283,12 @@ search moves. An edge's direction is `atan2(Δj, Δi)` over the integer cell off
 - **`c2` — edge length.** `c2 = Σ_e (|e| / L − 1)²`, over edges, with `|e|` the
   Euclidean distance in cells and `L` the target length **OQ-6 settles**. Zero iff
   every edge is exactly `L`. The functional form is fixed here; only `L` is open.
+
+  *(OQ-6 resolved 2026-08-14, at Phase 2: `L = max(1, m / g)` where `m` is the same
+  median non-zero projected edge length `g` derives from. Under the default `g` it is
+  exactly `1.0`, since the numerator is `g` itself. It is carried on
+  `SchematicLayout` beside `grid_spacing`, for the same reason — it is a function of
+  the parameters *and* the network.)*
 - **`c3` — angular resolution.** For each station of degree `d ≥ 2`: order its
   incident edges by direction, take the `d` consecutive angular gaps `θ_1…θ_d`
   (which sum to `2π`), and let the ideal gap be `2π/d`. Then
@@ -410,6 +416,14 @@ converge to one point at a true interchange. The rules:
 own right, not only reachable through the `build_schematic_svg` convenience
 function. `LayoutParams` and `RenderParams` are plain `Serialize`/`Deserialize`
 structs with a `Default` impl.
+
+*(Recorded 2026-08-14, at Phase 2. The five cost weights are **named for what they
+weigh** — `w_crossings`, `w_edge_length`, `w_angular_resolution`, `w_straightness`,
+`w_octilinearity` — rather than `w1`-`w5`, which is how §2.3 and Phase 2's scope word
+them. The names are serde-visible, so they are the key names in Phase 6's `--params`
+file, and Phase 6 derives a flag from every field: `w1` would give `--w1`, while §1's
+own end-state invocation types `--w-crossing`. The `w1`-`w5` spelling stays in the
+prose, where it is the shorter name for a criterion rather than an identifier.)*
 
 The reason is a future the code must not have to be rewritten for: a Tauri command
 parses and projects a loaded file **once**, holds the `Network` in memory, and on
@@ -568,7 +582,7 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   17 is an **odd** edge count, so the lower-middle median rule is invisible in `g`'s
   literal. That half of assertion 4 is a unit test on `grid::median_lower` over a
   hand-built even-count set, which is where it belongs.
-- **OQ-6** — `c2` as described penalizes edges that are not *exactly one grid cell*
+- **OQ-6** — ~~`c2` as described penalizes edges that are not *exactly one grid cell*
   long, which makes the target a network of uniform unit edges. Is the target length
   one cell, or the mean edge length, or a per-edge ideal? *(design call.)* **Blocks
   Phase 2.** The uniform-unit reading fights `c5` on any network whose station
@@ -577,7 +591,54 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   §2.2's derived default weakens the objection without settling it: when `g` is the
   median edge length, "exactly one cell" *is* the network's own typical spacing, so
   the target is no longer an arbitrary constant. It re-opens the moment a user passes
-  `--grid-spacing`, which is the case the resolution has to cover.
+  `--grid-spacing`, which is the case the resolution has to cover.~~
+
+  **RESOLVED 2026-08-14 by Phase 2, in §2.3.** `L = max(1, m / g)` in cells, where
+  `m` is the median non-zero projected edge length — the same quantity `g` derives
+  from. Three consequences, in the order they were argued:
+
+  - **Under the default `g` it is exactly `1.0`**, because the numerator *is* `g`.
+    So §2.2's argument holds verbatim rather than approximately: a typical edge is
+    one cell, which is the length `c2` reaches for, and the layout starts near the
+    criterion's optimum for any network at any scale.
+  - **It self-scales under `--grid-spacing`**, which is the case the resolution had
+    to cover. A fixed target of one cell would fuse two unrelated jobs into one
+    knob — `g` sets the *quantization resolution* as well as the target, so halving
+    it to get finer movement would also halve the target edge and contract the whole
+    drawing. Here `g` sets the resolution and the network sets the target.
+  - **Clamped at one cell**, because §2.2's occupancy invariant puts every post-snap
+    edge at least one cell apart, so a target below one is unreachable. Unclamped it
+    induces the same ranking — shorter is better — but with a magnitude that grows
+    without bound as `g` does, silently re-weighting `c2` against the other four.
+
+  The per-edge ideal `L_e = |e|_projected / g` was the third candidate and is
+  rejected outright rather than deferred: its zero-set is a grid map geometrically
+  similar to the projected one, which is *no schematization at all*, and it would put
+  `c2` in opposition to `c3` and `c5` instead of alongside them.
+
+- **OQ-8** — **Phase 3's octilinearity gate cannot be met on the 17-station fixture,
+  as written.** That gate asks for "the fraction of edges within 5 degrees of a
+  multiple of 45" to be *strictly greater* than the same measurement on the Phase 1
+  output. Measured at Phase 2, the Phase 1 output already scores **`c5 = 0.0`
+  exactly** — every one of the 17 corridors is octilinear — so that fraction is
+  already `1.0` and nothing can exceed it. `c1` is likewise already `0`.
+  *(answerable now.)* **Blocks Phase 3.**
+
+  The cause is a fixture property nobody specified and nobody noticed: OQ-5's
+  stations are spaced roughly 2.3 km apart, `g` derives as their median, and so all
+  17 snap onto a 7×5 patch of *unit* cells whose every corridor happens to run along
+  an axis or a diagonal. The fixture is a good schematic map before any layout
+  intelligence runs on it. That is why Phase 1's picture looked better than its own
+  scope text predicted.
+
+  Candidate answers, cheapest first: assert a strict decrease in `t` plus
+  *non-decreasing* octilinearity, which is the property the gate was reaching for;
+  or key the octilinear assertion to a second, deliberately off-angle fixture, the
+  way Phase 4 already plans its own; or re-author the 17-station fixture with
+  coordinates that do not land on a unit lattice — **the expensive one**, since every
+  Phase 1 gate literal is keyed to it, including the hand-counted edge total, the
+  collision pair and `g` itself. Recorded rather than resolved because it is Phase
+  3's gate and Phase 3's review round is where it belongs.
 
 - **OQ-7** — §2.4's cluster threshold is `2g`, chosen when `g` was an externally
   supplied constant. Under §2.2's derived default `g` is the median edge length, so
