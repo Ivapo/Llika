@@ -1,4 +1,8 @@
-//! Llika's core: a JSON metro network in, one schematic SVG out.
+//! Llika's core: a JSON transit network in, one schematic SVG out.
+//!
+//! Nothing here is specific to a metro. A network is stations and ordered line
+//! lists, which a tram or bus system satisfies as readily as an underground —
+//! the pipeline never asks what runs on the track.
 //!
 //! The three steps are public in their own right and not only reachable through
 //! [`build_schematic_svg`]. That is what lets a future desktop app parse and

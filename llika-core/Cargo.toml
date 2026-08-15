@@ -2,7 +2,7 @@
 name = "llika-core"
 version.workspace = true
 edition.workspace = true
-description = "Schematic metro map pipeline: projection, grid layout and SVG rendering."
+description = "Schematic transit map pipeline: projection, grid layout and SVG rendering."
 
 [dependencies]
 petgraph = "0.8"

@@ -11,7 +11,7 @@ use clap::Parser;
 use llika_core::{LayoutParams, Network, RenderParams, parse_input, render_to_string, run_layout};
 
 #[derive(Parser)]
-#[command(name = "llika", about = "Draw a metro network as a schematic map.")]
+#[command(name = "llika", about = "Draw a transit network as a schematic map.")]
 struct Args {
     /// Network JSON file to read.
     #[arg(long)]
