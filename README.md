@@ -19,11 +19,12 @@ lists, which a tram or bus system satisfies as readily as an underground.
 
 ## Status
 
-**Early. 4 of 6 phases shipped.** The pipeline runs end to end, and the layout step now
-optimises: stations are snapped to a grid and then hill-climbed against five weighted
-criteria, one station at a time and then in rigid groups. Expect junctions that fan out
-evenly and lines that do not kink — but not yet a transit poster, because lines sharing a
-corridor are still drawn as one stroke.
+**5 of 6 phases shipped.** The pipeline runs end to end and reads as a transit diagram:
+stations are snapped to a grid and then hill-climbed against five weighted criteria, one
+station at a time and then in rigid groups, and lines sharing a corridor are drawn as
+parallel strokes that converge to a single point at a real interchange. Expect junctions
+that fan out evenly, lines that do not kink, and bundled trunks. What is left is the
+tunable surface — the criteria weights are not yet reachable from the command line.
 
 | Phase | | |
 |---|---|---|
@@ -31,11 +32,11 @@ corridor are still drawn as one stroke.
 | 2 | The five cost criteria | ✅ shipped |
 | 3 | Single-station hill-climbing | ✅ shipped |
 | 4 | Cluster moves | ✅ shipped |
-| 5 | Line-bundling renderer | drafted |
+| 5 | Line-bundling renderer | ✅ shipped |
 | 6 | Full parameter surface | drafted |
 
-Phase 5 is the one that makes the output read as a transit poster: two lines along a
-shared trunk currently overprint rather than running as parallel strokes.
+Phase 6 is the one that makes the result tunable: every layout and render parameter
+exists as a struct field already, but only `--input` and `--output` reach them.
 
 ## Try it
 

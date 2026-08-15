@@ -10,5 +10,5 @@
   the hill-climbing sweep and its ordering, the cooling schedule and the convergence exit, the candidate set and its tie-break, the three hard move rejections with their predicates, and bridge-side clusters and their rigid translation
 - **[projection-grid](projection-grid.md)** — generated 2026-08-14 · 3 sources · 54/55 lines
   the equirectangular projection, the derived grid spacing and its fallback, cell rounding, the claim-order and spiral tie-break, and what run_layout produces
-- **[rendering](rendering.md)** — generated 2026-08-14 · 2 sources · 36/40 lines
-  RenderParams defaults, the viewport transform and its y-flip, the document envelope, what elements the SVG holds, and the convenience entry point
+- **[rendering](rendering.md)** — generated 2026-08-15 · 3 sources · 63/65 lines
+  RenderParams defaults, the viewport transform and its y-flip, the document envelope, what elements the SVG holds, line bundling and its mitre, and the convenience entry point

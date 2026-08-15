@@ -31,7 +31,7 @@ phases:
     by: null
   - name: "Phase 5 — line-bundling renderer"
     reviewed: 2026-08-15
-    shipped: null
+    shipped: 2026-08-15
     cut: null
     by: null
   - name: "Phase 6 — full parameter surface"
@@ -857,6 +857,30 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   them on, `r_0` of 1, 2, 3, 5 and 8 still give bit-identical positions. Worth recording
   because a cluster translation prices only one edge under `c2` and might plausibly have
   revived the knob; it does not.
+
+  **Re-judged 2026-08-15 at Phase 5's visual gate — the redraw this question nominated —
+  and they stand a second time.** 5.0 / 1.0 / 1.0 / 2.0 / 5.0, unchanged. This is the
+  occasion the entry above called "the next honest occasion", on the grounds that a weight
+  judged against an unbundled picture is judged against half of it; the bundled half is now
+  drawn and it does not change the reading. The junctions still fan evenly — `central`
+  reaches `c3`'s optimum outright at 0/90/180/270 across four corridors — and the only bend
+  at a degree-2 station is Blue's at `southgate`, which the geometry forces rather than the
+  weights permitting.
+
+  **What the bundled picture newly shows is not a weights matter**, which is the finding
+  worth recording rather than the verdict. The trunk reads as a lens: `oldtown`–`eastbank`
+  is genuinely parallel, while `riverside`–`oldtown` and `eastbank`–`central` splay from
+  zero to full offset. §2.5's last decision predicted exactly that split and priced it as an
+  accepted v1 limit, and no setting of `w1`-`w5` touches it — the shape comes from the
+  collapse rule's geometry, not from what the search optimised. Re-weighting to chase it
+  would be tuning the wrong subsystem.
+
+  **Still provisional, and now for a stated reason rather than for want of an occasion.**
+  Two judgements, both by eye and both by the same party, are not a calibration; the
+  measurement that would settle these numbers is a second network with a different shape,
+  which §1.1 puts out of v1 scope. Phase 6 exposes them as flags, which is what lets someone
+  else disagree cheaply — and that is the honest end state for a value nobody has yet had a
+  way to falsify.
 - **OQ-3** — ~~Deterministic tie-break when two stations snap to the same grid cell
   before hill-climbing starts. Proposed: spiral search outward to the nearest free
   cell, in a fixed order so the result is reproducible. *(design call.)* **Blocks

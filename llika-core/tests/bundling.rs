@@ -44,10 +44,14 @@ fn path_points(svg: &str, stroke: &str) -> Vec<(f64, f64)> {
     numbers.chunks(2).map(|pair| (pair[0], pair[1])).collect()
 }
 
+/// Where an unbundled renderer would have put both strokes: the bare cell
+/// centre, looked up by station id.
+type Centre = Box<dyn Fn(&str) -> (f64, f64)>;
+
 struct Drawn {
     red: Vec<(f64, f64)>,
     green: Vec<(f64, f64)>,
-    centre: Box<dyn Fn(&str) -> (f64, f64)>,
+    centre: Centre,
     spacing: f64,
 }
 
