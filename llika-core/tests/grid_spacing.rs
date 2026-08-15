@@ -58,12 +58,50 @@ fn projected_edge_lengths(network: &Network, layout: &llika_core::SchematicLayou
 #[test]
 fn an_explicit_grid_spacing_overrides_the_derivation() {
     let network = Network::from_input(&sample()).expect("the fixture is valid");
-    let layout = run_layout(
-        &network,
-        &LayoutParams {
-            grid_spacing: Some(900.0),
-        },
-    );
+    let layout = run_layout(&network, &explicit_spacing(900.0));
 
     assert_eq!(layout.grid_spacing(), 900.0);
+}
+
+/// Phase 2 gate, assertion 5's other half — OQ-6's target length `L`.
+///
+/// Under the default `g` the target is **exactly** `1.0`, because the numerator
+/// is the same median `g` itself comes from. That is §2.2's argument made
+/// checkable: a typical edge is one cell, which is the length `c2` is trying to
+/// reach, so the layout starts near the criterion's optimum at any scale.
+#[test]
+fn the_target_edge_length_is_exactly_one_cell_under_the_derived_spacing() {
+    let network = Network::from_input(&sample()).expect("the fixture is valid");
+    let layout = run_layout(&network, &LayoutParams::default());
+
+    assert_eq!(layout.target_edge_cells(), 1.0);
+}
+
+/// And it self-scales when a user supplies `g` — the case OQ-6 says the
+/// resolution has to cover. At 300 m on a network whose typical edge is
+/// `SAMPLE_GRID_SPACING_M`, `c2` asks for edges of about 7.6 cells rather than
+/// contracting the whole map to 300 m.
+#[test]
+fn the_target_edge_length_self_scales_against_an_explicit_spacing() {
+    let network = Network::from_input(&sample()).expect("the fixture is valid");
+
+    let fine = run_layout(&network, &explicit_spacing(300.0));
+    let expected = SAMPLE_GRID_SPACING_M / 300.0;
+    assert!(
+        close(fine.target_edge_cells(), expected, 1e-6),
+        "target was {} cells, expected {expected}",
+        fine.target_edge_cells()
+    );
+
+    // Clamped at one cell: §2.2's occupancy invariant puts every post-snap edge
+    // at least one cell apart, so a target below one is unreachable.
+    let coarse = run_layout(&network, &explicit_spacing(4.0 * SAMPLE_GRID_SPACING_M));
+    assert_eq!(coarse.target_edge_cells(), 1.0);
+}
+
+fn explicit_spacing(metres: f64) -> LayoutParams {
+    LayoutParams {
+        grid_spacing: Some(metres),
+        ..LayoutParams::default()
+    }
 }

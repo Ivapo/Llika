@@ -19,6 +19,7 @@ pub mod projection;
 pub mod render;
 
 pub use io::{InputError, InputSchema, parse_input};
+pub use layout::cost::{Cost, evaluate, total_cost};
 pub use layout::{LayoutParams, SchematicLayout, run_layout};
 pub use model::{Line, Network, Station};
 pub use render::{RenderParams, render_to_string};
