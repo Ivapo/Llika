@@ -8,22 +8,25 @@
 //! leaking out of a division nothing else divides by.
 //!
 //! It asserts shape and finiteness, never a magnitude — the weights are
-//! provisional (OQ-2) and the layout is snap-only until Phase 3, so any number
-//! pinned here would be pinning an artefact of two things that are both about
-//! to change.
+//! provisional (OQ-2), so any number pinned here would be pinning an artefact
+//! of something still expected to change.
+//!
+//! **Scored on the snap alone.** What the search does to these numbers is its
+//! own gate's business, in `hillclimb.rs`; here they are the input the search
+//! starts from.
 
 mod common;
 
-use common::sample;
+use common::{sample, snap_only};
 use llika_core::layout::cost::{
     c1_crossings, c2_edge_length, c3_angular_resolution, c4_straightness, c5_octilinearity,
 };
 use llika_core::{LayoutParams, Network, evaluate, run_layout};
 
 #[test]
-fn every_criterion_scores_the_fixture_without_panicking() {
+fn every_criterion_scores_the_snapped_fixture_without_panicking() {
     let network = Network::from_input(&sample()).expect("the fixture is valid");
-    let layout = run_layout(&network, &LayoutParams::default());
+    let layout = run_layout(&network, &snap_only());
     let positions = layout.positions();
 
     // The fixture spans the degrees that matter: a degree-1 terminus, degree-2

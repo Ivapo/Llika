@@ -1,10 +1,10 @@
 //! Layout: projected coordinates onto grid cells, and what it costs.
 //!
-//! Snap-only still. The hill-climbing loop is **absent rather than stubbed** —
-//! an empty `hillclimb` module would be a stub, and the point of this slice is
-//! that the picture exists before any layout intelligence does. What Phase 2
-//! adds is the scoring the search will climb: [`cost`], five separable criteria
-//! and their weighted total, called by nothing yet.
+//! Three steps, in order. [`Projector`] puts stations on a metre plane;
+//! [`snap_to_grid`] rounds them onto integer cells, one station per cell; and
+//! [`hillclimb`] moves them from there, one station at a time, against the five
+//! separable criteria in [`cost`]. [`candidate`] says where a station may go and
+//! which of those moves would tear the network.
 
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +15,10 @@ use crate::projection::Projector;
 
 pub mod cost;
 
-/// The layout's tunable surface. Phase 3 adds the iteration count.
+mod candidate;
+mod hillclimb;
+
+/// The layout's tunable surface.
 ///
 /// The five weights are the reason the cost function is five separable terms
 /// rather than one fused score: they become the sliders of the roadmap's UI, so
@@ -34,6 +37,20 @@ pub struct LayoutParams {
     /// any input at any scale. `Some(m)` must be finite and positive; the flag
     /// that will supply it, and its validation, belong to Phase 6.
     pub grid_spacing: Option<f64>,
+
+    /// How many sweeps the search makes over the stations.
+    ///
+    /// A **bound, not a target**: the search stops improving as soon as no
+    /// station has an improving move left, and nothing detects that or exits
+    /// early. **Zero means snap and stop**, which is both the reproducible
+    /// baseline every measurement of the search is taken against and the way to
+    /// ask for projection and snapping alone.
+    pub iterations: u32,
+
+    /// The movement radius at the first sweep, in Chebyshev rings — **not** a
+    /// Euclidean distance. It shrinks linearly to one cell over the run, so the
+    /// search ranges widely early and settles late.
+    pub initial_radius: u32,
 
     /// `w1` — edge crossings.
     pub w_crossings: f64,
@@ -61,6 +78,8 @@ impl Default for LayoutParams {
     fn default() -> Self {
         Self {
             grid_spacing: None,
+            iterations: 200,
+            initial_radius: 3,
             w_crossings: 5.0,
             w_edge_length: 1.0,
             w_angular_resolution: 1.0,
@@ -108,10 +127,12 @@ impl SchematicLayout {
     }
 }
 
-/// Project, derive `g`, and snap.
+/// Project, derive `g`, snap, and hill-climb.
 ///
 /// Infallible: every degenerate input the schema admits — no stations, no
 /// edges, coincident stations — has a defined answer here rather than an error.
+/// The search inherits that: a network with nothing to improve simply finds no
+/// improving move.
 pub fn run_layout(network: &Network, params: &LayoutParams) -> SchematicLayout {
     let projector = Projector::from_stations(network.stations());
     let projected = projector.project_all(network.stations());
@@ -124,13 +145,25 @@ pub fn run_layout(network: &Network, params: &LayoutParams) -> SchematicLayout {
         None => typical,
     };
 
-    let (positions, _occupancy) = snap_to_grid(&projected, grid_spacing);
+    let (mut positions, mut occupancy) = snap_to_grid(&projected, grid_spacing);
+    let target_edge_cells = target_edge_cells(typical, grid_spacing);
+
+    // The occupancy comes from the snap rather than being rebuilt: it is the
+    // one structure that answers "which cells are taken", and the search moves
+    // stations between them.
+    hillclimb::run(
+        network,
+        &mut positions,
+        &mut occupancy,
+        target_edge_cells,
+        params,
+    );
 
     SchematicLayout {
         positions,
         projected,
         grid_spacing,
-        target_edge_cells: target_edge_cells(typical, grid_spacing),
+        target_edge_cells,
     }
 }
 

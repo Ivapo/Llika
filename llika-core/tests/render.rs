@@ -2,17 +2,21 @@
 
 mod common;
 
-use common::{SAMPLE_LINES, SAMPLE_STATIONS, sample};
+use common::{SAMPLE_LINES, SAMPLE_STATIONS, sample, snap_only};
 use llika_core::render::Viewport;
 use llika_core::{LayoutParams, Network, RenderParams, render_to_string, run_layout};
 
 /// Assertion 8 — the y-flip. Latitude increases north and SVG `y` increases
 /// down, so a renderer that omits the flip draws the map upside down and passes
 /// every count-based assertion in this file.
+///
+/// On the snap alone, because the claim is about the *viewport* rather than the
+/// layout: a search free to move either station could invert the pair without
+/// the flip being wrong.
 #[test]
 fn the_more_northerly_station_has_the_smaller_svg_y() {
     let network = Network::from_input(&sample()).expect("the fixture is valid");
-    let layout = run_layout(&network, &LayoutParams::default());
+    let layout = run_layout(&network, &snap_only());
     let params = RenderParams::default();
     let viewport = Viewport::new(&layout, &params);
 

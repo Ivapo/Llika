@@ -9,7 +9,7 @@
 
 use std::path::PathBuf;
 
-use llika_core::{InputSchema, parse_input};
+use llika_core::{InputSchema, LayoutParams, parse_input};
 
 /// Hand-counted from the JSON: Red contributes 7 consecutive pairs, Green 8 and
 /// Blue 6 — 21 in all — and the four trunk pairs (`riverside`-`oldtown`,
@@ -22,6 +22,20 @@ pub const SAMPLE_LINES: usize = 3;
 /// The derived `g` for the fixture, in metres: the 9th of its 17 sorted edge
 /// lengths, which is the `riverside` → `hillcrest` corridor.
 pub const SAMPLE_GRID_SPACING_M: f64 = 2269.9117477523614;
+
+/// Parameters that project and snap and then stop.
+///
+/// Phase 1's assertions are about the projection, the snap and the viewport,
+/// and the search would perturb them without saying anything about what they
+/// assert — a snap-order tie-break checked against a layout the search has since
+/// moved is a coincidence rather than a test. This is also the baseline the
+/// search's own gate measures against.
+pub fn snap_only() -> LayoutParams {
+    LayoutParams {
+        iterations: 0,
+        ..LayoutParams::default()
+    }
+}
 
 pub fn fixture_path(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))

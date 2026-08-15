@@ -80,7 +80,10 @@ pub fn total_cost(
 }
 
 /// The corridors, as pairs of station indices, in input order.
-fn corridors(network: &Network) -> Vec<(usize, usize)> {
+///
+/// Visible to the rest of `layout` so the search's overlap rejection walks the
+/// same edge list the criteria score, rather than a second spelling of it.
+pub(super) fn corridors(network: &Network) -> Vec<(usize, usize)> {
     let graph = network.graph();
     graph
         .edge_indices()
@@ -96,6 +99,12 @@ fn corridors(network: &Network) -> Vec<(usize, usize)> {
 /// of a path meet at their common station by construction, which is not a
 /// crossing. The value is always integral; it is an `f64` only so the weighted
 /// sum needs no conversion at the call site.
+///
+/// **That exclusion is exactly what the search's overlap rejection does not
+/// do.** `super::candidate` walks this same corridor list *including*
+/// endpoint-sharing pairs, because the case it exists for — a line folded back
+/// along its own neighbour — is invisible here by construction. The two loops
+/// look alike and are not: neither is the other with a typo.
 pub fn c1_crossings(network: &Network, positions: &[GridPoint]) -> f64 {
     let edges = corridors(network);
     let mut crossings = 0usize;
@@ -148,14 +157,10 @@ pub fn c2_edge_length(network: &Network, positions: &[GridPoint], target: f64) -
 pub fn c3_angular_resolution(network: &Network, positions: &[GridPoint]) -> f64 {
     (0..network.stations().len())
         .map(|station| {
-            let mut incident = incident_directions(network, positions, station);
+            let incident = incident_directions(network, positions, station);
             if incident.len() < 2 {
                 return 0.0;
             }
-            // Two incident edges can share a direction, so the ordering breaks
-            // ties by neighbour station index — which keeps the gap sequence
-            // deterministic rather than dependent on enumeration order.
-            incident.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
 
             let directions: Vec<f64> = incident.iter().map(|(theta, _)| *theta).collect();
             let ideal = TAU / directions.len() as f64;
@@ -167,16 +172,22 @@ pub fn c3_angular_resolution(network: &Network, positions: &[GridPoint]) -> f64 
         .sum()
 }
 
-/// The direction of every corridor leaving `station`, paired with the station
-/// at its far end.
-fn incident_directions(
+/// The direction of every corridor leaving `station`, paired with the station at
+/// its far end, **ordered**: ascending direction, ties broken by neighbour
+/// index.
+///
+/// The sort belongs here rather than at either call site, because that ordering
+/// is a rule two things depend on: `c3` needs it to make its gap sequence
+/// deterministic, and the search's order-flip rejection is pinned to it by name.
+/// A comparator written out twice is one that can drift.
+pub(super) fn incident_directions(
     network: &Network,
     positions: &[GridPoint],
     station: usize,
 ) -> Vec<(f64, usize)> {
     let graph = network.graph();
     let node = network.node(station);
-    graph
+    let mut incident: Vec<(f64, usize)> = graph
         .edges(node)
         .map(|edge| {
             let neighbour = if edge.source() == node {
@@ -190,7 +201,13 @@ fn incident_directions(
                 neighbour,
             )
         })
-        .collect()
+        .collect();
+
+    // Two incident edges can share a direction, so the ordering breaks ties by
+    // neighbour station index, which keeps the sequence deterministic rather
+    // than dependent on the graph's edge enumeration.
+    incident.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
+    incident
 }
 
 /// `c4` — **line straightness**. For each line, at every interior station of
@@ -244,7 +261,7 @@ pub fn c5_octilinearity(network: &Network, positions: &[GridPoint]) -> f64 {
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
     use std::f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4};
 
     use super::*;
@@ -255,7 +272,7 @@ mod tests {
     /// criterion is scored over the `&[GridPoint]` passed alongside — so they
     /// are all zero, and the graph is built through the real validating
     /// constructor rather than by hand.
-    fn net(stations: &[&str], lines: &[(&str, &[&str])]) -> Network {
+    pub(in crate::layout) fn net(stations: &[&str], lines: &[(&str, &[&str])]) -> Network {
         let input = InputSchema {
             stations: stations
                 .iter()
@@ -279,7 +296,7 @@ mod tests {
         Network::from_input(&input).expect("the hand-built network is valid")
     }
 
-    fn at(cells: &[(i64, i64)]) -> Vec<GridPoint> {
+    pub(in crate::layout) fn at(cells: &[(i64, i64)]) -> Vec<GridPoint> {
         cells.iter().map(|(i, j)| GridPoint::new(*i, *j)).collect()
     }
 

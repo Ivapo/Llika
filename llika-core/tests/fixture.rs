@@ -5,7 +5,7 @@ mod common;
 
 use std::collections::BTreeSet;
 
-use common::{SAMPLE_EDGES, SAMPLE_LINES, SAMPLE_STATIONS, sample};
+use common::{SAMPLE_EDGES, SAMPLE_LINES, SAMPLE_STATIONS, sample, snap_only};
 use llika_core::grid::raw_cell;
 use llika_core::{LayoutParams, Network, run_layout};
 
@@ -44,10 +44,14 @@ fn the_interchange_and_the_trunk_have_the_shape_the_later_phases_need() {
 /// Assertion 6 — one station per cell, and the tie-break was actually
 /// exercised. Both halves are needed: the first alone passes vacuously on a
 /// fixture where nothing ever collided.
+///
+/// Measured on the **snap alone**. Every literal below is a claim about where
+/// the tie-break put a station, and a layout the search has since moved would
+/// satisfy them only by coincidence.
 #[test]
 fn every_station_holds_a_distinct_cell_and_the_collision_pair_really_collided() {
     let network = Network::from_input(&sample()).expect("the fixture is valid");
-    let layout = run_layout(&network, &LayoutParams::default());
+    let layout = run_layout(&network, &snap_only());
 
     let distinct: BTreeSet<_> = layout.positions().iter().collect();
     assert_eq!(
@@ -89,6 +93,18 @@ fn every_station_holds_a_distinct_cell_and_the_collision_pair_really_collided() 
     );
 }
 
+/// The one-station-per-cell invariant is the search's to keep too — it carries
+/// the snap's occupancy forward rather than building a second index, and this is
+/// what says the two never came apart.
+#[test]
+fn the_search_leaves_every_station_in_a_distinct_cell() {
+    let network = Network::from_input(&sample()).expect("the fixture is valid");
+    let layout = run_layout(&network, &LayoutParams::default());
+
+    let distinct: BTreeSet<_> = layout.positions().iter().collect();
+    assert_eq!(distinct.len(), SAMPLE_STATIONS);
+}
+
 /// Assertion 7 — the projected plane is in metres and spans a city.
 ///
 /// The range catches a degrees-for-metres error by four orders of magnitude. It
@@ -98,7 +114,7 @@ fn every_station_holds_a_distinct_cell_and_the_collision_pair_really_collided() 
 #[test]
 fn the_projected_bounding_box_spans_a_plausible_city_in_metres() {
     let network = Network::from_input(&sample()).expect("the fixture is valid");
-    let layout = run_layout(&network, &LayoutParams::default());
+    let layout = run_layout(&network, &snap_only());
 
     let xs: Vec<f64> = layout.projected().iter().map(|p| p.x).collect();
     let ys: Vec<f64> = layout.projected().iter().map(|p| p.y).collect();

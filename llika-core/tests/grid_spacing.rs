@@ -12,7 +12,7 @@
 
 mod common;
 
-use common::{SAMPLE_GRID_SPACING_M, close, sample};
+use common::{SAMPLE_GRID_SPACING_M, close, sample, snap_only};
 use llika_core::{LayoutParams, Network, run_layout};
 
 /// The literal is the 9th of the fixture's 17 sorted projected edge lengths —
@@ -24,7 +24,7 @@ use llika_core::{LayoutParams, Network, run_layout};
 #[test]
 fn the_default_grid_spacing_is_the_median_projected_edge_length() {
     let network = Network::from_input(&sample()).expect("the fixture is valid");
-    let layout = run_layout(&network, &LayoutParams::default());
+    let layout = run_layout(&network, &snap_only());
 
     let g = layout.grid_spacing();
     assert!(
@@ -72,7 +72,7 @@ fn an_explicit_grid_spacing_overrides_the_derivation() {
 #[test]
 fn the_target_edge_length_is_exactly_one_cell_under_the_derived_spacing() {
     let network = Network::from_input(&sample()).expect("the fixture is valid");
-    let layout = run_layout(&network, &LayoutParams::default());
+    let layout = run_layout(&network, &snap_only());
 
     assert_eq!(layout.target_edge_cells(), 1.0);
 }
@@ -99,9 +99,12 @@ fn the_target_edge_length_self_scales_against_an_explicit_spacing() {
     assert_eq!(coarse.target_edge_cells(), 1.0);
 }
 
+/// Snap-only, like every other layout in this file: `g` and the target length
+/// are both fixed before the first sweep, so running the search would only cost
+/// time.
 fn explicit_spacing(metres: f64) -> LayoutParams {
     LayoutParams {
         grid_spacing: Some(metres),
-        ..LayoutParams::default()
+        ..snap_only()
     }
 }

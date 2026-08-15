@@ -117,6 +117,12 @@ fn angle_from_east((di, dj): (i64, i64)) -> f64 {
 }
 
 /// Which station holds which cell.
+///
+/// **`by_cell` is queried by key and never iterated**, which is what lets it be
+/// a `HashMap` without making the output vary between processes: Rust seeds its
+/// default hasher per process. The search carries one of these from the snap all
+/// the way through, so a `for (cell, station) in &self.by_cell` added later
+/// would be a determinism bug rather than a style choice.
 #[derive(Debug, Clone, Default)]
 pub struct GridOccupancy {
     by_cell: HashMap<GridPoint, usize>,

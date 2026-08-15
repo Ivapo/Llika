@@ -89,6 +89,41 @@ pub fn segments_intersect(a1: GridPoint, a2: GridPoint, b1: GridPoint, b2: GridP
         || (o4 == 0 && on_collinear_segment(b1, b2, a2))
 }
 
+/// Whether two segments are collinear and share **more than a single point**.
+///
+/// **Deliberately not [`segments_intersect`], and reaching for that one here
+/// breaks two things at once.** It is a *closed* test that counts touching — its
+/// own test asserts true for two collinear segments meeting at exactly one
+/// endpoint — so it returns true for every legitimate straight-through, and true
+/// for ordinary crossings, which the layout search leaves to the soft crossing
+/// penalty rather than rejecting outright.
+///
+/// This is the degenerate case no penalty can distinguish from a legitimate
+/// drawing: a line folding back so that one edge comes to lie along its own
+/// neighbour. The crossing criterion cannot see it, because it excludes pairs
+/// sharing an endpoint by construction.
+///
+/// Collinearity comes from [`orientation`], so the arithmetic is exact `i128`
+/// with no epsilon to tune; the interval overlap is **strict**, which is what
+/// lets two collinear segments meet at one endpoint without counting.
+///
+/// A zero-length segment collapses its own interval and so overlaps nothing —
+/// safe without a guard, and unreachable anyway, since grid occupancy puts every
+/// post-snap edge at least one cell long.
+pub fn segments_overlap(a1: GridPoint, a2: GridPoint, b1: GridPoint, b2: GridPoint) -> bool {
+    if orientation(a1, a2, b1) != 0 || orientation(a1, a2, b2) != 0 {
+        return false;
+    }
+
+    // Collinear, so one axis parametrises both segments. Project onto `i`
+    // unless the shared line is vertical, where `i` would collapse to a point.
+    let along = |p: GridPoint| if a1.i != a2.i { p.i } else { p.j };
+    let span = |p: GridPoint, q: GridPoint| (along(p).min(along(q)), along(p).max(along(q)));
+
+    let ((a_lo, a_hi), (b_lo, b_hi)) = (span(a1, a2), span(b1, b2));
+    a_lo.max(b_lo) < a_hi.min(b_hi)
+}
+
 /// The direction of `from → to`, in radians, normalised into `[0, 2π)`.
 ///
 /// **Normalising is load-bearing, not cosmetic.** Rust's `%` keeps the sign of
@@ -263,6 +298,73 @@ mod tests {
             cell(2, 0),
             cell(2, 0),
             cell(4, 0)
+        ));
+    }
+
+    /// The whole point of the predicate: it disagrees with
+    /// [`segments_intersect`] on exactly the two cases the layout search cares
+    /// about, and agreeing with it would forbid the collinear straight-through
+    /// this layout most wants.
+    #[test]
+    fn overlap_is_collinear_and_strict_where_intersection_is_closed() {
+        // A fold-back: one edge lies along its own neighbour. The pair shares
+        // an endpoint, so the crossing criterion excludes it and this is the
+        // only thing that sees it.
+        assert!(segments_overlap(
+            cell(0, 0),
+            cell(3, 3),
+            cell(3, 3),
+            cell(2, 2)
+        ));
+
+        // A straight-through, which `segments_intersect` calls an intersection.
+        assert!(!segments_overlap(
+            cell(0, 0),
+            cell(1, 1),
+            cell(1, 1),
+            cell(2, 2)
+        ));
+        assert!(segments_intersect(
+            cell(0, 0),
+            cell(1, 1),
+            cell(1, 1),
+            cell(2, 2)
+        ));
+
+        // An ordinary crossing, which OQ-1 leaves to the soft penalty.
+        assert!(!segments_overlap(
+            cell(0, 0),
+            cell(2, 2),
+            cell(0, 2),
+            cell(2, 0)
+        ));
+
+        // Parallel but not collinear, and collinear but disjoint.
+        assert!(!segments_overlap(
+            cell(0, 0),
+            cell(4, 0),
+            cell(0, 1),
+            cell(4, 1)
+        ));
+        assert!(!segments_overlap(
+            cell(0, 0),
+            cell(2, 0),
+            cell(3, 0),
+            cell(5, 0)
+        ));
+
+        // Vertical, where projecting onto `i` would collapse both to a point.
+        assert!(segments_overlap(
+            cell(1, 0),
+            cell(1, 4),
+            cell(1, 2),
+            cell(1, 6)
+        ));
+        assert!(!segments_overlap(
+            cell(1, 0),
+            cell(1, 2),
+            cell(1, 2),
+            cell(1, 4)
         ));
     }
 
