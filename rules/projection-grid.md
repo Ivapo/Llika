@@ -44,14 +44,20 @@ is undefined and a zero median makes every cell a `NaN` that casts to 0.
 input-file order; first claim wins. A station whose cell is taken spirals out
 through `llika-core/src/grid.rs:ring`: increasing Chebyshev ring, and within a ring
 increasing angle from due east. No two cells of a ring share a ray, so that is a
-total order. `llika-core/src/grid.rs:snap_to_grid` is the whole pass.
+total order. `llika-core/src/grid.rs:snap_to_grid` is the whole pass, and it
+**returns the occupancy alongside the positions** rather than dropping it: the
+layout search moves stations with `llika-core/src/grid.rs:GridOccupancy::relocate`
+and must use the same structure that placed them. Its `by_cell` map is queried by
+key and never iterated, which is what keeps a `HashMap` out of the output order.
 
 Because of this, every **post-snap** edge is at least one cell long and degeneracy
 is confined to the pre-snap plane.
 
 **`run_layout`.** `llika-core/src/layout/mod.rs:run_layout` projects, derives `g`,
-snaps, and is infallible. `llika-core/src/layout/mod.rs:SchematicLayout` holds
-`positions` and `projected` — both indexed by station index — plus `grid_spacing`
-and `target_edge_cells`, the length `c2` wants an edge to be (`rules/layout-cost.md`).
-Read both scalars back from **there**, never from `LayoutParams`: each is a function
-of the parameters *and* the network. There is no iteration loop yet.
+snaps, hill-climbs (`rules/layout-search.md`), and is infallible.
+`llika-core/src/layout/mod.rs:SchematicLayout` holds `positions` and `projected` —
+both indexed by station index — plus `grid_spacing` and `target_edge_cells`, the
+length `c2` wants an edge to be (`rules/layout-cost.md`). Read both scalars back
+from **there**, never from `LayoutParams`: each is a function of the parameters
+*and* the network. `positions` is post-search; `projected` is the pre-snap plane and
+the search never touches it.

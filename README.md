@@ -19,22 +19,22 @@ lists, which a tram or bus system satisfies as readily as an underground.
 
 ## Status
 
-**Early. 2 of 6 phases shipped.** The pipeline runs end to end and writes a real SVG,
-but the layout intelligence is not built yet — stations are snapped to a grid and drawn,
-with no optimisation pass. Expect a recognisable network, not yet a transit poster.
+**Early. 3 of 6 phases shipped.** The pipeline runs end to end, and the layout step now
+optimises: stations are snapped to a grid and then hill-climbed against five weighted
+criteria. Expect junctions that fan out evenly and lines that do not kink — but not yet a
+transit poster, because lines sharing a corridor are still drawn as one stroke.
 
 | Phase | | |
 |---|---|---|
 | 1 | Thin end-to-end slice: JSON in, SVG out | ✅ shipped |
 | 2 | The five cost criteria | ✅ shipped |
-| 3 | Single-station hill-climbing | drafted, blocked |
+| 3 | Single-station hill-climbing | ✅ shipped |
 | 4 | Cluster moves | drafted |
 | 5 | Line-bundling renderer | drafted |
 | 6 | Full parameter surface | drafted |
 
-Phase 3 is where the output starts to look schematic. It is blocked on a question about
-the source paper's move-rejection rule, and on a gate that turned out to be unsatisfiable
-against the test fixture — both recorded as open questions in the spec.
+Phase 5 is the one that makes the output read as a transit poster: two lines along a
+shared trunk currently overprint rather than running as parallel strokes.
 
 ## Try it
 
@@ -80,10 +80,12 @@ Three coordinate systems, then a search.
 2. **An integer grid.** Cell size defaults to the *median edge length* of the network
    itself, so a typical edge is exactly one cell for any city at any scale. One station
    per cell; collisions spiral outward deterministically.
-3. **Hill-climbing** *(phase 3)* against five weighted criteria — crossings, edge length,
-   angular resolution at a station, line straightness, and four-gonality, the penalty
-   that pulls every edge toward a multiple of 45°. Five separable terms rather than one
-   fused score, so each becomes an independent slider.
+3. **Hill-climbing** against five weighted criteria — crossings, edge length, angular
+   resolution at a station, line straightness, and four-gonality, the penalty that pulls
+   every edge toward a multiple of 45°. Five separable terms rather than one fused score,
+   so each becomes an independent slider. Every station is tried against each free cell
+   within a radius that shrinks over the run; three hard rules reject the moves that
+   would tear the network, and everything else is left to the cost.
 4. **SVG**, with the y-axis flipped once — latitude increases north, SVG `y` increases
    down.
 

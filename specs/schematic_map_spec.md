@@ -21,7 +21,7 @@ phases:
     by: null
   - name: "Phase 3 — single-station hill-climbing"
     reviewed: 2026-08-15
-    shipped: null
+    shipped: 2026-08-15
     cut: null
     by: null
   - name: "Phase 4 — cluster moves"
@@ -580,12 +580,12 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   two wrong answers have very different costs, and only one of them can freeze the
   search.
 
-  **What is closed and what is not.** The *implementation* is closed — Phase 3 builds
-  the soft reading and is no longer blocked. The *reconciliation* is open: nobody in
-  this repo has read the 2011 paper, so this is an operational decision in exactly the
-  sense §2.3's five formulas are, and the paper's actual rule may differ. Reading it
-  remains worth doing, and a difference found then is a recorded change to §2.4, not a
-  defect in the phase that shipped it.
+  **What is closed and what is not.** The *implementation* is closed — Phase 3 shipped
+  the soft reading on 2026-08-15, in `layout/candidate.rs`. The *reconciliation* is
+  still open: nobody in this repo has read the 2011 paper, so this is an operational
+  decision in exactly the sense §2.3's five formulas are, and the paper's actual rule
+  may differ. Reading it remains worth doing, and a difference found then is a recorded
+  change to §2.4, not a defect in the phase that shipped it.
 
   The precedent is deliberate. Phase 2's round 1 found four criteria with no formula
   anywhere and closed them the same way rather than waiting on the same unread paper;
@@ -596,6 +596,14 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   structurally; the first defaults are a starting point to tune by eye against the
   fixture, and Phase 3's visual gate is the first place they are judged. Recorded so
   a later pass does not mistake the first numbers for settled ones.
+
+  **Judged once, 2026-08-15, at Phase 3's visual gate, and left unchanged.** The map
+  the provisional weights produce reads as a transit diagram: `riverside` reaches
+  `c3`'s degree-3 floor exactly, the Blue line's fold at `quayside` straightens into
+  an axis run, and no line kinks where nothing forces it. There was nothing to correct
+  by eye, so 5.0 / 1.0 / 1.0 / 2.0 / 5.0 stand — **still provisional, not settled**.
+  Phase 5 redraws the same layout with bundling and is the next honest occasion; a
+  weight judged against an unbundled picture is judged against half of it.
 - **OQ-3** — ~~Deterministic tie-break when two stations snap to the same grid cell
   before hill-climbing starts. Proposed: spiral search outward to the nearest free
   cell, in a fixed order so the result is reproducible. *(design call.)* **Blocks
