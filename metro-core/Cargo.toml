@@ -1,0 +1,18 @@
+[package]
+name = "metro-core"
+version.workspace = true
+edition.workspace = true
+description = "Schematic metro map pipeline: projection, grid layout and SVG rendering."
+
+[dependencies]
+petgraph = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+svg = "0.18"
+thiserror = "2"
+
+# Test-only. The Phase 1 exit gate asserts the output "parses as well-formed
+# XML", which needs a parser; it is deliberately not in the shipped dependency
+# set of specs/schematic_map_spec.md §2.8.
+[dev-dependencies]
+roxmltree = "0.20"

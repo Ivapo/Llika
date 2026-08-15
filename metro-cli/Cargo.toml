@@ -1,0 +1,14 @@
+[package]
+name = "metro-cli"
+version.workspace = true
+edition.workspace = true
+description = "Command-line front end for metro-core."
+
+# The binary is `llika`, which is the invocation the spec's §1 observable names.
+[[bin]]
+name = "llika"
+path = "src/main.rs"
+
+[dependencies]
+metro-core = { path = "../metro-core" }
+clap = { version = "4", features = ["derive"] }
