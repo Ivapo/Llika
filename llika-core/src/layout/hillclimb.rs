@@ -96,6 +96,7 @@ fn cooling_radius(k: u32, params: &LayoutParams) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layout::cost::tests::{at, net};
 
     fn params(initial_radius: u32, iterations: u32) -> LayoutParams {
         LayoutParams {
@@ -127,5 +128,42 @@ mod tests {
         // flag Phase 6 derives rejects it at the boundary rather than silently
         // meaning something.
         assert_eq!(cooling_radius(0, &params(0, 10)), 1);
+    }
+
+    /// **The spiral tie-break**, which §2.4 pins as a determinism rule: where two
+    /// candidates lower `t` by the same amount, the *earlier* cell in spiral
+    /// order wins.
+    ///
+    /// Untested, the rule is free to invert unnoticed — flipping the comparison
+    /// in `run` to `<=`, so the last equal-best candidate wins instead, leaves
+    /// every other test in the workspace green while silently changing the map.
+    ///
+    /// The tie is built rather than found. `blocker` sits due east of `b`, on the
+    /// single cell that would otherwise win outright, which leaves `(1, 1)` and
+    /// `(1, -1)` level: both are one diagonal from `a` and both octilinear, so
+    /// their costs agree bit-for-bit. `(1, 1)` is index 1 of ring 1 and `(1, -1)`
+    /// is index 7.
+    #[test]
+    fn the_earlier_cell_in_spiral_order_wins_a_tie() {
+        let network = net(&["b", "blocker", "a"], &[("l", &["b", "a"])]);
+        let mut positions = at(&[(0, 0), (1, 0), (2, 0)]);
+
+        let mut occupancy = GridOccupancy::new();
+        for (station, cell) in positions.iter().enumerate() {
+            occupancy.claim(station, *cell);
+        }
+
+        run(&network, &mut positions, &mut occupancy, 1.0, &params(1, 1));
+
+        assert_eq!(
+            positions[0],
+            GridPoint::new(1, 1),
+            "the tie went to the later cell in spiral order"
+        );
+
+        // And an isolated station never moves: with no incident edges it appears
+        // in no criterion, so every candidate scores identically and none is
+        // *strictly* lower.
+        assert_eq!(positions[1], GridPoint::new(1, 0));
     }
 }

@@ -47,8 +47,11 @@ increasing angle from due east. No two cells of a ring share a ray, so that is a
 total order. `llika-core/src/grid.rs:snap_to_grid` is the whole pass, and it
 **returns the occupancy alongside the positions** rather than dropping it: the
 layout search moves stations with `llika-core/src/grid.rs:GridOccupancy::relocate`
-and must use the same structure that placed them. Its `by_cell` map is queried by
-key and never iterated, which is what keeps a `HashMap` out of the output order.
+and must use the same structure that placed them. That one method is `pub(crate)`
+while the rest of the type is public — its preconditions are debug assertions, and
+a public method whose invariant check vanishes in release would be a public way to
+break the invariant. Its `by_cell` map is queried by key and never iterated, which
+is what keeps a `HashMap` out of the output order.
 
 Because of this, every **post-snap** edge is at least one cell long and degeneracy
 is confined to the pre-snap plane.

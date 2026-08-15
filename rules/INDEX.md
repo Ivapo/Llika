@@ -8,7 +8,7 @@
   the plane and integer-grid geometry helpers, the five cost criteria and their zero-sets, the c2 target length, and the weights that combine them into t
 - **[layout-search](layout-search.md)** — generated 2026-08-15 · 2 sources · 52/55 lines
   the hill-climbing sweep and its ordering, the cooling schedule, the candidate set and its tie-break, and the three hard move rejections with their predicates
-- **[projection-grid](projection-grid.md)** — generated 2026-08-14 · 3 sources · 51/55 lines
+- **[projection-grid](projection-grid.md)** — generated 2026-08-14 · 3 sources · 54/55 lines
   the equirectangular projection, the derived grid spacing and its fallback, cell rounding, the claim-order and spiral tie-break, and what run_layout produces
 - **[rendering](rendering.md)** — generated 2026-08-14 · 2 sources · 36/40 lines
   RenderParams defaults, the viewport transform and its y-flip, the document envelope, what elements the SVG holds, and the convenience entry point

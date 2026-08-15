@@ -161,7 +161,15 @@ impl GridOccupancy {
     /// Both preconditions are the caller's to hold — the search checks
     /// [`is_free`](Self::is_free) before it scores a candidate at all — so they
     /// are debug assertions rather than a `Result` nothing would ever handle.
-    pub fn relocate(&mut self, station: usize, from: GridPoint, to: GridPoint) {
+    ///
+    /// **`pub(crate)` for that reason.** A debug assertion is silent in a release
+    /// build, so a public `relocate` would be a public way to destroy the
+    /// one-station-per-cell invariant this type exists to hold — evicting the
+    /// station that really holds `from`, or overwriting whoever holds `to`.
+    /// Narrowing the visibility removes the hazard outright, where a runtime
+    /// check would only report it, and nothing outside this crate has any
+    /// business moving a station.
+    pub(crate) fn relocate(&mut self, station: usize, from: GridPoint, to: GridPoint) {
         debug_assert_eq!(
             self.by_cell.get(&from),
             Some(&station),
