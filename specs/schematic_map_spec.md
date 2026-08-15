@@ -730,6 +730,12 @@ file, and Phase 6 derives a flag from every field: `w1` would give `--w1`, while
 own end-state invocation types `--w-crossing`. The `w1`-`w5` spelling stays in the
 prose, where it is the shorter name for a criterion rather than an identifier.)*
 
+*(That tension is **resolved at Phase 6**, in its favour of the field name: every flag
+is its field kebab-cased, with no exceptions, and §1's block is corrected instead. The
+argument is that one irregular flag forces Phase 6's field-to-flag gate to consult the
+same mapping the implementation does, which makes it assert that the code agrees with
+itself. Recorded here because this is the section that raised it and left it open.)*
+
 The reason is a future the code must not have to be rewritten for: a Tauri command
 parses and projects a loaded file **once**, holds the `Network` in memory, and on
 every slider drag calls only `run_layout` and `render_to_string` with new
@@ -1551,14 +1557,68 @@ delivers §1's promise that a user can improve a good first result, and it is th
 last thing the roadmap's UI needs from the core.*
 
 - **Scope:** `clap` flags covering every `LayoutParams` and `RenderParams` field
-  (`--grid-spacing`, `--iterations`, `--w-crossing` and the rest), plus `--params
-  <file>` taking the whole struct as JSON. `Serialize`/`Deserialize`/`Default` on
-  both structs. Structural snapshot tests.
+  (`--grid-spacing`, `--iterations`, `--w-crossings` and the rest), plus `--params
+  <file>`. ~~`Serialize`/`Deserialize`/`Default` on both structs.~~ — *that shipped at
+  Phases 1–2 and §2.6 records it; it is struck rather than deleted because the scope
+  line read as new work.* Structural snapshot tests.
 
-  **Four things Phase 6 inherits and must not ship silently**, three of them found by
-  a code review after Phase 3:
+  #### The flag names are mechanical, and §1's invocation is what gives (decision)
 
-  - **`#[serde(default)]` on `LayoutParams`.** It is absent, so a `--params` file
+  **Every flag is its field name kebab-cased, with no exceptions and no table.**
+  `w_crossings` gives `--w-crossings`. §2.6 noticed the tension and left it open;
+  §1's end-state block types `--w-crossing`, singular, and **§1 is what changes.**
+
+  The argument is the gate below rather than taste: a test enumerating both structs'
+  fields against the registered flags is only worth having if it derives the expected
+  flag from the field. Given one hand-written exception it must consult the same
+  mapping table the implementation does, which makes it assert that the code agrees
+  with itself — the defect Phase 1's assertion 1 exists to prevent. One irregular
+  flag costs the phase its only structural guarantee, and `--w-crossing` is not worth
+  that.
+
+  **`cluster_moves: bool` defaults `true`, so it needs the off switch and not the on
+  one.** clap's `SetTrue` cannot turn a `true` default off. It takes an explicit
+  value — `--cluster-moves <bool>` — rather than a `--no-` prefix, because the
+  enumeration test derives one flag per field and a `--no-` pair is two names for one
+  field. The same rule covers any future `bool`.
+
+  #### `--params` takes both structs, and the container is named here (decision)
+
+  The prior wording said "the whole struct as JSON", singular, while its own two
+  examples were a `LayoutParams` key and a `RenderParams` key. There are **two**
+  structs and they live in different modules, so a flat object deserializes into
+  neither without a hand-written `Deserialize` that §2.8's layout has no home for.
+
+  **The file is one JSON object with two optional keys:**
+
+  ```json
+  { "layout": { "iterations": 400 }, "render": { "stroke_width": 8.0 } }
+  ```
+
+  Both keys are optional and each omitted one means `Default`, which is the same rule
+  `#[serde(default)]` gives the fields inside them. The wrapper is a new
+  `Serialize`/`Deserialize` struct in `llika-cli`, not in core: it is a CLI file
+  format rather than a library type, and §2.6's argument for the two structs being
+  plain is about what a Tauri command passes, which is the structs and not a file.
+
+  **Individual flags override the file, field by field**, and that ordering is stated
+  because the gate's first clause depends on it: a flag given alongside `--params`
+  wins over the same field in the file, and a field named in neither takes `Default`.
+
+  **Unknown keys are rejected — `deny_unknown_fields` on both structs and on the
+  wrapper.** `{"w_crosings": 9.0}` with a typo is otherwise a file that parses to all
+  defaults and silently ignores the one value the user cared about, which is the worst
+  case for a knob whose whole purpose (§1) is improving a result by eye. This is the
+  one place the phase deliberately chooses strictness over tolerance, and it composes
+  with `#[serde(default)]` rather than fighting it: missing is fine, misspelled is not.
+
+  **Five things Phase 6 inherits and must not ship silently**, three of them found by
+  a code review after Phase 3 and one by this phase's own review round:
+
+  - **`#[serde(default)]` on `LayoutParams` *and* `RenderParams`.** It is absent from
+    both — the heading named only the first while the correction below measures both,
+    and an implementer following the heading leaves `{"stroke_width": 8.0}` failing.
+    It is absent, so a `--params` file
     omitting any field — `iterations`, say — fails to deserialize with `missing
     field` rather than falling back to the `Default` that §2.6 argues is precisely
     the meaning of an unset field. A user writing a file with only the weights they
@@ -1586,22 +1646,140 @@ last thing the roadmap's UI needs from the core.*
     units_per_cell`. What it narrows is the blast radius the attribute protects —
     eight of `LayoutParams`' nine fields and three of `RenderParams`' four, not all
     thirteen.)*
-  - **Validation of the fields whose docs defer it here.** `grid_spacing` must be
-    finite and positive; `initial_radius` needs an upper bound, because
-    `candidate::spiral_offsets` materialises every cell of rings `1..=r` and a radius
-    of 10 000 asks for ~4·10⁸ tuples, rebuilt every sweep.
-  - **`--initial-radius` does nothing at the default weights** — see OQ-2. Either the
-    weights change first or the flag ships with that stated.
-  - **The CLI summary line still prints only the grid size**, where §1's end state
-    prints `cost 4820.3 → 611.7 over 200 iterations`. Logged as a gap at Phase 3's
-    close-out rather than fixed there, because reporting it needs a public way to get
-    `t` out of `run_layout` that Phase 3's review round never saw. This phase already
-    owns reconciling §1's invocation with the real one.
-- **Exit gate:** a `--params` file and the equivalent individual flags produce
-  byte-identical SVG. A test enumerating both structs' fields against the registered
-  flags fails if a field has no flag, so the surface cannot silently fall behind the
-  structs. At least two structural snapshot tests — element and path counts,
-  interchange coincidence — that are explicitly not pixel-exact. `--help` lists every
-  flag.
-- **Close-out:** seeds `rules/cli.md`, updates the `CLAUDE.md` observable line if the
-  invocation in §1 has drifted from the real one.
+  - **Validation, with the bounds named and a home.** The prior wording said
+    `initial_radius` "needs an upper bound" without giving one, which is a design
+    handed to an implementer under the name of a decision — the shape OQ-7 was closed
+    for. The bounds:
+
+    | field | accepted | why the bound |
+    |---|---|---|
+    | `grid_spacing` | finite and `> 0` | `round(x / g)` is NaN at 0 and casts silently to cell 0 |
+    | `initial_radius` | `1 ..= 64` | `candidate::spiral_offsets` materialises every cell of rings `1..=r`, rebuilt every sweep; 64 is ~16 600 tuples and 10 000 asks for ~4·10⁸ |
+    | `iterations` | any `u32`, including 0 | 0 is the snap-only mode Phase 3's gate is keyed to — a supported value, not a degenerate one |
+    | `units_per_cell`, `stroke_width` | finite and `> 0` | a zero or negative scale draws nothing, or inside out |
+    | `margin_cells` | finite and `>= 0`, and `> 0` where the network has one station | Phase 1's scope: a one-station network reduces the envelope to `2 · margin_cells · units_per_cell`, so zero yields a zero-extent document |
+    | `bundle_spacing` | finite when `Some` | `Some(0.0)` is the supported disable seam (§2.5) |
+
+    **`initial_radius = 0` is rejected rather than accepted-as-1.**
+    `hillclimb::cooling_radius` clamps it to 1, so it is representable and silently
+    means something else; `hillclimb.rs`'s own test comment already records that "the
+    flag Phase 6 derives rejects it at the boundary rather than silently meaning
+    something", and the prior wording named only an upper bound.
+
+    **Validation lives in `llika-cli`, and `run_layout` stays infallible.** Its doc
+    says every degenerate input the schema admits "has a defined answer here rather
+    than an error", and §2.6 pins the signature a Tauri command calls; making core
+    fallible changes both and pushes a `Result` through `build_schematic_svg` and every
+    caller. But a clap `value_parser` alone is not enough — **`--params` would bypass
+    it entirely**, and it lands in the same phase. So validation is one function over
+    the assembled `LayoutParams`/`RenderParams` pair, run **after** the file and the
+    flags are merged, and it is what both paths go through.
+  - **`--initial-radius` does nothing at the default weights** — see OQ-2, which
+    re-judged the weights at Phase 5 and left them standing. **So the fork this bullet
+    named is decided: the flag ships with the inertness stated**, in its `--help` text
+    and in `rules/cli.md`, rather than the weights changing first. Reproduced twice
+    more since: `r_0` of 1, 2, 3, 5 and 8 give bit-identical positions at
+    `t = 11.338720` on the fixture with cluster moves on.
+  - **The CLI summary line, and what is actually missing.** ~~It still prints only the
+    grid size~~ — it prints station count, line count and grid; the missing clause is
+    `cost … → … over N iterations`. And ~~reporting it needs a public way to get `t`
+    out of `run_layout`~~ **is false and was false when it was written**: `lib.rs`
+    re-exports `total_cost`, and Phase 3's own gate assertion 2 says so in terms —
+    "two `run_layout` calls and two `total_cost` calls, **all public**".
+
+    **The gap that is real is the other half of the sentence.** `hillclimb::run`
+    returns the executed sweep count as a `u32` and `run_layout` **discards it** —
+    the call is a bare statement — and `SchematicLayout` has no field for it. So
+    "over 200 iterations" cannot be printed truthfully today, and printing the
+    *requested* count would be a lie the moment Phase 4's early exit fires, which on
+    the fixture is immediately: **2 sweeps executed against `iterations = 200`.**
+    `SchematicLayout` gains an `executed_iterations` accessor beside
+    `grid_spacing()` and `target_edge_cells()`, for the same reason those exist — it
+    is a function of the parameters *and* the network, so a caller cannot compute it
+    from `LayoutParams`. **This is the phase's one change inside `llika-core/src/layout/`.**
+  - **§1's cost literals are fiction, and §1 is what changes.** Measured at §1's own
+    flags — `--grid-spacing 900 --iterations 200 --w-crossing 5.0` — the real pair is
+    `t` **54.817110 → 12.747375**, against the block's `4820.3 → 611.7`. At the
+    defaults it is **37.166633 → 11.338720** in **2** executed sweeps. The prior
+    wording said this phase "owns reconciling §1's invocation with the real one" and
+    never said which way. **The direction: the CLI prints what it measured, and §1's
+    block is corrected in place at this phase's close-out to what the shipped binary
+    prints** — a dated `CORRECTED` note beside the text, per the methodology's §6.1
+    rule for shipped prose that is now actively misleading. §1 is a goal written
+    before anything was built; the binary is not going to be bent to match its
+    invented numbers.
+  **The integration points, named because "add some flags" is not the whole change** —
+  the omission this loop has now caught at Phases 3, 4, 5 and here, and this phase
+  needs one more of them than any of those did:
+
+  - **`llika-cli` gains a JSON dependency.** It depends on `llika-core` and `clap`
+    alone today, so `--params` has nowhere to parse. Add `serde` and `serde_json` to
+    `llika-cli/Cargo.toml`; both are already in the workspace's lock via core.
+  - **`llika-cli` has no lib target**, so nothing in `llika-cli/tests/` can name the
+    `Args` type. The field-to-flag enumeration test is therefore a `#[cfg(test)]`
+    module **inside `main.rs`**, which is the same constraint and the same answer
+    Phase 2 gave for `layout/cost.rs` and Phase 5 for `render/corridor.rs`. Shelling
+    out to `--help` and grepping is the alternative and is worse: it tests the help
+    renderer, not the registration.
+  - **The `#[serde(default)]` and `deny_unknown_fields` work lands in
+    `llika-core/src/layout/mod.rs` and `llika-core/src/render/mod.rs`** — two *core*
+    files, in a scope that otherwise reads as CLI-only.
+  - **`llika-core/src/layout/mod.rs` also gains `SchematicLayout::executed_iterations`**,
+    per the summary-line bullet. Nothing else in `layout/` is touched, and no
+    algorithm changes: `hillclimb::run` already returns the number and `run_layout`
+    already throws it away.
+  - `llika-cli/src/main.rs` is substantially rewritten. It is the binary
+    `llika-cli/tests/byte_stability.rs` invokes, which is why the gate below carries a
+    determinism clause.
+- **Exit gate:** `cargo test --workspace` green, and six assertions:
+  1. **A `--params` file and the equivalent individual flags produce byte-identical
+     SVG — with the file holding *non-default* values on at least one field of each
+     struct, and a picture that differs from the all-defaults render.** All three
+     clauses are the assertion. The two paths resolve a field by different routes —
+     the file by serde name, the flag by clap registration — so this is the only
+     clause that catches one of them mis-wired; and a file of defaults satisfies the
+     bare comparison while proving nothing, since both sides would then be the
+     default picture. Use `grid_spacing` and `stroke_width`: both move the output at
+     any setting.
+
+     **Not `initial_radius` or `iterations`**, and the reason is recorded so a later
+     pass does not "simplify" the choice: `initial_radius` is inert at the shipped
+     weights (OQ-2) and `iterations` is inert above the convergence sweep (§2.4's
+     early exit, 2 of 200 on the fixture), so a test keyed to either passes whether
+     the flag is wired or not.
+  2. **A test enumerating both structs' fields against the registered flags**, failing
+     if a field has no flag, so the surface cannot silently fall behind the structs.
+     It derives the expected flag by kebab-casing the field name — which is what the
+     decision above buys it — rather than consulting a table the implementation also
+     consults.
+  3. **Each validation bound rejects at its boundary, one case each**, and by both
+     routes: a bad value passed as a flag *and* the same value inside `--params` are
+     both rejected. The second half is the load-bearing one — a `value_parser` alone
+     passes the first and lets every `--params` file through unchecked, which is the
+     failure the validation bullet exists to prevent. Include `--initial-radius 0`
+     specifically, since it is representable and `cooling_radius` silently clamps it.
+  4. **A misspelled key in `--params` is an error, not a silent default.**
+     `{"layout": {"w_crosings": 9.0}}` must fail. Without `deny_unknown_fields` it
+     parses to all-defaults and renders happily.
+  5. **At least two structural snapshot tests** — element and path counts, interchange
+     coincidence — explicitly not pixel-exact. Carried as a **regression guard and
+     labelled as one**: `llika-core/tests/render.rs` and `llika-core/tests/bundling.rs`
+     already assert both, and they are parameter-invariant, so this clause cannot fail
+     for any parameter reason. It is here to catch a rewrite of `main.rs` that stops
+     calling the pipeline correctly, not to test the flags.
+  6. **Determinism across processes**, delegated to `llika-cli/tests/byte_stability.rs`
+     as Phases 3, 4 and 5 did. This is the first phase since Phase 1 to rewrite
+     `main.rs` — the binary that test invokes — so confirm it still passes rather than
+     assuming it, and extend it to one run with `--params` so the new path is covered
+     too.
+
+  `--help` listing every flag is **not** a separate assertion: it restates assertion 2,
+  which is the stronger form of the same check.
+- **Close-out:** seeds `rules/cli.md`. Updates **`README.md`** — user-facing
+  documentation, which §6's close-out hook covers: it carries the invocation, the
+  summary line without the cost clause, the sentence "only `--input` and `--output`
+  reach them", and a `| 6 | Full parameter surface | drafted |` row. Corrects **§1's
+  invocation block** in place, per the summary-line bullet. **`CLAUDE.md` needs no
+  change** — its observable line carries no invocation, so the prior wording's "updates
+  the `CLAUDE.md` observable line if the invocation in §1 has drifted" had no referent;
+  revisit only if §1's rewrite changes what the observable *is*, which it should not.
