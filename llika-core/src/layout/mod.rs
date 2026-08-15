@@ -33,16 +33,25 @@ mod hillclimb;
 /// meaningful.
 ///
 /// Named for what they weigh rather than `w1`-`w5`, which is how the spec words
-/// them: these names are serde-visible and Phase 6 derives a flag from each
-/// field, and §1's own end-state invocation types `--w-crossing`, not `--w1`.
+/// them: these names are serde-visible and the CLI derives a flag from each field
+/// by kebab-casing it, with no exceptions — `w_crossings` gives `--w-crossings`.
+///
+/// **`default` and `deny_unknown_fields`, together and deliberately.** A params
+/// file naming only the weights someone cares about is the common case, so a
+/// missing field falls back to [`Default`] rather than failing with `missing
+/// field iterations`. A *misspelled* one is the opposite case: without the second
+/// attribute `{"w_crosings": 9.0}` parses to all-defaults and silently discards
+/// the one value the user was tuning, which is the worst failure for a knob whose
+/// whole purpose is improving a result by eye. Missing is fine, misspelled is not.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct LayoutParams {
     /// Grid spacing in **metres**.
     ///
     /// `None` — the default — derives it from the network as the median
     /// projected edge length, which makes a typical edge exactly one cell for
-    /// any input at any scale. `Some(m)` must be finite and positive; the flag
-    /// that will supply it, and its validation, belong to Phase 6.
+    /// any input at any scale. `Some(m)` must be finite and positive — a bound
+    /// `llika-cli` enforces, since `run_layout` is infallible by design.
     pub grid_spacing: Option<f64>,
 
     /// The **most** iterations the search will make. Each is a sweep over every
@@ -123,6 +132,7 @@ pub struct SchematicLayout {
     projected: Vec<Point2>,
     grid_spacing: f64,
     target_edge_cells: f64,
+    executed_iterations: u32,
 }
 
 impl SchematicLayout {
@@ -146,6 +156,19 @@ impl SchematicLayout {
     /// it is a function of the parameters *and* the network.
     pub fn target_edge_cells(&self) -> f64 {
         self.target_edge_cells
+    }
+
+    /// How many iterations the search **actually executed**, which is at most
+    /// [`LayoutParams::iterations`] and usually far below it — the search stops
+    /// at the first one that moves nothing.
+    ///
+    /// Here for the same reason as the two scalars above: it is a function of
+    /// the parameters *and* the network, so a caller cannot compute it from
+    /// [`LayoutParams`]. Reporting the requested count instead would be a lie
+    /// the moment the early exit fires, which on the sample fixture is
+    /// immediately — 2 executed against 200 asked for.
+    pub fn executed_iterations(&self) -> u32 {
+        self.executed_iterations
     }
 }
 
@@ -173,7 +196,7 @@ pub fn run_layout(network: &Network, params: &LayoutParams) -> SchematicLayout {
     // The occupancy comes from the snap rather than being rebuilt: it is the
     // one structure that answers "which cells are taken", and the search moves
     // stations between them.
-    hillclimb::run(
+    let executed_iterations = hillclimb::run(
         network,
         &mut positions,
         &mut occupancy,
@@ -186,6 +209,7 @@ pub fn run_layout(network: &Network, params: &LayoutParams) -> SchematicLayout {
         projected,
         grid_spacing,
         target_edge_cells,
+        executed_iterations,
     }
 }
 

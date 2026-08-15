@@ -16,9 +16,16 @@ use crate::model::{Line, Network};
 
 use corridor::Bundling;
 
-/// The renderer's tunable surface. Phase 6 completes it and gives every field a
-/// flag.
+/// The renderer's tunable surface. Every field has a flag, its own name
+/// kebab-cased.
+///
+/// `default` and `deny_unknown_fields` carry the same contract as
+/// [`crate::layout::LayoutParams`], and for the same reasons: a params file
+/// naming only `stroke_width` must not fail with `missing field units_per_cell`,
+/// and a misspelled key must not parse to all-defaults. Missing is fine,
+/// misspelled is not.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct RenderParams {
     /// SVG user units per grid cell.
     pub units_per_cell: f64,
