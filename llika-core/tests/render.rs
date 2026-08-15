@@ -44,6 +44,12 @@ fn the_more_northerly_station_has_the_smaller_svg_y() {
 }
 
 /// Assertion 9 — well-formed XML, one path per line, one marker per station.
+///
+/// Phase 5's gate names this as its assertion 5 and keeps it **as a regression
+/// guard, labelled as one**: it cannot fail there. Each line renders as one
+/// path across its whole station list, bundled or not, so bundling changes the
+/// path *data* and never the element count. What Phase 5 actually turns on is
+/// `llika-core/tests/bundling.rs`.
 #[test]
 fn the_document_is_well_formed_with_one_path_per_line_and_a_marker_per_station() {
     let network = Network::from_input(&sample()).expect("the fixture is valid");
