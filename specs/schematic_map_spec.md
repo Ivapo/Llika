@@ -35,7 +35,7 @@ phases:
     cut: null
     by: null
   - name: "Phase 6 — full parameter surface"
-    reviewed: null
+    reviewed: 2026-08-15
     shipped: null
     cut: null
     by: null
@@ -1657,7 +1657,7 @@ last thing the roadmap's UI needs from the core.*
     | `initial_radius` | `1 ..= 64` | `candidate::spiral_offsets` materialises every cell of rings `1..=r`, rebuilt every sweep; 64 is ~16 600 tuples and 10 000 asks for ~4·10⁸ |
     | `iterations` | any `u32`, including 0 | 0 is the snap-only mode Phase 3's gate is keyed to — a supported value, not a degenerate one |
     | `units_per_cell`, `stroke_width` | finite and `> 0` | a zero or negative scale draws nothing, or inside out |
-    | `margin_cells` | finite and `>= 0`, and `> 0` where the network has one station | Phase 1's scope: a one-station network reduces the envelope to `2 · margin_cells · units_per_cell`, so zero yields a zero-extent document |
+    | `margin_cells` | finite and `>= 0`, and `> 0` where the network's extent is zero on either axis | Phase 1's scope: a one-station network reduces the envelope to `2 · margin_cells · units_per_cell`, so zero yields a zero-extent document |
     | `bundle_spacing` | finite when `Some` | `Some(0.0)` is the supported disable seam (§2.5) |
 
     **`initial_radius = 0` is rejected rather than accepted-as-1.**
@@ -1671,9 +1671,18 @@ last thing the roadmap's UI needs from the core.*
     than an error", and §2.6 pins the signature a Tauri command calls; making core
     fallible changes both and pushes a `Result` through `build_schematic_svg` and every
     caller. But a clap `value_parser` alone is not enough — **`--params` would bypass
-    it entirely**, and it lands in the same phase. So validation is one function over
-    the assembled `LayoutParams`/`RenderParams` pair, run **after** the file and the
-    flags are merged, and it is what both paths go through.
+    it entirely**, and it lands in the same phase. So validation is one function run
+    **after** the file and the flags are merged, and it is what both paths go through.
+
+    **It takes the network's extent as well as the two structs**, because the
+    `margin_cells` row is conditional on the drawn network being degenerate on an axis
+    and the parameter pair cannot know that. The CLI has the `Network` in hand by then,
+    so this is a signature detail rather than a gap — but it is stated, because "one
+    function over the assembled pair" is the natural reading and it cannot satisfy its
+    own table. The `j_max == j_min` case — a collinear multi-station network — is
+    included by the row's wording rather than only the one-station case Phase 1 argued
+    from; it is a pre-existing property of §2.2's envelope and fires only where a user
+    asks for a zero margin outright.
   - **`--initial-radius` does nothing at the default weights** — see OQ-2, which
     re-judged the weights at Phase 5 and left them standing. **So the fork this bullet
     named is decided: the flag ships with the inertness stated**, in its `--help` text
@@ -1747,6 +1756,18 @@ last thing the roadmap's UI needs from the core.*
      weights (OQ-2) and `iterations` is inert above the convergence sweep (§2.4's
      early exit, 2 of 200 on the fixture), so a test keyed to either passes whether
      the flag is wired or not.
+
+     **And a third run pins the override direction**, which the two above exercise only
+     in isolation: the same file plus a conflicting `--grid-spacing` must render what
+     the flag says and not what the file says. One line, and the only clause that
+     touches the merge at all.
+
+     *(Buildable, and checked at this phase's review round against the workspace's clap
+     4.6.6 rather than assumed: declare the args `Option<T>` with **no**
+     `default_value`, so `None` is "absent" and `Some(v)` is "given". The natural wrong
+     version — clap defaults on the args — makes `--params` inert, which fails this
+     assertion's first two clauses rather than passing them quietly. clap's derive also
+     kebab-cases field names itself, so assertion 2 derives what clap registers.)*
   2. **A test enumerating both structs' fields against the registered flags**, failing
      if a field has no flag, so the surface cannot silently fall behind the structs.
      It derives the expected flag by kebab-casing the field name — which is what the
