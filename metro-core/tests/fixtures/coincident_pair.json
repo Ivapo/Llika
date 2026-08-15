@@ -1,0 +1,10 @@
+{
+  "stations": [
+    { "id": "twin_a", "name": "Twin A", "lat": 37.780000, "lon": -122.420000 },
+    { "id": "twin_b", "name": "Twin B", "lat": 37.780000, "lon": -122.420000 }
+  ],
+  "lines": [
+    { "id": "only", "name": "Only Line", "color": "#333333",
+      "stations": ["twin_a", "twin_b"] }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "stations": [
+    { "id": "solitude", "name": "Solitude", "lat": 37.780000, "lon": -122.420000 }
+  ],
+  "lines": []
+}
