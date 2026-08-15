@@ -30,7 +30,7 @@ phases:
     cut: null
     by: null
   - name: "Phase 5 — line-bundling renderer"
-    reviewed: null
+    reviewed: 2026-08-15
     shipped: null
     cut: null
     by: null
@@ -588,10 +588,14 @@ converge to one point at a true interchange. The rules:
   keeps one fixed offset across the whole run" then contradicts the collapse rule two
   bullets up. Its interior stations are not collapse stations.
 
-  Its **endpoints** are, with one exception that is legal input rather than a corner
-  case: a closed cycle of degree-2 stations carrying one constant line set has no
-  collapse station to break it, since §2.1 rejects only *consecutive* repeats. Such a
-  run has no endpoints, and the rule below that needs one says what to do.
+  Its **endpoints** are, with two exceptions that are legal input rather than corner
+  cases, both reachable because §2.1 rejects only *consecutive* repeats. A closed cycle
+  of degree-2 stations carrying one constant line set has no collapse station to break
+  it, so the run has **no** endpoints. And a line that revisits a station — `[X, a, b,
+  X, c]` — drives `X` to degree 3, making it a collapse station, so the run `X–a–b–X`
+  has **two endpoints that are the same station**. The rule below that needs a direction
+  says what to do in both; each carries `n = 1` in any realistic instance, so what is at
+  stake is totality rather than a picture.
 - Within a run each line keeps **one fixed perpendicular offset**, so a line never
   visually swaps sides mid-run. For a run carrying `n` lines, the line at index `k`
   — 0-based, in the run's sort order — takes signed offset `(k − (n−1)/2) · s`, so the
@@ -606,9 +610,13 @@ converge to one point at a true interchange. The rules:
 - **The side a positive offset lies on is a property of the run, not of any line's
   traversal.** Direct the **whole run** from its lower-indexed endpoint station to its
   other endpoint; every corridor in it inherits that direction, and the offset is
-  along the left normal `(dy, −dx)/|(dx, dy)|` of `(dx, dy)` in SVG user space. A run
-  that is a closed cycle has no endpoints, so direct it from its lowest-indexed station
-  towards whichever of that station's two neighbours has the lower index.
+  along the left normal `(dy, −dx)/|(dx, dy)|` of `(dx, dy)` in SVG user space.
+
+  Both exceptions above take the same fallback, which is why it is stated once: where a
+  run has no endpoints, or two that are the same station, direct it from its
+  **lowest-indexed station towards whichever neighbour along the run has the lower
+  index**. Either choice draws a valid mirror of the other; what matters is that one of
+  them is named.
 
   Two things need this, and the second is why it is the **run** rather than the
   corridor. Two lines that walk a shared corridor in opposite list order — legal, and
@@ -672,12 +680,20 @@ the wrong version is the one a reader is likely to reconstruct:
   else, and `iterations = 0` — a supported mode, and Phase 3's own baseline — evaluates
   no candidate at all, so a fold-back present at the snap is never removed.
 
-So the bound has to be imposed rather than inherited. **Clamp the scale at 4, which is
-SVG's own `stroke-miterlimit` default** — a derivation rather than an invented number,
-and the same trade every renderer makes at a sharp join. It is a named constant and
-deliberately **not** a `RenderParams` field: the tunable surface is what §2.6's sliders
-bind to, and a miter limit is a degeneracy guard rather than a thing anyone tunes, in
-the same way `FALLBACK_GRID_SPACING_M` is a constant and not a parameter.
+So the bound has to be imposed rather than inherited. **Clamp the scale at 4.**
+
+The number is **borrowed** from SVG's `stroke-miterlimit` default rather than derived
+from it, and the difference is worth one sentence because the looser claim was written
+first: SVG *bevels* past its limit where this clamps, and its ratio is against
+`stroke-width` where this one is against `bundle_spacing` — the same quantity only while
+`bundle_spacing` is `None`. So 4 is a sanity anchor from a renderer that faced the same
+trade, not a value this rule inherits. What justifies it here on its own terms: at `4 · s`
+the outer stroke of a two-line bundle sits `2 · s` off the centreline, which is bounded
+and still reads as a corner, and beyond it the join reads as a spike.
+
+It is a named constant and deliberately **not** a `RenderParams` field: the tunable
+surface is what §2.6's sliders bind to, and a degeneracy guard is not a thing anyone
+tunes — the same call `FALLBACK_GRID_SPACING_M` is.
 
 The clamp also **subsumes the anti-parallel case instead of special-casing it**. Where
 `n₁ + n₂` is zero the direction is undefined; take `n₁`. Everywhere else the clamp makes
@@ -1427,7 +1443,7 @@ overstating it is how a gate comes to assert something the data cannot show.*
   check and record the outcome in OQ-2, including "they stand", which is an outcome and
   not a skipped step.
 - **Exit gate:** `cargo test --workspace` green — the whole suite, since this phase
-  rewrites the path data of every line in every SVG the crate emits — and six
+  rewrites the path data of every line in every SVG the crate emits — and seven
   assertions:
   1. **`bundle_spacing: Some(0.0)` reproduces the unbundled SVG byte-for-byte, against
      a golden file generated by the binary at this phase's base commit and committed as
@@ -1454,13 +1470,39 @@ overstating it is how a gate comes to assert something the data cannot show.*
      at `oldtown` and `eastbank` they do not** — both halves in one test. The first
      alone passes vacuously on a renderer that does no bundling at all, which is
      precisely the state this phase starts from.
-  4. Exactly one `<path>` element per line, kept as a **regression guard and labelled
+  4. **The mitre's four branches, as unit tests over hand-built direction pairs** —
+     straight-through gives exactly `1 · s`; a 90° turn gives `√2 · s`; the
+     `(5,0)`/`(5,1)` shape §2.5 names gives **`4 · s`, the clamp, and not `10.15 · s`**;
+     anti-parallel gives direction `n₁` **at `4 · s`**. That last magnitude is asserted
+     as well as the direction: §2.5 reaches it through the clamp rather than through a
+     special case, and an implementer who reads the guard as a whole special case would
+     return `1 · s`, which a direction-only assertion accepts.
+
+     **Neither committed fixture can carry this, and that is the whole reason it is a
+     separate assertion.** On `sample_network.json` the only two bundled run-interior
+     stations are `oldtown` and `eastbank`, both straight-through at scale exactly 1;
+     the only bend at a run-interior station is `southgate`, which carries one line and
+     so multiplies the mitre by zero; `crossing.json` bundles nothing at all, since its
+     two lines share no station. **The clamp is structurally unreachable from any
+     octilinear fixture** — the sharpest such corner is 2.61 against a limit of 4. So of
+     the mitre's four branches only straight-through is reached with a nonzero offset,
+     and an implementation writing `1/cos(θ)` for `1/cos(θ/2)`, or omitting the clamp,
+     or dividing by zero at anti-parallel, would pass every other assertion here and the
+     whole suite besides. This is the failure this document blocked on at Phase 3
+     (assertion 5) and Phase 4 (assertion 3), one subsystem over.
+
+     It needs no fixture and no new expected values — §2.5 supplies all four — and it
+     is a unit test inside `render/corridor.rs`. The reason is simpler than Phase 2's,
+     which was that a hand-built `Network` is only constructible inside the crate: a
+     direction pair needs no `Network` at all, but `corridor.rs` is a private module and
+     nothing in `llika-core/tests/` can reach into it.
+  5. Exactly one `<path>` element per line, kept as a **regression guard and labelled
      as one** — `llika-core/tests/render.rs` already asserts it and it cannot fail
      here.
-  5. **Determinism across processes**, delegated to `llika-cli/tests/byte_stability.rs`
+  6. **Determinism across processes**, delegated to `llika-cli/tests/byte_stability.rs`
      as Phases 3 and 4 did. The fixture exercises bundling at the defaults, so that
      test covers it; confirm it does rather than assuming it.
-  6. **The two degenerate inputs still render** — one station with no lines, and two
+  7. **The two degenerate inputs still render** — one station with no lines, and two
      stations at identical coordinates. Bundling runs on them too, and a network with
      no corridor at all is the case where run-finding has nothing to iterate. Not a
      division hazard: the normal's divisor is the corridor length, which §2.2's
