@@ -1,8 +1,10 @@
 //! SVG rendering.
 //!
-//! Phase 1 is the bare renderer: one path per line, one marker per station, no
-//! line-bundling and no labels. Bundling arrives in Phase 5 as
-//! `render/corridor.rs`.
+//! One path per line, one marker per station, and no labels. Lines sharing a
+//! corridor are bundled into parallel offset strokes by [`corridor`], which is
+//! what makes the output read as a transit poster rather than a graph drawing.
+
+mod corridor;
 
 use serde::{Deserialize, Serialize};
 use svg::Document;
@@ -11,6 +13,8 @@ use svg::node::element::{Circle, Path, Rectangle};
 use crate::grid::GridPoint;
 use crate::layout::SchematicLayout;
 use crate::model::{Line, Network};
+
+use corridor::Bundling;
 
 /// The renderer's tunable surface. Phase 6 completes it and gives every field a
 /// flag.
@@ -27,6 +31,18 @@ pub struct RenderParams {
     pub margin_cells: f64,
     /// Stroke width of a line, in user units.
     pub stroke_width: f64,
+    /// The perpendicular distance between **adjacent** lines of a bundle, in
+    /// SVG user units.
+    ///
+    /// `None`, the default, derives it as `stroke_width`, which puts two
+    /// strokes exactly adjacent — touching without a gap or an overlap. It is
+    /// an `Option` for the reason `LayoutParams::grid_spacing` is: a fixed
+    /// default is wrong the moment `stroke_width` changes, and a bundle spaced
+    /// at half its stroke width draws as one thick smear.
+    ///
+    /// `Some(0.0)` disables bundling, and is the seam the exit gate measures
+    /// against.
+    pub bundle_spacing: Option<f64>,
 }
 
 impl Default for RenderParams {
@@ -35,6 +51,7 @@ impl Default for RenderParams {
             units_per_cell: 40.0,
             margin_cells: 2.0,
             stroke_width: 6.0,
+            bundle_spacing: None,
         }
     }
 }
@@ -118,6 +135,7 @@ pub fn render_to_string(
 ) -> String {
     let viewport = Viewport::new(layout, params);
     let (width, height) = (viewport.width(), viewport.height());
+    let bundling = Bundling::new(network, layout, &viewport, params);
 
     let mut document = Document::new()
         .set("width", num(width))
@@ -134,10 +152,13 @@ pub fn render_to_string(
                 .set("fill", "#ffffff"),
         );
 
-    for line in network.lines() {
+    for (index, line) in network.lines().iter().enumerate() {
         document = document.add(
             Path::new()
-                .set("d", line_path_data(network, layout, &viewport, line))
+                .set(
+                    "d",
+                    line_path_data(network, layout, &viewport, &bundling, index, line),
+                )
                 .set("fill", "none")
                 .set("stroke", line.color.as_str())
                 .set("stroke-width", num(params.stroke_width))
@@ -164,10 +185,17 @@ pub fn render_to_string(
 
 /// One path across a line's whole station list, so corner rounding comes free
 /// from `stroke-linejoin`.
+///
+/// The bundling offset is added **after** `Viewport::project`, in SVG user
+/// space: its magnitude is in user units because it derives from
+/// `stroke_width`, which is, and applying it before the transform would couple
+/// it to `units_per_cell`.
 fn line_path_data(
     network: &Network,
     layout: &SchematicLayout,
     viewport: &Viewport,
+    bundling: &Bundling,
+    index: usize,
     line: &Line,
 ) -> String {
     let mut data = String::new();
@@ -176,6 +204,8 @@ fn line_path_data(
             .station_index(station_id)
             .expect("every line's stations are resolved by Network::from_input");
         let (x, y) = viewport.project(layout.positions()[station]);
+        let (dx, dy) = bundling.offset(index, nth);
+        let (x, y) = (x + dx, y + dy);
         let command = if nth == 0 { 'M' } else { 'L' };
         if nth > 0 {
             data.push(' ');
