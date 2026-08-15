@@ -232,4 +232,7 @@ Full JSON fixture and research citations are saved at
 
 ## Status
 
-Idea stage — design researched and drafted, no code written yet.
+Superseded as a status record by `specs/schematic_map_spec.md` (`llk-001`), which
+is where the design now lives and where build state is tracked. This file is kept
+as the pre-spec seed document and is not maintained against the code — read
+`specs/INDEX.md` for what has shipped.

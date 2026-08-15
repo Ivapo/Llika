@@ -2,3 +2,9 @@
 
 # Rules
 
+- **[data-model](data-model.md)** — generated 2026-08-14 · 2 sources · 42/50 lines
+  station/line/network types, the corridor edge and its line set, the five-condition input error contract, and input order as iteration order
+- **[projection-grid](projection-grid.md)** — generated 2026-08-14 · 4 sources · 44/55 lines
+  the equirectangular projection, the derived grid spacing and its fallback, cell rounding, the claim-order and spiral tie-break, and what run_layout produces
+- **[rendering](rendering.md)** — generated 2026-08-14 · 2 sources · 36/40 lines
+  RenderParams defaults, the viewport transform and its y-flip, the document envelope, what elements the SVG holds, and the convenience entry point

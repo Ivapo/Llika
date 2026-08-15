@@ -11,7 +11,7 @@ last_updated: 2026-08-14
 phases:
   - name: "Phase 1 — thin end-to-end slice: JSON in, SVG out"
     reviewed: 2026-08-14
-    shipped: null
+    shipped: 2026-08-14
     cut: null
     by: null
   - name: "Phase 2 — the five cost criteria"
@@ -414,7 +414,7 @@ land code are what put citable symbols in the tree, and later revisions cite the
   import from OpenStreetMap / a GTFS feed. *(deferred — explicitly out of v1 scope
   per §1.1.)* Deliberately left open so the core algorithm is built against
   hand-authored data first and neither input path is designed around prematurely.
-- **OQ-5** — **The 17-station fixture does not exist.** The pointer chain dead-ends:
+- **OQ-5** — ~~**The 17-station fixture does not exist.** The pointer chain dead-ends:
   the seed document points at two planning files, the plan file points at the agent
   research file, and the agent research file contains no JSON and no station ids at
   all. Nothing points back. *(answerable now — it must be authored.)* **Blocks Phase
@@ -449,7 +449,31 @@ land code are what put citable symbols in the tree, and later revisions cite the
     trunk, this spec says four, and the reason is that §2.5's own collapse rule makes
     the 3-edge version unable to satisfy Phase 5. Settled here because Phase 1 is
     where the fixture is authored, and discovering it at Phase 5 means re-authoring
-    the fixture every later gate is keyed to.
+    the fixture every later gate is keyed to.~~
+
+  **RESOLVED 2026-08-14 by Phase 1, which authored it** at
+  `metro-core/tests/fixtures/sample_network.json`. 17 stations, 3 lines and **17**
+  deduped corridors — the literal assertion 1 is keyed to, hand-counted as
+  7 + 8 + 6 = 21 consecutive pairs less the 4 shared trunk pairs. Red and Green run
+  the four-edge trunk `riverside` → `oldtown` → `eastbank` → `central` → `market`;
+  `central` is degree 4 across 3 lines, `market` the 3-way split, and `oldtown` and
+  `eastbank` are both degree 2 carrying exactly {Red, Green}, which is the parallel
+  segment Phase 5 needs. Blue closes a cycle `central` → `market` → `quayside` →
+  `brookside` → `southgate` → `central`, so the graph is not a tree and Phase 2's
+  `c1` has crossings to find.
+
+  Two facts settled by authoring it rather than by specifying it. **The collision
+  pair is `northgate` and `lakeside`** — two northern termini on different lines,
+  403 m apart, both degree 1, so the displacement the tie-break causes distorts
+  nothing structural; `northgate` is earlier in the `stations` array and keeps the
+  cell, `lakeside` takes the cell due east. And **the derived `g` is
+  2269.9117477523614 m**, the 9th of the 17 sorted edge lengths — the
+  `riverside` → `hillcrest` corridor.
+
+  One thing the fixture cannot cover, recorded so a later phase does not assume it:
+  17 is an **odd** edge count, so the lower-middle median rule is invisible in `g`'s
+  literal. That half of assertion 4 is a unit test on `grid::median_lower` over a
+  hand-built even-count set, which is where it belongs.
 - **OQ-6** — `c2` as described penalizes edges that are not *exactly one grid cell*
   long, which makes the target a network of uniform unit edges. Is the target length
   one cell, or the mean edge length, or a per-edge ideal? *(design call.)* **Blocks
