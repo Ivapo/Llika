@@ -150,6 +150,11 @@ fn smaller_side(a: Vec<usize>, b: Vec<usize>) -> Vec<usize> {
 /// Each cluster is offered the same candidate offsets and the same cooling radius
 /// a single station gets, accepted under the same strict-improvement rule, so the
 /// incumbent holds on a tie and the earlier cell in spiral order wins.
+///
+/// Reports whether anything moved. The caller's convergence test is the whole
+/// iteration's and not the station sweep's, and this is the half of it a station
+/// sweep cannot see: a cluster can have an improving move at a layout where no
+/// single station does — that is the entire reason this pass exists.
 pub(super) fn pass(
     network: &Network,
     positions: &mut [GridPoint],
@@ -158,7 +163,9 @@ pub(super) fn pass(
     offsets: &[(i64, i64)],
     target_edge_cells: f64,
     params: &LayoutParams,
-) {
+) -> bool {
+    let mut moved = false;
+
     for cluster in clusters {
         let mut best = (
             (0, 0),
@@ -181,8 +188,11 @@ pub(super) fn pass(
 
         if best.0 != (0, 0) {
             apply(positions, occupancy, cluster, best.0);
+            moved = true;
         }
     }
+
+    moved
 }
 
 /// Whether the whole cluster may translate by `offset`, against all three of the
@@ -328,7 +338,7 @@ fn projection(cell: GridPoint, (di, dj): (i64, i64)) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::layout::cost::tests::{at, net};
+    use crate::layout::cost::tests::{at, net, sample};
 
     /// An occupancy holding every station where the positions say it is.
     fn occupied(positions: &[GridPoint]) -> GridOccupancy {
@@ -345,14 +355,6 @@ mod tests {
             .iter()
             .map(|m| network.stations()[*m].id.clone())
             .collect()
-    }
-
-    /// The committed 17-station fixture, which the phase's gate is keyed to.
-    fn sample() -> Network {
-        let input =
-            crate::io::parse_input(include_str!("../../tests/fixtures/sample_network.json"))
-                .expect("the fixture parses");
-        Network::from_input(&input).expect("the fixture is valid")
     }
 
     /// Assertion 3 — the cluster set is the one the spec defines.

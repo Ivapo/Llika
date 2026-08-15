@@ -300,6 +300,16 @@ pub(super) mod tests {
         cells.iter().map(|(i, j)| GridPoint::new(*i, *j)).collect()
     }
 
+    /// The committed 17-station fixture, for the two rules in `layout` whose
+    /// gate literals are keyed to it. `include_str!` rather than a runtime read:
+    /// a unit test that cannot find its fixture should fail to compile.
+    pub(in crate::layout) fn sample() -> Network {
+        let input =
+            crate::io::parse_input(include_str!("../../tests/fixtures/sample_network.json"))
+                .expect("the fixture parses");
+        Network::from_input(&input).expect("the fixture is valid")
+    }
+
     /// A single edge from the origin to `offset`, for the one-edge criteria.
     fn one_edge(offset: (i64, i64)) -> (Network, Vec<GridPoint>) {
         (

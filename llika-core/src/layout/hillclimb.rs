@@ -8,12 +8,24 @@
 //! intention. Equal-cost candidates are common rather than exotic: a symmetric
 //! neighbourhood produces them constantly.
 //!
-//! **Reaching a fixed point early is correct behaviour, not a stall.** A sweep
-//! that can find no improving move for any station has converged, and on a
-//! network already near its optimum that happens inside the first sweep.
-//! Nothing detects it and nothing stops early: the iteration count is a bound,
-//! not a target, and a run that does nothing after sweep 1 has still produced
-//! the right map.
+//! **Reaching a fixed point early is correct behaviour, not a stall**, and the
+//! search stops when it does. `iterations` is a bound, not a target.
+//!
+//! The exit is **output-identical**, not merely output-similar, which is what
+//! makes it a saving rather than a trade. If an iteration moves nothing in
+//! *either* pass, positions and occupancy are unchanged entering the next; the
+//! cooling radius is non-increasing, so that iteration's candidate set is a
+//! subset of the one just exhausted over an identical layout; and clusters are a
+//! function of the graph rather than of the positions, so the cluster pass sees
+//! the same set. It therefore also moves nothing, and by induction so does every
+//! iteration after it. On the sample fixture the search converges inside sweep 1
+//! and 199 of the 200 sweeps were provably no-ops.
+//!
+//! **The test is the whole iteration's and not the station sweep's.** A cluster
+//! can have an improving move at a layout where no single station does — that is
+//! the dead end [`super::cluster`] exists for — so an exit keyed to the station
+//! sweep alone would stop one pass short of the fixed point and produce a
+//! different map.
 //!
 //! One consequence worth stating: **an isolated station never moves.** With no
 //! incident edges it contributes to no criterion, so every candidate scores
@@ -29,13 +41,17 @@ use super::cluster;
 use super::cost::total_cost;
 
 /// Hill-climb `positions` in place, keeping `occupancy` in step with them.
+///
+/// Returns the number of iterations actually executed, which is what makes the
+/// early exit observable rather than inferred from a layout that would look the
+/// same either way.
 pub(super) fn run(
     network: &Network,
     positions: &mut [GridPoint],
     occupancy: &mut GridOccupancy,
     target_edge_cells: f64,
     params: &LayoutParams,
-) {
+) -> u32 {
     // Bridges are a property of the graph and not of the layout, so the cluster
     // set is built **once** here and never recomputed as stations move.
     let clusters = if params.cluster_moves {
@@ -44,10 +60,13 @@ pub(super) fn run(
         Vec::new()
     };
 
+    let mut executed = 0;
+
     for k in 0..params.iterations {
         // `r` is fixed across a sweep, so the candidate offsets are built once
         // per iteration rather than once per station.
         let offsets = spiral_offsets(cooling_radius(k, params));
+        let mut moved = false;
 
         for station in 0..network.stations().len() {
             let from = positions[station];
@@ -78,12 +97,14 @@ pub(super) fn run(
             if best.0 != from {
                 occupancy.relocate(station, from, best.0);
                 positions[station] = best.0;
+                moved = true;
             }
         }
 
         // **After** the per-station sweep and inside the same iteration, so a
-        // cluster is offered the map the stations have just settled into.
-        cluster::pass(
+        // cluster is offered the map the stations have just settled into. `|=`
+        // and not `||`: the pass runs whether or not a station moved.
+        moved |= cluster::pass(
             network,
             positions,
             occupancy,
@@ -92,7 +113,14 @@ pub(super) fn run(
             target_edge_cells,
             params,
         );
+
+        executed += 1;
+        if !moved {
+            break;
+        }
     }
+
+    executed
 }
 
 /// The movement radius at sweep `k`: linear, integral, and never below one cell.
@@ -186,5 +214,98 @@ mod tests {
         // in no criterion, so every candidate scores identically and none is
         // *strictly* lower.
         assert_eq!(positions[1], GridPoint::new(1, 0));
+    }
+
+    /// The early exit is **output-identical**, which is the whole claim.
+    ///
+    /// The fixture converges inside sweep 1, so sweep 2 is the one that finds
+    /// nothing and stops — and asking for 200 sweeps yields the same map as
+    /// asking for 3, because the induction says every sweep after the first
+    /// no-op is itself a no-op.
+    #[test]
+    fn the_search_stops_once_an_iteration_moves_nothing() {
+        let network = crate::layout::cost::tests::sample();
+
+        let long = crate::run_layout(&network, &LayoutParams::default());
+        let short = crate::run_layout(&network, &params(3, 3));
+
+        assert_eq!(
+            long.positions(),
+            short.positions(),
+            "the sweeps after convergence changed the map"
+        );
+        assert_eq!(executed_sweeps(&network, &LayoutParams::default()), 2);
+    }
+
+    /// **The natural wrong version, and the only thing that catches it.**
+    ///
+    /// Exiting when the *station* sweep moved nothing — ignoring the cluster
+    /// pass — is invisible in every measurement above: with both passes on, the
+    /// fixture is bit-identical at 1, 2, 3, 10 and 200 iterations, so the wrong
+    /// rule and the right one stop at the same map.
+    ///
+    /// Re-entering the search from the layout the single-station search settles
+    /// at separates them. There, by construction, sweep 1's station pass moves
+    /// nothing — that layout is its fixed point at this radius — while the
+    /// cluster pass moves `parkview`/`lakeside`. The wrong rule executes one
+    /// sweep; the right one keeps going.
+    #[test]
+    fn the_exit_test_is_the_whole_iterations_and_not_the_station_sweeps() {
+        let network = crate::layout::cost::tests::sample();
+        let single_station = crate::run_layout(
+            &network,
+            &LayoutParams {
+                cluster_moves: false,
+                ..LayoutParams::default()
+            },
+        );
+
+        let mut positions = single_station.positions().to_vec();
+        let mut occupancy = GridOccupancy::new();
+        for (station, cell) in positions.iter().enumerate() {
+            occupancy.claim(station, *cell);
+        }
+
+        let executed = run(
+            &network,
+            &mut positions,
+            &mut occupancy,
+            single_station.target_edge_cells(),
+            &LayoutParams::default(),
+        );
+
+        assert_ne!(
+            positions.as_slice(),
+            single_station.positions(),
+            "the cluster pass found nothing to do, so this proves nothing"
+        );
+        assert!(
+            executed > 1,
+            "the search exited after one sweep, on the strength of a station \
+             pass that moved nothing while the cluster pass moved something"
+        );
+    }
+
+    /// How many sweeps `run_layout` really takes on a network.
+    fn executed_sweeps(network: &crate::model::Network, params: &LayoutParams) -> u32 {
+        let layout = crate::run_layout(
+            network,
+            &LayoutParams {
+                iterations: 0,
+                ..params.clone()
+            },
+        );
+        let mut positions = layout.positions().to_vec();
+        let mut occupancy = GridOccupancy::new();
+        for (station, cell) in positions.iter().enumerate() {
+            occupancy.claim(station, *cell);
+        }
+        run(
+            network,
+            &mut positions,
+            &mut occupancy,
+            layout.target_edge_cells(),
+            params,
+        )
     }
 }
