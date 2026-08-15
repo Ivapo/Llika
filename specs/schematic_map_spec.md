@@ -26,7 +26,7 @@ phases:
     by: null
   - name: "Phase 4 — cluster moves"
     reviewed: 2026-08-15
-    shipped: null
+    shipped: 2026-08-15
     cut: null
     by: null
   - name: "Phase 5 — line-bundling renderer"
@@ -365,11 +365,12 @@ reference to a different enumeration. The cooling law is **linear and integral**
 to the implementer because both are serde-visible and Phase 6 derives a flag from
 each.
 
-**Reaching a fixed point early is correct behaviour, not a stall.** A hill-climb that
-can find no improving move for any station has converged, and on a network already
-near its optimum that can happen inside the first sweep. Nothing detects it and
-nothing stops early: the iteration count is a bound, not a target, and a run that
-does nothing after iteration 1 has still produced the right map.
+**Reaching a fixed point early is correct behaviour, not a stall**, ~~and nothing
+detects it and nothing stops early~~ **— and the search stops when it reaches one.**
+A hill-climb that can find no improving move for any station has converged, and on a
+network already near its optimum that can happen inside the first sweep. The iteration
+count is a bound, not a target, and a run that does nothing after iteration 1 has still
+produced the right map. The reversal is OQ-9's, argued below.
 
 Determinism needs one more rule than "no randomness" gives it: when two candidate
 cells lower `t` by the same amount, **the earlier cell in §2.2's spiral order wins**.
@@ -520,6 +521,34 @@ seventeen corridors measure 1.0 or 1.41 cells and nothing else — so no cut of 
 distribution separates a cluster from the rest of the map. A bridge is **structural**,
 parameter-free, and cannot degenerate to a whole component by definition, which is
 exactly the guarantee a length threshold could not give.
+
+#### Why the search stops early (OQ-9, decided 2026-08-15 at Phase 4)
+
+The struck clause above was written to say that early convergence is **correct**, and
+that much is untouched. What it also asserted — that the remaining sweeps must actually
+execute — the induction here makes pure cost, so the search exits instead.
+
+If an iteration moves nothing **in either pass**, positions and occupancy are unchanged
+entering the next; the cooling radius is non-increasing, so that iteration's candidate
+set is a *subset* of the one just exhausted over an identical layout; and clusters are a
+function of the graph rather than of the positions, so the cluster pass sees the same
+set. It therefore also moves nothing, and by induction so does every iteration after it.
+**The exit is output-identical, not merely output-similar.** Measured: on the fixture,
+`iterations` of 1, 2, 3, 10 and 200 give bit-identical positions at `t = 11.338720`, and
+the run executes 2 iterations rather than 200.
+
+**The test is the whole iteration's and not the per-station sweep's**, and that
+distinction needs an assertion of its own rather than a sentence. A cluster can have an
+improving move at a layout where no single station does — that is the dead end cluster
+moves exist for — so an exit keyed to the station sweep alone stops one pass short of the
+fixed point and produces a different map. It is invisible on both committed fixtures,
+where the two passes converge inside the same sweep, and every other test in the
+workspace stays green under the wrong reading. What separates them is re-entering the
+search from the layout the single-station search settles at: there the station sweep
+moves nothing by construction while the cluster pass moves `parkview`/`lakeside`.
+
+**The other half of OQ-9 is not answered here** — the whole-network rescore per candidate
+stands, and §3 carries both the measurement and the reason the shallow fixes were left.
 
 #### Why hill-climbing and not a solver (decision, recorded)
 
@@ -919,6 +948,26 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
     early convergence is *correct*, which the induction leaves untouched, or that the
     remaining sweeps must actually execute, which the induction makes pure cost. Phase
     4's round decides, and a decision either way is recorded in §2.4.
+
+  **HALF-RESOLVED 2026-08-15 by Phase 4, and the two halves got different answers.**
+  The second is **decided and shipped**: the search exits when an iteration moves
+  nothing. It was asserting that early convergence is *correct*, which the induction
+  leaves untouched, and not that the sweeps must run. The decision, the induction as the
+  cluster pass extends it, and the assertion that carries it are in §2.4. The exit is
+  output-identical: `t` is `11.338720` either way and the fixture executes 2 iterations
+  rather than 200.
+
+  The first is **left open, deliberately**, and it is now the only performance item in
+  this spec. `O(iterations · V · r² · E²)` stands and so does the **72.9 s release**
+  measurement. The exit changes the leading factor and not the shape — a run now executes
+  as many sweeps as convergence takes rather than `iterations` of them — so the pressure
+  is off but the term is not gone. **The three shallow fixes above were deliberately not
+  taken**: with the exit in place each buys a constant against a term the deep fix
+  removes outright, and one of them has grown a third call site, since `cluster.rs`
+  rebuilds `cost::corridors` once per candidate too. The deep fix — a delta score over
+  the edges a move actually touches, which for a cluster move is the bridge alone — needs
+  a phase or a spec of its own, and should get one before §1's promise of "a real metro
+  network" is tested on a city rather than on a fixture.
 
 ## 4. Implementation phases
 

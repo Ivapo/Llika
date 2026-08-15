@@ -19,17 +19,18 @@ lists, which a tram or bus system satisfies as readily as an underground.
 
 ## Status
 
-**Early. 3 of 6 phases shipped.** The pipeline runs end to end, and the layout step now
+**Early. 4 of 6 phases shipped.** The pipeline runs end to end, and the layout step now
 optimises: stations are snapped to a grid and then hill-climbed against five weighted
-criteria. Expect junctions that fan out evenly and lines that do not kink — but not yet a
-transit poster, because lines sharing a corridor are still drawn as one stroke.
+criteria, one station at a time and then in rigid groups. Expect junctions that fan out
+evenly and lines that do not kink — but not yet a transit poster, because lines sharing a
+corridor are still drawn as one stroke.
 
 | Phase | | |
 |---|---|---|
 | 1 | Thin end-to-end slice: JSON in, SVG out | ✅ shipped |
 | 2 | The five cost criteria | ✅ shipped |
 | 3 | Single-station hill-climbing | ✅ shipped |
-| 4 | Cluster moves | drafted |
+| 4 | Cluster moves | ✅ shipped |
 | 5 | Line-bundling renderer | drafted |
 | 6 | Full parameter surface | drafted |
 
@@ -86,6 +87,11 @@ Three coordinate systems, then a search.
    so each becomes an independent slider. Every station is tried against each free cell
    within a radius that shrinks over the run; three hard rules reject the moves that
    would tear the network, and everything else is left to the cost.
+   Then whole **clusters** move rigidly, which gets the search out of a dead end no
+   single station can: a group hanging off the map by one long edge cannot shorten that
+   edge by moving any one of its members. A cluster is the smaller side of a bridge —
+   structural and parameter-free, rather than a length threshold that would have to be
+   right for every city at once.
 4. **SVG**, with the y-axis flipped once — latitude increases north, SVG `y` increases
    down.
 
