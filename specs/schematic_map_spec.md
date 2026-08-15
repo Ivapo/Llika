@@ -6,7 +6,7 @@ note: >
   schematic map — projection, grid snap, Stott-Rodgers hill-climbing layout and a
   line-bundling renderer, behind a CLI.
 status: accepted
-last_updated: 2026-08-14
+last_updated: 2026-08-15
 
 phases:
   - name: "Phase 1 — thin end-to-end slice: JSON in, SVG out"
@@ -20,7 +20,7 @@ phases:
     cut: null
     by: null
   - name: "Phase 3 — single-station hill-climbing"
-    reviewed: null
+    reviewed: 2026-08-15
     shipped: null
     cut: null
     by: null
@@ -355,6 +355,22 @@ always produce the same map. Per iteration, for each station **in input order**
 (§2.2): test every free grid point within a movement radius `r`, and move to
 whichever lowers `t` most. `r` starts large and shrinks to one cell over the run.
 
+**`r` is a Chebyshev ring count, not a Euclidean radius**, and the candidate set at
+radius `r` is every cell in rings `1..=r` of §2.2's spiral — which is what makes
+"the earlier cell in the spiral order" below a well-defined tie-break rather than a
+reference to a different enumeration. The cooling law is **linear and integral**:
+`r_k = max(1, round(r_0 * (1 - k / iterations)))` at iteration `k`, from
+`r_0 = LayoutParams::initial_radius` (default **3**) over
+`LayoutParams::iterations` (default **200**). Both are stated here rather than left
+to the implementer because both are serde-visible and Phase 6 derives a flag from
+each.
+
+**Reaching a fixed point early is correct behaviour, not a stall.** A hill-climb that
+can find no improving move for any station has converged, and on a network already
+near its optimum that can happen inside the first sweep. Nothing detects it and
+nothing stops early: the iteration count is a bound, not a target, and a run that
+does nothing after iteration 1 has still produced the right map.
+
 Determinism needs one more rule than "no randomness" gives it: when two candidate
 cells lower `t` by the same amount, **the earlier cell in §2.2's spiral order wins**.
 Equal-cost candidates are common rather than exotic — a symmetric neighbourhood
@@ -362,14 +378,69 @@ produces them constantly — so leaving the tie to whichever the enumeration hap
 to reach first makes the output depend on iteration order, which is the thing §2.2
 went to trouble to fix.
 
-Two move rejections keep the network from tearing:
+Three move rejections keep the network from tearing:
 
 - the target cell is occupied;
-- the move flips the clockwise order of the station's connected edges.
+- the move flips the clockwise order of the station's connected edges;
+- the move makes one of the station's edges **exactly overlap** another edge —
+  collinear and sharing more than a single point.
 
-Whether crossing another edge is a *third* hard rejection or is left entirely to the
-soft `c1` penalty is OQ-1, and it is the one open question that changes what gets
-built rather than when.
+The third is a rejection in its own right and not a narrowing of either other, which
+is why it is counted here rather than folded into OQ-1's paragraph below. It has its
+own geometry and its own pair set, both pinned below.
+
+**The order-flip predicate, pinned.** Let the station's neighbours be ordered by
+`geometry::direction` — the same `[0, 2π)` normalisation `c3` uses, ties broken by
+neighbour station index, so the sequence is the one §2.3 already made deterministic.
+A move is rejected when the resulting sequence is **not a rotation of** the sequence
+before it. Cyclic and not positional: "clockwise order" is a property of a cycle, and
+a station whose whole fan rotates by one position has not torn anything — its edges
+still meet in the same rotational order, which is the thing the rule protects. The
+positional reading rejects 4.6× as many moves for no stated reason.
+
+Two consequences follow and are stated rather than left to be discovered:
+
+- **The rule is vacuous below degree 3.** One neighbour has no order, and with two,
+  every sequence is a rotation of every other. That is correct — you cannot flip a
+  cycle of two — and it means the rule constrains only junctions. On the OQ-5 fixture
+  that is 4 of 17 stations.
+- **It is evaluated on the station's own incident edges only**, not on the whole map.
+
+**OQ-1 resolved (2026-08-14): an ordinary crossing is *not* a hard rejection.** Only
+exact overlap is — the third bullet above. Ordinary crossings are left entirely to
+the soft `c1` penalty.
+
+The argument is the asymmetry this spec already recorded: build the hard-rejection
+reading when the source means the soft one, and the layout freezes early with edges
+it was never allowed to improve through — whereas building the soft reading when the
+source means the hard one costs a map with a crossing that `c1`, weighted 5.0 and the
+heaviest term in §2.3, is already pushing out. The failure modes are not comparable,
+so the reading that cannot freeze the search is the one to build. See OQ-1 in §3 for
+what remains open about it.
+
+**The overlap predicate's pair set, pinned — and it is deliberately *not* `c1`'s.**
+Test every edge incident to the moved station against **every other edge in the
+graph, including edges that share an endpoint with it**. `c1` excludes
+endpoint-sharing pairs (§2.3), and that exclusion is exactly what makes this a
+separate rule worth having: a line folding back so that one edge lies along its own
+neighbour is invisible to `c1` by construction, and it is the only case that answers
+to "a degenerate no penalty can distinguish from a legitimate drawing".
+
+Mirroring `c1`'s pair set instead would make the rule fire only where `c1` is already
+charging 5.0 — leaving the fold-back it exists for unrejected, and making the
+rationale above false. The two readings are 10× apart in rejections on the OQ-5
+fixture at the pinned defaults (3351 against 312), a wider gap than the one that
+justified pinning the order-flip predicate two paragraphs up, so this is not a
+detail an implementer can be left to settle.
+
+**`geometry::segments_intersect` is the wrong tool here, and reaching for it breaks
+two things at once.** §2.3 built it as a *closed* test that deliberately counts
+touching — its own test asserts true for two collinear segments meeting at exactly
+one endpoint — so it returns true for every legitimate straight-through, forbidding
+the collinear moves this layout most wants, and true for ordinary crossings, silently
+reinstating the hard-crossing rejection OQ-1 just decided against. The predicate here
+is collinearity via `geometry::orientation` plus a **strict** interval overlap. That
+is exact `i128` arithmetic already in the tree, with no epsilon to tune.
 
 **Cluster moves.** Stations joined by edges shorter than `2g` are grouped and moved
 as one rigid unit under the same score-and-move rule. This exists for a specific dead
@@ -495,13 +566,31 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
 
 ## 3. Open questions
 
-- **OQ-1** — Is "does not cross another edge" a hard move rejection, or only a hard
+- **OQ-1** — ~~Is "does not cross another edge" a hard move rejection, or only a hard
   rule against exact overlap with ordinary crossings left to the soft `c1` penalty?
   *(needs-input — a direct re-read of the 2011 TVCG paper.)* **Blocks Phase 3**; it
   changes what `candidate.rs` implements. This is the one open question that can
   produce a wrong implementation rather than a late one: build the hard-rejection
   reading when the paper means the soft one and the layout freezes early with edges
-  it was never allowed to improve through.
+  it was never allowed to improve through.~~
+
+  **DECIDED 2026-08-15, in §2.4, as this spec's own call rather than as the paper's.**
+  Exact overlap is a hard rejection; ordinary crossings are left to `c1`. The
+  reasoning is in §2.4 and turns on the asymmetry the struck text above states: the
+  two wrong answers have very different costs, and only one of them can freeze the
+  search.
+
+  **What is closed and what is not.** The *implementation* is closed — Phase 3 builds
+  the soft reading and is no longer blocked. The *reconciliation* is open: nobody in
+  this repo has read the 2011 paper, so this is an operational decision in exactly the
+  sense §2.3's five formulas are, and the paper's actual rule may differ. Reading it
+  remains worth doing, and a difference found then is a recorded change to §2.4, not a
+  defect in the phase that shipped it.
+
+  The precedent is deliberate. Phase 2's round 1 found four criteria with no formula
+  anywhere and closed them the same way rather than waiting on the same unread paper;
+  leaving this one `needs-input` would block the project's central phase on a
+  dependency nothing in the tree can discharge.
 - **OQ-2** — Starting values for `w1`-`w5`. The paper gives none, and the five
   criteria have different natural scales. *(design call.)* Blocks nothing
   structurally; the first defaults are a starting point to tune by eye against the
@@ -637,8 +726,20 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   way Phase 4 already plans its own; or re-author the 17-station fixture with
   coordinates that do not land on a unit lattice — **the expensive one**, since every
   Phase 1 gate literal is keyed to it, including the hand-counted edge total, the
-  collision pair and `g` itself. Recorded rather than resolved because it is Phase
-  3's gate and Phase 3's review round is where it belongs.
+  collision pair and `g` itself.
+
+  **RESOLVED 2026-08-15 by Phase 3's review round, which took the first answer** and
+  measured that it holds: octilinearity is asserted **non-decreasing**, and the
+  strict-improvement burden moves onto `t`, which falls 37.166633 → 22.505867 on the
+  fixture under the default weights. Both numbers were measured against the shipped
+  `layout::cost::evaluate` by the round-1 reviewer, independently of the author.
+
+  The round also found the consequence that makes the naive repair fail: **Phase 2's
+  golden file retires at this phase**, so after it there is no committed artifact of
+  "the Phase 1 output" left to measure a baseline against. The gate therefore names
+  `iterations = 0` as the reproducible baseline — it must yield the snap-only layout
+  bit-for-bit — which is a property worth having in its own right, since it is also
+  what lets a caller ask for projection and snapping alone.
 
 - **OQ-7** — §2.4's cluster threshold is `2g`, chosen when `g` was an externally
   supplied constant. Under §2.2's derived default `g` is the median edge length, so
@@ -792,21 +893,87 @@ the search together, with only a picture to tell them apart.*
   in §3.
 
 ### Phase 3 — single-station hill-climbing
-*Produces the observable: **yes** — the first map that actually looks schematic.*
+*Produces the observable: **yes** — the first map the layout step has actually
+reasoned about. Not "the first that looks schematic": OQ-8 established that the Phase
+1 map is already fully octilinear on this fixture, by accident of the fixture's own
+spacing. What this phase adds is measurable and visible but narrower than the original
+claim — evenly spread junctions and unkinked lines, `c3` 22.515 → 14.137 and `c4`
+7.069 → 3.927, with 5 of 17 stations moving.*
 
-- **Scope:** `candidate.rs` (candidate enumeration within `r`, move validity) and
-  `hillclimb.rs` (iteration loop, cooling `r` from large to one cell). Both move
-  rejections from §2.4. Cluster step remains absent. Resolve OQ-1 first — it decides
-  what `candidate.rs` rejects.
-- **Exit gate:** on the fixture, total cost at the final iteration is strictly lower
-  than at the first, asserted in a test rather than eyeballed in a log. Determinism:
-  two runs with identical input and parameters produce byte-identical SVG. A test
-  that a move onto an occupied cell is rejected, and one that an order-flipping move
-  is rejected. The fraction of edges within 5 degrees of a multiple of 45 is measured
-  and asserted to be strictly greater than the same measurement on the Phase 1
-  output.
-- **Close-out:** updates `rules/layout-cost.md`, seeds `rules/layout-search.md`.
-  Records the OQ-1 resolution in §3.
+- **Scope:** `layout/candidate.rs` (candidate enumeration over §2.4's rings `1..=r`,
+  move validity) and `layout/hillclimb.rs` (iteration loop, §2.4's linear cooling).
+  All **three** move rejections from §2.4 — occupancy, the pinned order-flip
+  predicate, and exact overlap with its own pair set — carrying its **OQ-1
+  decision**: exact overlap rejected, ordinary crossings left to `c1`. Cluster step
+  remains absent.
+
+  **The integration points, named because the two new files are not the whole
+  change.** `run_layout` currently returns after snapping and must call the loop.
+  `LayoutParams` gains `iterations` (default 200) and `initial_radius` (default 3),
+  both serde-visible, both flagged in Phase 6. `layout/mod.rs` declares the two new
+  modules. And **`llika-core/tests/golden.rs` is deleted in this phase**, with
+  `tests/fixtures/golden/sample_network_phase1.svg`: it pins the SVG byte-for-byte,
+  Phase 2's gate 7 says it retires here, and it fails the moment the picture changes.
+
+  **Grid occupancy needs one addition, and it belongs to this phase.**
+  `grid::snap_to_grid` builds a `GridOccupancy` and drops it, and `GridOccupancy` has
+  `claim` but no way to release a cell — so a search that moves a station cannot use
+  the type Phase 1 built for exactly this job. Add a `relocate(station, from, to)` to
+  `grid.rs` and have the search carry the occupancy forward from the snap, rather than
+  keeping a private free-cell index in `hillclimb.rs`. Two structures answering "which
+  cells are taken" is how they come to disagree.
+
+- **Exit gate:** `cargo test` green, and six assertions.
+  1. **`iterations = 0` reproduces the snap-only layout bit-for-bit.** This is the
+     reproducible baseline the rest of the gate is measured against, and it is what
+     replaces the retiring golden file. Assertion 2 has no meaning without it.
+  2. **`t` after the search is strictly lower than `t` at `iterations = 0`** — that
+     comparison and explicitly *not* "final iteration versus first iteration". The
+     search reaches a fixed point inside the first sweep on this fixture, so the two
+     are bit-identical and the first-versus-final reading fails on a correct
+     implementation. Measured: 37.166633 → 22.505867. Assertion 1 makes this two
+     `run_layout` calls and two `total_cost` calls, all public.
+  3. **The fraction of edges within 5 degrees of a multiple of 45 is
+     non-decreasing** against assertion 1's baseline — never "strictly greater",
+     which OQ-8 showed is unsatisfiable here because the baseline is already 1.0.
+  4. **Each of §2.4's three rejections fires, one test each.** A move onto an
+     occupied cell is rejected. An order-flipping move is rejected — built on a
+     station of **degree ≥ 3**, since the predicate is vacuous below that and the
+     test would otherwise pass for the wrong reason; the fixture has four such
+     junctions and real flipping candidates at every one, so this needs no hand-built
+     graph. And an **exact-overlap** move is rejected, on a hand-built fold-back where
+     one edge comes to lie along its own neighbour — which must share an endpoint,
+     because that is the case `c1` cannot see and therefore the only one that tests
+     the rule rather than the penalty.
+
+     Plus **one negative test, which is the load-bearing one**: a move that leaves a
+     station's two edges exactly collinear through it — a legitimate straight-through
+     — is **not** rejected. The three positive tests all pass under the
+     `segments_intersect` implementation §2.4 warns against, and so does assertion 5
+     on most crossing fixtures; this is the only assertion that fails it
+     deterministically rather than by luck of fixture shape.
+  5. **A second, small fixture carrying a deliberate crossing**, on which `c1` is
+     strictly positive at the baseline and strictly lower after the search. The
+     17-station fixture scores `c1 = 0` before *and* after, so without this the OQ-1
+     decision — the phase's headline call — ships with zero gate coverage. This is
+     the same failure OQ-5 was amended to prevent for the snap tie-break, one rule
+     over.
+  6. **Determinism across processes**, delegated to the existing
+     `llika-cli/tests/byte_stability.rs` rather than re-asserted weakly here: two
+     in-process runs cannot see a per-process hasher seed, and a `HashMap`-backed
+     occupancy carried through the search is the most likely new place for one. The
+     existing test runs two processes on defaults and will exercise the search
+     automatically; confirm it still passes and that it is reaching the loop.
+
+  Then the human half, named separately because it is **not** reproducible and does
+  not carry the gate: open the SVG and confirm the junctions read as evenly spread and
+  no line kinks where nothing forces it to. This is the visual judgement OQ-2 promises
+  for the provisional weights, and it is the first occasion to make it.
+- **Close-out:** seeds `rules/layout-search.md`, updates `rules/layout-cost.md` and
+  **`rules/projection-grid.md`** — the latter declares `layout/mod.rs` among its
+  sources and states "`run_layout` projects, derives `g`, snaps, and is infallible…
+  There is no iteration loop yet", both false after this phase. Records in §3 that
+  OQ-1's implementation is closed while its reconciliation with the paper is not.
 
 ### Phase 4 — cluster moves
 *Produces the observable: **yes** — the same map with a class of local minimum
