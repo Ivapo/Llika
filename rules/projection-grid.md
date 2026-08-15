@@ -7,8 +7,8 @@ sources:
 covers: >
   the equirectangular projection, the derived grid spacing and its fallback, cell
   rounding, the claim-order and spiral tie-break, and what run_layout produces
-max_lines: 55
-generated: 2026-08-14
+max_lines: 65
+generated: 2026-08-15
 ---
 
 # Projection and grid
@@ -59,8 +59,15 @@ is confined to the pre-snap plane.
 **`run_layout`.** `llika-core/src/layout/mod.rs:run_layout` projects, derives `g`,
 snaps, hill-climbs (`rules/layout-search.md`), and is infallible.
 `llika-core/src/layout/mod.rs:SchematicLayout` holds `positions` and `projected` —
-both indexed by station index — plus `grid_spacing` and `target_edge_cells`, the
-length `c2` wants an edge to be (`rules/layout-cost.md`). Read both scalars back
-from **there**, never from `LayoutParams`: each is a function of the parameters
-*and* the network. `positions` is post-search; `projected` is the pre-snap plane and
-the search never touches it.
+both indexed by station index — plus three scalars: `grid_spacing`,
+`target_edge_cells`, the length `c2` wants an edge to be (`rules/layout-cost.md`),
+and `executed_iterations`, how many sweeps the search actually made before its exit
+(`rules/layout-search.md`). Read all three back from **there**, never from
+`LayoutParams`: each is a function of the parameters *and* the network, which is why
+`run_layout` keeps the count `hillclimb::run` returns rather than discarding it.
+`positions` is post-search; `projected` is the pre-snap plane and the search never
+touches it.
+
+`LayoutParams` deserializes with `#[serde(default, deny_unknown_fields)]`: an
+omitted field takes its `Default`, an unrecognised one is an error. `rules/cli.md`
+is the consumer and carries the argument.

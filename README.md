@@ -11,7 +11,7 @@ for legibility.
 
 ```console
 $ llika --input network.json --output bayside.svg
-wrote bayside.svg — 17 stations, 3 lines, grid 2270m
+wrote bayside.svg — 17 stations, 3 lines, grid 2270m, cost 37.166633 → 11.338720 over 2 iterations
 ```
 
 Nothing in the pipeline is specific to a metro. A network is stations and ordered line
@@ -19,12 +19,13 @@ lists, which a tram or bus system satisfies as readily as an underground.
 
 ## Status
 
-**5 of 6 phases shipped.** The pipeline runs end to end and reads as a transit diagram:
-stations are snapped to a grid and then hill-climbed against five weighted criteria, one
-station at a time and then in rigid groups, and lines sharing a corridor are drawn as
-parallel strokes that converge to a single point at a real interchange. Expect junctions
-that fan out evenly, lines that do not kink, and bundled trunks. What is left is the
-tunable surface — the criteria weights are not yet reachable from the command line.
+**All 6 phases shipped — v1 is complete.** The pipeline runs end to end and reads as a
+transit diagram: stations are snapped to a grid and then hill-climbed against five
+weighted criteria, one station at a time and then in rigid groups, and lines sharing a
+corridor are drawn as parallel strokes that converge to a single point at a real
+interchange. Expect junctions that fan out evenly, lines that do not kink, and bundled
+trunks. Every layout and render parameter has a flag, so a good first result can be
+improved by eye.
 
 | Phase | | |
 |---|---|---|
@@ -33,10 +34,10 @@ tunable surface — the criteria weights are not yet reachable from the command 
 | 3 | Single-station hill-climbing | ✅ shipped |
 | 4 | Cluster moves | ✅ shipped |
 | 5 | Line-bundling renderer | ✅ shipped |
-| 6 | Full parameter surface | drafted |
+| 6 | Full parameter surface | ✅ shipped |
 
-Phase 6 is the one that makes the result tunable: every layout and render parameter
-exists as a struct field already, but only `--input` and `--output` reach them.
+Out of scope for v1, deliberately: station-name labels, a GUI, and importing a real
+network from OpenStreetMap or GTFS.
 
 ## Try it
 
@@ -48,6 +49,42 @@ $ cargo run -p llika-cli -- \
 ```
 
 Open `map.svg` in any browser.
+
+## Tuning
+
+The first automatic result is meant to look good with no tuning. The flags are there to
+improve a good result, not to rescue a bad default.
+
+Every layout and render parameter has a flag, and the flag is always the field name
+kebab-cased — no exceptions to remember:
+
+| | |
+|---|---|
+| `--grid-spacing <m>` | cell size in metres. Default: the network's median edge length |
+| `--iterations <n>` | ceiling on search sweeps. The search stops as soon as one moves nothing |
+| `--initial-radius <rings>` | how far a station may move on the first sweep, 1–64 |
+| `--cluster-moves <bool>` | translate whole bridge-side groups as well |
+| `--w-crossings`, `--w-edge-length`, `--w-angular-resolution`, `--w-straightness`, `--w-octilinearity` | the five criteria weights |
+| `--units-per-cell`, `--margin-cells`, `--stroke-width`, `--bundle-spacing` | the drawing |
+
+`--bundle-spacing 0` turns bundling off, and `--iterations 0` snaps without searching.
+
+The same surface as a file, for the settings worth keeping:
+
+```console
+$ cat tuned.json
+{ "layout": { "w_crossings": 9.0 }, "render": { "stroke_width": 8.0 } }
+$ llika --input network.json --output map.svg --params tuned.json --stroke-width 10
+```
+
+Name only the fields you care about; the rest take their defaults. Individual flags
+override the file field by field, so the run above draws at stroke width 10. A
+misspelled key is an error rather than a silent default — the whole point of a knob you
+are tuning by eye is that it took effect.
+
+One knob does nothing at the shipped weights, and says so in `--help`:
+`--initial-radius`. The edge-length criterion prices every move beyond one ring out of
+contention before any other criterion is consulted, so raising it only costs time.
 
 ## Input format
 

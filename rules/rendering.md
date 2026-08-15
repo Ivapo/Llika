@@ -8,7 +8,7 @@ covers: >
   RenderParams defaults, the viewport transform and its y-flip, the document
   envelope, what elements the SVG holds, line bundling and its mitre, and the
   convenience entry point
-max_lines: 65
+max_lines: 70
 generated: 2026-08-15
 ---
 
@@ -18,7 +18,9 @@ generated: 2026-08-15
 `margin_cells` 2, `stroke_width` 6, `bundle_spacing` `None`. The margin defaults
 **above zero** because a one-station network has `i_max == i_min`, so the envelope
 reduces to `2 * margin_cells * units_per_cell` and a zero margin gives a zero-extent
-document.
+document. It deserializes with `#[serde(default, deny_unknown_fields)]` — an omitted
+field takes its `Default`, an unrecognised one is an error — and `rules/cli.md`
+carries the argument and every bound.
 
 `llika-core/src/render/mod.rs:Viewport` owns the third coordinate system:
 

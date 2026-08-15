@@ -36,7 +36,7 @@ phases:
     by: null
   - name: "Phase 6 — full parameter surface"
     reviewed: 2026-08-15
-    shipped: null
+    shipped: 2026-08-15
     cut: null
     by: null
 
@@ -74,6 +74,29 @@ $ llika --input tests/fixtures/sample_network.json --output bayside.svg \
         --grid-spacing 900 --iterations 200 --w-crossing 5.0
 wrote bayside.svg — 17 stations, 3 lines, grid 900m, cost 4820.3 → 611.7 over 200 iterations
 ```
+
+**CORRECTED 2026-08-15, at Phase 6's close-out.** The block above is what this goal
+was written to promise before anything was built; two of its three lines are now
+wrong, and the shipped binary is not going to be bent to match them. What `llika`
+actually prints, at those same flags:
+
+```console
+$ llika --input llika-core/tests/fixtures/sample_network.json --output bayside.svg \
+        --grid-spacing 900 --iterations 200 --w-crossings 5.0
+wrote bayside.svg — 17 stations, 3 lines, grid 900m, cost 54.817110 → 12.747375 over 3 iterations
+```
+
+Three differences, each with its own reason. **`--w-crossings`, plural** — Phase 6
+decided every flag is its field name kebab-cased with no exceptions, because one
+irregular flag would force its field-to-flag gate to consult the same mapping the
+implementation does; §1 is the side that changes. **The cost pair was invented** and
+is wrong by two orders of magnitude; the real figures were measured independently at
+Phase 6's review round and reproduced by the shipped binary. **`over 3 iterations`,
+not 200** — §2.4's early exit means `iterations` is a ceiling, and printing the
+requested count would be a lie. At the defaults the same line reads
+`grid 2270m, cost 37.166633 → 11.338720 over 2 iterations`.
+
+Nothing else in the block moved: 17 stations, 3 lines and `grid 900m` were right.
 
 `bayside.svg` opens in any browser and reads as a transit diagram: every edge at or
 near a multiple of 45 degrees, a marker at every stop, and the Red and Green lines

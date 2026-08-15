@@ -38,7 +38,8 @@ the snap bit-for-bit — the baseline every gate measurement is taken against.
 `llika-core/src/grid.rs:ring`, concatenated. The station's own cell is not among them.
 
 **The search stops when an iteration moves nothing in *either* pass**, and `run` returns
-how many it executed. The exit is output-identical, not merely output-similar: positions
+how many it executed — the number `SchematicLayout::executed_iterations` carries out to
+callers. The exit is output-identical, not merely output-similar: positions
 and occupancy are unchanged entering the next iteration, the radius is non-increasing so
 its candidate set is a subset of the one just exhausted, and clusters are a function of
 the graph rather than of the positions — so by induction every later iteration is a

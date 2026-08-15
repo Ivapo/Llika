@@ -66,6 +66,7 @@ for collinear opposite offsets at any angle, octilinear or not.
 `llika-core/src/layout/mod.rs:LayoutParams` carries `w_crossings` 5.0,
 `w_edge_length` 1.0, `w_angular_resolution` 1.0, `w_straightness` 2.0,
 `w_octilinearity` 5.0 — named for what they weigh, since the names are serde-visible
-and Phase 6 derives a flag from each. `Default` is **written out, never derived**: a
+and `rules/cli.md` derives a flag from each by kebab-casing it. `Default` is
+**written out, never derived**: a
 derived one zeroes every weight, making `t ≡ 0` and every cost-decrease gate vacuous.
 The values are provisional (OQ-2), judged by eye and left as they are at Phase 3.

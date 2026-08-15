@@ -2,5 +2,5 @@
 
 # Specs
 
-- **[schematic-map-pipeline](schematic_map_spec.md)** — `llk-001` · accepted · partial
+- **[schematic-map-pipeline](schematic_map_spec.md)** — `llk-001` · accepted · done
   The v1 pipeline turning a JSON metro network into one static octilinear SVG schematic map — projection, grid snap, Stott-Rodgers hill-climbing layout and a line-bundling renderer, behind a CLI.
