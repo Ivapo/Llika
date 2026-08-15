@@ -604,6 +604,20 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   by eye, so 5.0 / 1.0 / 1.0 / 2.0 / 5.0 stand — **still provisional, not settled**.
   Phase 5 redraws the same layout with bundling and is the next honest occasion; a
   weight judged against an unbundled picture is judged against half of it.
+
+  **One measured consequence of these weights, which Phase 6 needs before it designs a
+  flag around it: `initial_radius` is inert.** Found by a code review after Phase 3
+  shipped and reproduced independently — `r_0` of 1, 2, 3, 5 and 8 all give
+  **bit-identical positions** on the fixture, at `t = 22.505867` with the same 5
+  movers, while costing `O(r²)` candidates each. The cause is `c2`: at `L = 1.0` cell,
+  `(|e|/L − 1)²` prices every ring-≥2 move out of contention before any other criterion
+  is consulted. Zeroing `w_edge_length` makes the radius matter again, which is what
+  identifies `c2` as the cause rather than the search.
+
+  This is a **weights** finding and not a search one, which is why it is recorded here
+  rather than in OQ-9. It leaves Phase 6 about to expose `--initial-radius` as a knob
+  that, at the shipped defaults, does nothing but multiply the runtime by ~9. Either
+  the weights change, or the flag ships with that stated — but not neither.
 - **OQ-3** — ~~Deterministic tie-break when two stations snap to the same grid cell
   before hill-climbing starts. Proposed: spiral search outward to the nearest free
   cell, in a fixed order so the result is reproducible. *(design call.)* **Blocks
@@ -759,6 +773,44 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   against the *shortest* edges by percentile; or key it to absolute metres
   independent of `g`. Recorded rather than resolved because Phase 4 has its own
   fixture and gate, and the right answer is measurable there and guesswork here.
+
+- **OQ-9** — **The search rescores the whole network per candidate, and runs sweeps
+  that provably cannot change anything.** Raised by a code review of Phase 3 after it
+  shipped; nothing here is a defect in that phase, and every number was measured
+  against the shipped code. *(design call.)* **Blocks nothing; Phase 4 is where it is
+  answerable**, since that phase reopens the same loop for cluster moves and brings
+  its own fixture and benchmark. Recorded for the same reason OQ-7 is: measurable
+  there, guesswork here.
+
+  Two separate things, and the second is the larger and the more surprising:
+
+  - **Cost.** Every candidate move calls `layout::cost::evaluate` over the entire
+    network, and `c1` alone is `O(E²)`, so a run is
+    `O(iterations · V · r² · E²)`. Measured on a synthetic 200-station network:
+    **72.9 s release.** The 17-station fixture is 1.4 s debug and nobody notices, but
+    §1 promises "a real metro network" and London is several times larger again. The
+    deep fix is a delta score over the edges a move actually touches — only the moved
+    station's incident edges, and its own and its neighbours' fans, can change. The
+    shallow fixes are named below and change no output bit: hoist `ordered_neighbours`
+    out of the candidate loop (it is invariant across a station's candidates), hoist
+    `cost::corridors` out of `evaluate` and `overlaps_another_edge` (it is invariant
+    across the whole run), and carry the incumbent total forward between stations
+    rather than recomputing it — it is already in hand as the previous station's `best`.
+
+  - **199 of the 200 sweeps are provably no-ops, not merely usually ones.** If a sweep
+    moves nothing, positions and occupancy are unchanged entering the next; the cooling
+    radius is non-increasing, so that sweep's candidate set is a *subset* of the one
+    just exhausted over an identical layout. It therefore also moves nothing, and by
+    induction so does every sweep after it. Measured: on the fixture, `iterations` of
+    1, 2, 3 and 10 give **bit-identical positions** to 200.
+
+    So an early exit here is *output-identical*, not merely output-similar — which is
+    what makes this worth asking. **§2.4 says "Nothing detects it and nothing stops
+    early", and that sentence converged through three review rounds**, so it is not
+    something to quietly reverse. The open question is what it was asserting: that
+    early convergence is *correct*, which the induction leaves untouched, or that the
+    remaining sweeps must actually execute, which the induction makes pure cost. Phase
+    4's round decides, and a decision either way is recorded in §2.4.
 
 ## 4. Implementation phases
 
@@ -1024,6 +1076,26 @@ last thing the roadmap's UI needs from the core.*
   (`--grid-spacing`, `--iterations`, `--w-crossing` and the rest), plus `--params
   <file>` taking the whole struct as JSON. `Serialize`/`Deserialize`/`Default` on
   both structs. Structural snapshot tests.
+
+  **Four things Phase 6 inherits and must not ship silently**, three of them found by
+  a code review after Phase 3:
+
+  - **`#[serde(default)]` on `LayoutParams`.** It is absent, so a `--params` file
+    omitting any field — `iterations`, say — fails to deserialize with `missing
+    field` rather than falling back to the `Default` that §2.6 argues is precisely
+    the meaning of an unset field. A user writing a file with only the weights they
+    care about is the common case, not the exotic one.
+  - **Validation of the fields whose docs defer it here.** `grid_spacing` must be
+    finite and positive; `initial_radius` needs an upper bound, because
+    `candidate::spiral_offsets` materialises every cell of rings `1..=r` and a radius
+    of 10 000 asks for ~4·10⁸ tuples, rebuilt every sweep.
+  - **`--initial-radius` does nothing at the default weights** — see OQ-2. Either the
+    weights change first or the flag ships with that stated.
+  - **The CLI summary line still prints only the grid size**, where §1's end state
+    prints `cost 4820.3 → 611.7 over 200 iterations`. Logged as a gap at Phase 3's
+    close-out rather than fixed there, because reporting it needs a public way to get
+    `t` out of `run_layout` that Phase 3's review round never saw. This phase already
+    owns reconciling §1's invocation with the real one.
 - **Exit gate:** a `--params` file and the equivalent individual flags produce
   byte-identical SVG. A test enumerating both structs' fields against the registered
   flags fails if a field has no flag, so the surface cannot silently fall behind the
