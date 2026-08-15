@@ -25,7 +25,7 @@ phases:
     cut: null
     by: null
   - name: "Phase 4 — cluster moves"
-    reviewed: null
+    reviewed: 2026-08-15
     shipped: null
     cut: null
     by: null
@@ -442,15 +442,84 @@ reinstating the hard-crossing rejection OQ-1 just decided against. The predicate
 is collinearity via `geometry::orientation` plus a **strict** interval overlap. That
 is exact `i128` arithmetic already in the tree, with no epsilon to tune.
 
-**Cluster moves.** Stations joined by edges shorter than `2g` are grouped and moved
-as one rigid unit under the same score-and-move rule. This exists for a specific dead
-end: a tight cluster attached to the rest of the map by a single long edge cannot
-shorten that edge by moving any one of its stations, so single-station hill-climbing
-is stuck at a local minimum it cannot see out of.
+**Cluster moves.** This exists for a specific dead end: a tight cluster attached to
+the rest of the map by a single long edge cannot shorten that edge by moving any one
+of its stations, so single-station hill-climbing is stuck at a local minimum it cannot
+see out of.
 
-The `2g` threshold was written when `g` was an externally chosen constant and a
-typical edge spanned many cells. §2.2's derived default changes what it selects —
-OQ-7.
+A **cluster** is one side of a **bridge** — an edge whose removal **increases the
+number of connected components**, which is the reading a Tarjan-style finder gives and
+which stays well defined on the disconnected input §2.1 admits — and specifically the
+**smaller** side, ties broken by the lower minimum station index. The two sides of a
+bridge are disjoint and non-empty, so their minimum indices always differ and that tie
+rule is total. Sides of fewer than two stations are dropped: a single station is what
+the per-station sweep already moves, and a cluster move over one is the same move made
+more expensively. Bridges are a property of the **graph alone**, not of the layout, so
+the cluster set is computed **once, before the first sweep, and never recomputed** as
+stations move. A graph with no bridges — a pure cycle — yields no clusters and an inert
+pass, which is correct.
+
+**Clusters nest; they are not a partition**, and that is worth stating because the rule
+this replaced *was* one. On the fixture the seven sides stand in seven containment
+relations — `{northgate, hillcrest}` inside the four-station side inside the five
+inside the six — so a single station is translated by several clusters over one pass.
+An implementation that dedupes or partitions to "tidy that up" silently drops the
+clusters that would have fired.
+
+A cluster is translated rigidly — every member by the same offset — over the same
+candidate offsets and the same cooling radius a single station gets, accepted under
+the same strict-improvement rule and the same spiral tie-break. **The pass runs after
+the per-station sweep, inside the same iteration**, over clusters in the order their
+bridges appear in the corridor list, which is input order (§2.2).
+
+**Exactly one edge changes geometry under a cluster move**, because a bridge is the
+only edge joining its two sides and a rigid translation preserves every edge inside a
+side. That is what makes the three rejections cheap to state for the group case, and
+each needs stating, because all three are written above for a single station:
+
+- **Occupancy is read with the cluster's own cells vacated.** A target cell counts as
+  free when it is free *or* when a member of the same cluster currently holds it. A
+  translation is injective, so members cannot collide with one another and this is
+  exactly the remaining condition. Without the clause, a translation by one cell is
+  rejected by the cluster's own body and no cluster move can ever fire.
+
+  **Applying an accepted move needs an order, and there is one that needs no new API.**
+  `GridOccupancy` has no bulk or release method — `relocate` debug-asserts a free
+  target — so relocating members in arbitrary order trips its own precondition. Move
+  them in **decreasing projection along the offset**: the front of the cluster goes
+  first, into cells the occupancy check has already proved free, and each later member
+  lands on a cell its predecessor has just vacated. That keeps `grid.rs` out of this
+  phase entirely.
+- **The order-flip rule is evaluated at the bridge's two endpoints only.** Every other
+  station's fan is rigidly translated and therefore unchanged.
+- **The overlap rule is evaluated on the bridge edge alone**, against every other edge
+  in the graph, with the pair set pinned above — and **the reason is not the one above
+  it**. Overlap is a pairwise *positional* property, so an intra-cluster edge does move
+  relative to the rest of the map even though its own shape is preserved; "only one
+  edge changes geometry" does not by itself license dropping those pairs. What licenses
+  it is that an intra-cluster edge has both endpoints inside the side and an external
+  edge has both outside, so **such a pair can never share an endpoint** — which makes
+  the dropped pairs exactly `c1`'s pair set, where `c1`'s closed test already charges a
+  collinear overlap at weight 5.0. That is OQ-1's soft/hard split applied one level up,
+  and it leaves a stated asymmetry: a configuration hard-rejected when a single station
+  creates it is only *priced* when a cluster move does.
+
+#### Why a bridge and not "edges shorter than `2g`" (decision, recorded)
+
+The original rule was "stations joined by edges shorter than `2g`", written when `g`
+was an externally chosen constant and a typical edge spanned many cells. §2.2's derived
+default destroyed it, and not by a margin worth re-tuning — see OQ-7, which carries the
+measurements. The short version: under the derived `g` **every** edge of the fixture is
+under `2g`, so the whole network is one cluster; all five criteria are
+translation-invariant, so translating a whole connected component leaves `t` bit-identical;
+and the search accepts only strict improvements. The step could therefore never fire.
+
+No threshold repairs that, because the quantity is wrong rather than the constant is:
+after snapping, edge lengths cluster tightly around `L` by construction — the fixture's
+seventeen corridors measure 1.0 or 1.41 cells and nothing else — so no cut of that
+distribution separates a cluster from the rest of the map. A bridge is **structural**,
+parameter-free, and cannot degenerate to a whole component by definition, which is
+exactly the guarantee a length threshold could not give.
 
 #### Why hill-climbing and not a solver (decision, recorded)
 
@@ -547,7 +616,7 @@ llika-core/src/
     mod.rs        LayoutParams, SchematicLayout, run_layout
     cost.rs       the five criteria, independently testable
     candidate.rs  candidate points, move validity
-    cluster.rs    short-edge clusters and rigid moves
+    cluster.rs    bridge-side clusters and rigid moves
     hillclimb.rs  iteration loop, cooling schedule
   render/
     mod.rs        RenderParams, render_to_string
@@ -618,6 +687,11 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   rather than in OQ-9. It leaves Phase 6 about to expose `--initial-radius` as a knob
   that, at the shipped defaults, does nothing but multiply the runtime by ~9. Either
   the weights change, or the flag ships with that stated — but not neither.
+
+  **Phase 4's review round re-measured this and it is unchanged by cluster moves**: with
+  them on, `r_0` of 1, 2, 3, 5 and 8 still give bit-identical positions. Worth recording
+  because a cluster translation prices only one edge under `c2` and might plausibly have
+  revived the knob; it does not.
 - **OQ-3** — ~~Deterministic tie-break when two stations snap to the same grid cell
   before hill-climbing starts. Proposed: spiral search outward to the nearest free
   cell, in a fixed order so the result is reproducible. *(design call.)* **Blocks
@@ -744,8 +818,8 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
 
   Candidate answers, cheapest first: assert a strict decrease in `t` plus
   *non-decreasing* octilinearity, which is the property the gate was reaching for;
-  or key the octilinear assertion to a second, deliberately off-angle fixture, the
-  way Phase 4 already plans its own; or re-author the 17-station fixture with
+  or key the octilinear assertion to a second, deliberately off-angle fixture; or
+  re-author the 17-station fixture with
   coordinates that do not land on a unit lattice — **the expensive one**, since every
   Phase 1 gate literal is keyed to it, including the hand-counted edge total, the
   collision pair and `g` itself.
@@ -763,7 +837,7 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   bit-for-bit — which is a property worth having in its own right, since it is also
   what lets a caller ask for projection and snapping alone.
 
-- **OQ-7** — §2.4's cluster threshold is `2g`, chosen when `g` was an externally
+- **OQ-7** — ~~§2.4's cluster threshold is `2g`, chosen when `g` was an externally
   supplied constant. Under §2.2's derived default `g` is the median edge length, so
   **at least half of all edges are `≤ g`** and therefore under `2g` by construction:
   the step meant to group "stations joined by very short edges" would group most of
@@ -772,15 +846,49 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   scale the threshold to a fraction of the median rather than a multiple; define it
   against the *shortest* edges by percentile; or key it to absolute metres
   independent of `g`. Recorded rather than resolved because Phase 4 has its own
-  fixture and gate, and the right answer is measurable there and guesswork here.
+  fixture and gate, and the right answer is measurable there and guesswork here.~~
+
+  **RESOLVED 2026-08-15 by Phase 4's review round, and none of the three candidate
+  answers won.** A cluster is a **bridge-side**, per §2.4. The threshold is gone rather
+  than re-tuned, and the round is where it was closed rather than the implementation,
+  on Phase 3's OQ-1 precedent: the phase said "resolve OQ-7 first" while nothing in the
+  phase could discriminate the candidates, which is a design handed to an implementer
+  under the name of a decision.
+
+  **The measurements that killed the threshold**, all against the shipped
+  `layout::cost::evaluate` and `run_layout`, and reproduced independently by the round-1
+  reviewer and the author:
+
+  - **17 of 17** of the fixture's corridors are under `2g` — not "at least half", every
+    one — so the whole network is a single cluster.
+  - **All five criteria are translation-invariant.** Shifting every station by `(7, −3)`
+    leaves `t` at `22.505867`, bit-identical.
+  - The search accepts only strict improvements. Those three together mean the step
+    could **never fire**, on either committed fixture, at any weights. It is inert
+    rather than badly tuned, which is why re-tuning was the wrong shape of answer.
+
+  **And no threshold could have worked**, which is the finding that rules out candidates
+  (a) and (b) rather than merely preferring something else. After snapping, edge lengths
+  are compressed against `L` by construction: the fixture's seventeen corridors measure
+  **1.0 or 1.41 cells and nothing else**, so there is no cut of that distribution that
+  separates a cluster from the rest of the map. Candidate (c), absolute metres, survives
+  the argument but reintroduces exactly the constant §2.2 removed.
+
+  **The bridge rule is non-degenerate on committed data**, which is what lets Phase 4's
+  gate drop its purpose-built fixture: `sample_network.json` yields **7** bridge-sides of
+  two or more stations, and a rigid move of the `parkview`/`lakeside` pair — the side of
+  the `university`–`parkview` bridge — by `(1, 1)` takes `t` from **22.505867 to
+  16.222682**, a 28% improvement no single-station move reaches. That is measured from
+  Phase 3's shipped final layout, so it is a real local minimum and not a contrived one.
 
 - **OQ-9** — **The search rescores the whole network per candidate, and runs sweeps
   that provably cannot change anything.** Raised by a code review of Phase 3 after it
   shipped; nothing here is a defect in that phase, and every number was measured
   against the shipped code. *(design call.)* **Blocks nothing; Phase 4 is where it is
   answerable**, since that phase reopens the same loop for cluster moves and brings
-  its own fixture and benchmark. Recorded for the same reason OQ-7 is: measurable
-  there, guesswork here.
+  its own fixture and benchmark; Phase 4's scope names it back, so the pointer resolves
+  in both directions. Recorded for the same reason OQ-7 was: measurable there,
+  guesswork here.
 
   Two separate things, and the second is the larger and the more surprising:
 
@@ -1037,18 +1145,78 @@ claim — evenly spread junctions and unkinked lines, `c3` 22.515 → 14.137 and
 
 ### Phase 4 — cluster moves
 *Produces the observable: **yes** — the same map with a class of local minimum
-removed.*
+removed, and the map visibly changes. Measured at this phase's review round: a rigid
+move of the `parkview`/`lakeside` pair takes `t` from 22.505867 to 16.222682 on the
+committed fixture, which the poster shows. Under the `2g` rule the round replaced, it
+would have produced no observable at all — the step could not fire on anything
+committed.*
 
-- **Scope:** `cluster.rs` — grouping stations joined by short edges, and moving a
-  group as one rigid unit under the same score-and-move rule. **Resolve OQ-7 first**:
-  the `2g` threshold as written selects the majority of edges under §2.2's derived
-  `g`, which would make the cluster move a whole-map translation.
-- **Exit gate:** a second, small fixture built specifically so a tight cluster hangs
-  off the network by one long edge — a case where single-station moves provably
-  cannot shorten it. On that fixture, final cost with cluster moves enabled is
-  strictly lower than with them disabled. The 17-station fixture's cost is still
-  non-increasing and still deterministic across runs.
-- **Close-out:** updates `rules/layout-search.md`.
+- **Scope:** `llika-core/src/layout/cluster.rs`, implementing §2.4's cluster rule as
+  OQ-7 resolved it — bridge-sides of two or more stations, computed once from the
+  graph, translated rigidly, with the three rejections in their pinned group forms.
+
+  **The integration points, named because one new file is not the whole change**
+  (the omission Phase 3's round 1 caught one phase earlier):
+
+  - `layout/mod.rs` declares `mod cluster;`.
+  - `hillclimb::run` gains the cluster pass, **after** the per-station sweep and inside
+    the same iteration, over clusters in corridor order.
+  - `LayoutParams` gains **`cluster_moves: bool`, default `true`** — the seam the exit
+    gate's own headline comparison needs, since `run_layout` is the only public entry
+    and `hillclimb::run` is `pub(super)`. It is serde-visible, so Phase 6 derives a
+    flag from it like every other field (§2.6).
+  - `candidate::is_rotation` becomes `pub(super)`. The group order-flip rule is the
+    same predicate over the same sequence, and §2.3's argument against writing one
+    comparator twice applies unchanged. `cost::corridors` and
+    `cost::incident_directions` are already `pub(super)` and need nothing.
+  - Bridge finding is new code with no home yet; put it in `cluster.rs` rather than
+    reaching for a `petgraph` algorithm, so its determinism is this crate's to state.
+    **Nothing in it may iterate a `HashMap`** — grouping is exactly where one is the
+    reflex structure, and §2.2's order rule is what byte-stability rests on.
+
+  **OQ-9 is answerable here and this phase is where it is answered** — it names Phase 4
+  and, before this round, Phase 4 did not name it back. Decide it, record the decision
+  in §2.4, and note that the bridge rule leaves its induction intact: clusters are a
+  function of the graph, not of positions, so a sweep that moves nothing still makes
+  every later sweep a no-op.
+
+  **If that decision adds an early exit, output-identity is the assertion it carries**,
+  and this fixture cannot be trusted to show it: the natural wrong version — exit when
+  the *station* pass moved nothing, ignoring the cluster pass — is invisible here,
+  because with both passes on, `iterations` of 1, 2, 3, 10 and 200 are already
+  bit-identical. If the decision instead leaves §2.4 alone, say so in the close-out
+  rather than leaving OQ-9 silently open a second time.
+- **Exit gate:** `cargo test` green — the whole deterministic suite, since this phase
+  changes every layout the crate produces — and five assertions:
+  1. **`cluster_moves: false` reproduces Phase 3's shipped layout bit-for-bit**, at
+     `t = 22.505867` on the fixture. This is the baseline the rest is measured against,
+     the same role `iterations = 0` played for Phase 3.
+  2. **With cluster moves enabled, `t` on the fixture is strictly lower than that.**
+     Keyed to the committed 17-station fixture and not to a purpose-built one, because
+     OQ-7's resolution measured a real improving cluster move on it. The comparison is
+     *not* vacuous and the direction is not free: hill-climbing is path-dependent, so
+     an accepted cluster move can steer the run to a worse fixed point than the
+     single-station search reaches.
+  3. **The cluster set is the one §2.4 defines**: on the fixture, exactly **7**
+     bridge-sides of two or more stations, and none equal to a whole connected
+     component. A unit test on the bridge finder over a hand-built graph with a known
+     cycle, since a fixture-only check cannot tell a correct bridge finder from one
+     that returns every edge — and that graph must also carry a bridge splitting it
+     **evenly**, because the smaller-side tie rule is otherwise untested: no tie arises
+     on the fixture at all, whose sides are 4, 5, 6, 2, 2, 2 and 3 over 17 stations.
+  4. **Each of the three group-form rejections fires, one test each** — in particular
+     that a translation onto a cell the cluster itself is vacating is **accepted**,
+     which is the load-bearing negative: the reflex occupancy reading rejects it and
+     makes the whole feature inert while every aggregate assertion above still passes.
+  5. **Determinism across processes**, delegated to `llika-cli/tests/byte_stability.rs`
+     as Phase 3 did — two in-process runs cannot see a per-process hasher seed. The
+     fixture now exercises the new path at the defaults, so that test covers it;
+     confirm it does rather than assuming it.
+- **Close-out:** updates `rules/layout-search.md` — which today states "Cluster moves
+  do not exist yet", must add `llika-core/src/layout/cluster.rs` to its `sources:`, and
+  will need its `max_lines` raised from 55 against a 52-line body. Also updates **§2.4**
+  itself, whose threshold and rigid-move rules this phase settles, and records OQ-9's
+  decision there.
 
 ### Phase 5 — line-bundling renderer
 *Produces the observable: **yes** — and this is the phase that makes the output
