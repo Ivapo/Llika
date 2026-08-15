@@ -24,7 +24,7 @@ id_min_digits: 3
 # Citations. Cite `file:symbol`; a `file:line` citation is an error. Migration
 # is a ratchet, not a cliff: `baseline` is a map of file -> count that a HUMAN
 # lowers, in the commit that converts the citations. The linter never writes it.
-citation_extensions: [.rs,.toml,.ts,.json]
+citation_extensions: [rs,toml,ts,json]
 source_roots: ["."]
 source_index: git
 baseline: {}
