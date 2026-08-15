@@ -567,17 +567,137 @@ Real transit maps draw lines sharing a corridor as parallel offset strokes that
 converge to one point at a true interchange. The rules:
 
 - Two lines **share a corridor** when the same consecutive station pair appears in
-  both station lists. This is a topology check. It will not catch an express line
-  that skips stations along a corridor it visually shares — an accepted v1 limit,
-  stated here so a reviewer does not report it as a bug.
-- For a run of consecutive edges carrying the same line set, each line keeps one
-  fixed perpendicular offset across the whole run, ordered by line id, so a line
-  never visually swaps sides mid-run.
-- At any station where the line set changes, or where more than two edges meet,
-  every offset collapses to zero. Bundled lines therefore merge to a single point
-  exactly at real interchanges and stay separate along a shared trunk.
+  both station lists. This is a topology check, and it is **already computed** —
+  `LineSet` on the graph edge is exactly this, built at parse time. The renderer
+  reads it rather than re-deriving shared pairs from the station lists, on the same
+  grounds Phase 3 gave for occupancy: two structures answering one question is how
+  they come to disagree. It will not catch an express line that skips stations along
+  a corridor it visually shares — an accepted v1 limit, stated here so a reviewer
+  does not report it as a bug.
+- **A collapse station is one where the line set changes, or where degree ≠ 2.** At
+  one, every offset is zero. Bundled lines therefore merge to a single point exactly
+  at real interchanges and stay separate along a shared trunk.
+
+  **`≠ 2` and not `> 2`**, which is wider than this section first said and deliberately
+  so: a *terminus* shared by two lines is degree 1, and a bundle that ran to the end of
+  the track without converging would draw two separate stub ends at one stop. Invisible
+  on the fixture, where every degree-1 station carries a single line.
+- **A run is a maximal path of consecutive edges carrying the same line set, and it
+  breaks at every collapse station.** Both halves are needed: without the second, the
+  fixture's whole trunk is one run whose *interior* contains `central`, and "each line
+  keeps one fixed offset across the whole run" then contradicts the collapse rule two
+  bullets up. Its interior stations are not collapse stations.
+
+  Its **endpoints** are, with one exception that is legal input rather than a corner
+  case: a closed cycle of degree-2 stations carrying one constant line set has no
+  collapse station to break it, since §2.1 rejects only *consecutive* repeats. Such a
+  run has no endpoints, and the rule below that needs one says what to do.
+- Within a run each line keeps **one fixed perpendicular offset**, so a line never
+  visually swaps sides mid-run. For a run carrying `n` lines, the line at index `k`
+  — 0-based, in the run's sort order — takes signed offset `(k − (n−1)/2) · s`, so the
+  bundle straddles the corridor's centreline symmetrically and `n = 1` falls out as
+  zero with no special case.
+- **The sort key is the line `id`, the string**, which is why §2.1 rejects a duplicate
+  one — that error's stated reason is this sort being total. Note it is *not* input
+  order, which §2.2 makes the rule everywhere else: on the fixture the ids sort
+  `blue < green < red` where input order is `red, green, blue`, so the two readings
+  mirror the trunk. Both are deterministic; this one is named because the structure an
+  implementer has in hand, `LineSet`, is a set of line *indices* and yields the other.
+- **The side a positive offset lies on is a property of the run, not of any line's
+  traversal.** Direct the **whole run** from its lower-indexed endpoint station to its
+  other endpoint; every corridor in it inherits that direction, and the offset is
+  along the left normal `(dy, −dx)/|(dx, dy)|` of `(dx, dy)` in SVG user space. A run
+  that is a closed cycle has no endpoints, so direct it from its lowest-indexed station
+  towards whichever of that station's two neighbours has the lower index.
+
+  Two things need this, and the second is why it is the **run** rather than the
+  corridor. Two lines that walk a shared corridor in opposite list order — legal, and
+  unremarkable on a real network — would otherwise compute opposite normals and land on
+  the same side. And the mitre below needs the two corridors at a bend expressed in one
+  frame; a per-corridor rule gives adjacent corridors independently-signed normals, and
+  the bisector of those is meaningless.
+- **An offset belongs to a (line, position-in-that-line's-list) pair, not to a
+  (line, station) pair.** §2.1 rejects only *consecutive* repeats, so a line may
+  legally visit one station twice, at two different offsets. Not reachable on the
+  committed fixture; cheap to get right and expensive to retrofit.
 - Each line renders as **one** SVG path across its full station list, not one path
   per edge, so corner rounding comes free from `stroke-linejoin="round"`.
+- **Markers do not move.** They stay circles at the bare cell centre. At the default
+  spacing a two-line bundle spans `±stroke_width` and the marker radius is
+  `0.9 · stroke_width`, so the marker sits inside the pair, centred on the seam, and
+  still reads as one stop serving both. At `n ≥ 3` it no longer covers the outer
+  strokes — an accepted v1 limit, unreachable on the fixture, and a per-line marker is
+  a different design rather than a tweak to this one.
+
+#### Where the offset points at a bend, and how big it is (decision, recorded)
+
+Two numbers the rules above leave open, and an implementer cannot draw a single
+stroke without both.
+
+**The magnitude is `RenderParams::bundle_spacing`, an `Option<f64>` in SVG user
+units** — the perpendicular distance between *adjacent* lines of a bundle. `Some(u)`
+uses `u`; **`None`, the default, derives it as `stroke_width`**, which puts two
+strokes exactly adjacent, touching without a gap or an overlap. It is `Option` rather
+than a constant for §2.2's reason one subsystem over: a fixed default is wrong the
+moment `stroke_width` changes, and a bundle whose spacing is half its stroke width
+draws as one thick smear. `Some(0.0)` disables bundling and is the seam the exit gate
+measures against, the role `iterations = 0` played for Phase 3 and `cluster_moves:
+false` for Phase 4. It is serde-visible, so Phase 6 derives a flag from it like every
+other field (§2.6).
+
+**At an interior station of a run the corridor can bend, and the offset point is the
+mitre** — the intersection of the two offset lines, which is what keeps the parallel
+distance exactly `s` on both sides of the corner rather than pinching it. With `n₁` and
+`n₂` the two corridors' left normals **in the run's direction** (the bullet above is
+what makes them comparable), the offset direction is `normalize(n₁ + n₂)` and the scale
+is `1 / cos(θ/2)`, `θ` being the turn angle. A straight-through gives `n₁ = n₂`, the
+bisector is `n₁` and the scale is exactly 1.
+
+**The scale is clamped at 4, and the clamp is load-bearing rather than defensive.** An
+earlier draft of this section argued the factor was bounded because the layout is
+octilinear, and that argument was wrong in three separate ways — recorded here because
+the wrong version is the one a reader is likely to reconstruct:
+
+- `1/cos(θ/2)` **increases** with `θ`, so a *lower* bound on the turn bounds it from
+  below, not above. The figure `1/cos(67.5°) ≈ 2.61` is θ = 135°, the sharpest
+  non-reversing octilinear corner, not θ = 45°.
+- **Octilinearity is not an invariant.** §1.1 says in terms that this design leaves some
+  edges off-angle, so "interior angle ≥ 45°" is not a property of a shipped layout. The
+  hazard is the near-anti-parallel neighbourhood, where no exact-reversal special case
+  fires and the factor diverges: on the integer grid, neighbours at `(5,0)` and `(5,1)`
+  give 11.31° and a factor of **10.15**; at `(20,0)` and `(20,1)`, 2.86° and **40.04**.
+  `c3`, `c4` and `c5` price those shapes. Nothing forbids them.
+- **§2.4's overlap rejection is a move filter, not a layout invariant.** It runs only
+  when a candidate move is evaluated. `grid.rs`'s snap claims cells and checks nothing
+  else, and `iterations = 0` — a supported mode, and Phase 3's own baseline — evaluates
+  no candidate at all, so a fold-back present at the snap is never removed.
+
+So the bound has to be imposed rather than inherited. **Clamp the scale at 4, which is
+SVG's own `stroke-miterlimit` default** — a derivation rather than an invented number,
+and the same trade every renderer makes at a sharp join. It is a named constant and
+deliberately **not** a `RenderParams` field: the tunable surface is what §2.6's sliders
+bind to, and a miter limit is a degeneracy guard rather than a thing anyone tunes, in
+the same way `FALLBACK_GRID_SPACING_M` is a constant and not a parameter.
+
+The clamp also **subsumes the anti-parallel case instead of special-casing it**. Where
+`n₁ + n₂` is zero the direction is undefined; take `n₁`. Everywhere else the clamp makes
+the function bounded and continuous approaching that point, which a discontinuous
+special case at exactly 180° would not.
+
+The consequence of getting this wrong is concrete and not cosmetic: `Viewport::new`
+sizes the document from the *station* extents plus the margin, and the existing render
+test bounds-checks station points only — so an unclamped mitre puts a path vertex
+outside the `viewBox` and nothing in the suite sees it.
+
+**One consequence of the collapse rule, measured on the fixture and stated rather than
+discovered at the gate: a corridor whose *both* endpoints are collapse stations draws
+with zero offset at both ends, so its lines overprint exactly as they do today.** On
+`sample_network.json` the four trunk corridors split 1 / 2 / 1: `oldtown`–`eastbank`
+is genuinely parallel, `riverside`–`oldtown` and `eastbank`–`central` splay from zero
+to full offset, and **`central`–`market` overprints entirely**, because `central` is
+degree 4 and `market` degree 3. That is the same lens OQ-5 lengthened the trunk to
+avoid, one corridor over, and it is an accepted v1 limit: separating it needs offsets
+that taper into a station rather than collapsing at it, which is a different renderer.
 
 ### 2.6 API shape for reuse (decision, recorded)
 
@@ -1268,21 +1388,96 @@ committed.*
   decision there.
 
 ### Phase 5 — line-bundling renderer
-*Produces the observable: **yes** — and this is the phase that makes the output
-read as a transit poster rather than as a graph drawing.*
+*Produces the observable: **yes** — this is the phase that makes the output read as a
+transit poster rather than as a graph drawing, and §1's end-state sentence names its
+output by name. **The fixture shows it on one corridor**, not on the whole trunk:
+§2.5's last decision measures the split, and `oldtown`–`eastbank` is the single
+genuinely parallel pair. That is what OQ-5 engineered the fixture to guarantee, and
+overstating it is how a gate comes to assert something the data cannot show.*
 
-- **Scope:** `render/corridor.rs` implementing every rule in §2.5 — shared-corridor
-  detection by shared consecutive pair, one fixed offset per line per run ordered by
-  line id, offsets collapsing to zero where the line set changes or degree exceeds 2,
-  one SVG path per line with `stroke-linejoin="round"`.
-- **Exit gate:** structural assertions on the fixture's SVG — along the
-  `oldtown` → `eastbank` segment, the one place OQ-5 guarantees two consecutive
-  interior degree-2 stations carrying {Red, Green}, the two lines' paths hold two
-  distinct, constant, parallel offsets; at `central` and at `market` both paths pass
-  through the identical point; the document holds exactly one path element per line.
-  Confirmed visually in a browser: the trunk is two parallel strokes converging to
-  single points at the two interchanges.
-- **Close-out:** updates `rules/rendering.md`.
+- **Scope:** `render/corridor.rs` implementing every rule in §2.5 — runs broken at
+  collapse stations, the symmetric `(k − (n−1)/2) · s` offset with `s` from
+  `bundle_spacing`, the line-`id` sort key, the corridor-directed normal, the mitre at
+  an interior bend, one SVG path per line with `stroke-linejoin="round"`, and markers
+  left where they are. Corridor membership is **read from `LineSet` on the graph
+  edge**, not re-derived from the station lists.
+
+  **The integration points, named because one new file is not the whole change** — the
+  omission this loop has now caught at Phase 3, Phase 4 and here:
+
+  - `render/mod.rs` declares `mod corridor;`. It declares **no submodule at all**
+    today.
+  - `render/mod.rs:line_path_data` is the only producer of path data and emits bare
+    cell centres; it is replaced rather than extended.
+  - `RenderParams` gains **`bundle_spacing: Option<f64>`**, defaulting to `None`
+    (§2.5). It is the fourth field on a struct Phase 6 derives a flag from per field.
+  - **Offsets are applied in SVG user space, after `Viewport::project`**, not in cell
+    space. The magnitude is in user units because it derives from `stroke_width`,
+    which is; applying it before the transform would couple it to `units_per_cell`.
+  - Nothing in `layout/` is touched. The picture changes; the layout does not.
+
+  **Nothing in `corridor.rs` may iterate a `HashMap`.** Grouping edges into runs and
+  keying offsets by line id is exactly where one is the reflex structure, and §2.2's
+  order rule is what byte-stability rests on — the same ban Phase 4's scope carried,
+  for the same reason, one subsystem over.
+
+  **OQ-2 names this phase and this phase now names it back.** The weights were judged
+  once, at Phase 3, against an unbundled picture — "judged against half of it", as OQ-2
+  puts it — and this is the redraw it nominated. Re-judge them by eye at the visual
+  check and record the outcome in OQ-2, including "they stand", which is an outcome and
+  not a skipped step.
+- **Exit gate:** `cargo test --workspace` green — the whole suite, since this phase
+  rewrites the path data of every line in every SVG the crate emits — and six
+  assertions:
+  1. **`bundle_spacing: Some(0.0)` reproduces the unbundled SVG byte-for-byte, against
+     a golden file generated by the binary at this phase's base commit and committed as
+     this phase's first commit.** The reproducible baseline the rest is measured
+     against, and the reason the parameter is `Option<f64>` rather than a bare `f64`
+     with a magic default.
+
+     **The capture point is the whole assertion.** Unlike Phase 3's `iterations = 0` and
+     Phase 4's `cluster_moves: false`, both computable at test time from two public
+     calls, the "before" here stops existing the moment `line_path_data` is replaced —
+     and nothing in the tree holds it, since Phase 2's golden retired at Phase 3 by
+     design. A golden captured *after* the new renderer lands asserts that the code
+     agrees with itself, which is the defect Phase 1's assertion 1 exists to prevent.
+     This is Phase 2's clause reused verbatim, and it is legitimate here for the reason
+     `PHASE3_POSITIONS` was at Phase 4: "no bundling" is a picture that must never
+     change again.
+  2. **Along `oldtown` → `eastbank`, the Red and Green segments are parallel,
+     separated by exactly `bundle_spacing`, and symmetric about the corridor
+     centreline.** **This is the only clause that discriminates**, and the gate says so
+     because two of the three assertions the phase originally carried are satisfied by
+     the *Phase 1* renderer: it already emits one path per line, and unbundled paths
+     already coincide at every interchange.
+  3. **At `central` and at `market` both paths pass through the identical point, *and*
+     at `oldtown` and `eastbank` they do not** — both halves in one test. The first
+     alone passes vacuously on a renderer that does no bundling at all, which is
+     precisely the state this phase starts from.
+  4. Exactly one `<path>` element per line, kept as a **regression guard and labelled
+     as one** — `llika-core/tests/render.rs` already asserts it and it cannot fail
+     here.
+  5. **Determinism across processes**, delegated to `llika-cli/tests/byte_stability.rs`
+     as Phases 3 and 4 did. The fixture exercises bundling at the defaults, so that
+     test covers it; confirm it does rather than assuming it.
+  6. **The two degenerate inputs still render** — one station with no lines, and two
+     stations at identical coordinates. Bundling runs on them too, and a network with
+     no corridor at all is the case where run-finding has nothing to iterate. Not a
+     division hazard: the normal's divisor is the corridor length, which §2.2's
+     occupancy invariant keeps non-zero post-snap, and the mitre's is covered by the
+     clamp.
+
+  Then the human half, named separately because it is **not** reproducible and does
+  not carry the gate: open the SVG and confirm `oldtown`–`eastbank` reads as two
+  parallel strokes converging to single points at `central` and `riverside`. This is
+  also OQ-2's occasion.
+- **Close-out:** updates **`rules/rendering.md`** — which must add
+  `llika-core/src/render/corridor.rs` to its `sources:`, loses its "**There is no
+  line-bundling.** Two lines sharing a corridor draw over each other, the later path on
+  top" paragraph, and needs `max_lines` raised from 40 against a 37-line body. Also
+  **`README.md`**, whose phase table marks this row `drafted` and whose status text says
+  trunks "currently overprint rather than running as parallel strokes" — user-facing
+  documentation, which §6's close-out hook covers. Records OQ-2's re-judgement.
 
 ### Phase 6 — full parameter surface
 *Produces the observable: **yes** — the map, made tunable. This is the phase that
