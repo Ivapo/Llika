@@ -1302,6 +1302,13 @@ last thing the roadmap's UI needs from the core.*
     field` rather than falling back to the `Default` that §2.6 argues is precisely
     the meaning of an unset field. A user writing a file with only the weights they
     care about is the common case, not the exotic one.
+
+    **And until it lands, every field this spec adds is a format break** — Phase 4's
+    `cluster_moves` invalidated every `LayoutParams` JSON written before it. That
+    costs nothing today, because no `--params` exists and nothing in the tree writes
+    one, which is why Phase 4's code review recorded it here rather than fixing it
+    out of phase. It stops being free the moment this phase ships the flag, so the
+    attribute goes on **before** the first file format is published, not after.
   - **Validation of the fields whose docs defer it here.** `grid_spacing` must be
     finite and positive; `initial_radius` needs an upper bound, because
     `candidate::spiral_offsets` materialises every cell of rings `1..=r` and a radius

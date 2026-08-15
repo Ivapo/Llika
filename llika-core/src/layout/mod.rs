@@ -2,9 +2,15 @@
 //!
 //! Three steps, in order. [`Projector`] puts stations on a metre plane;
 //! [`snap_to_grid`] rounds them onto integer cells, one station per cell; and
-//! [`hillclimb`] moves them from there, one station at a time, against the five
-//! separable criteria in [`cost`]. [`candidate`] says where a station may go and
-//! which of those moves would tear the network.
+//! [`hillclimb`] moves them from there against the five separable criteria in
+//! [`cost`], stopping as soon as an iteration changes nothing.
+//!
+//! That last step is two passes, not one. Each iteration sweeps the stations
+//! individually — [`candidate`] says where one may go and which moves would tear
+//! the network — and then translates whole [`cluster`]s rigidly, which is the
+//! only way out of a dead end no single station can see: a group hanging off the
+//! map by one long edge cannot shorten that edge by moving any one of its
+//! members.
 
 use serde::{Deserialize, Serialize};
 
@@ -39,13 +45,17 @@ pub struct LayoutParams {
     /// that will supply it, and its validation, belong to Phase 6.
     pub grid_spacing: Option<f64>,
 
-    /// How many sweeps the search makes over the stations.
+    /// The **most** iterations the search will make. Each is a sweep over every
+    /// station followed by a sweep over every cluster.
     ///
-    /// A **bound, not a target**: the search stops improving as soon as no
-    /// station has an improving move left, and nothing detects that or exits
-    /// early. **Zero means snap and stop**, which is both the reproducible
-    /// baseline every measurement of the search is taken against and the way to
-    /// ask for projection and snapping alone.
+    /// A **bound, not a target**: the search stops at the first iteration that
+    /// moves nothing in either pass, because every iteration after that one is
+    /// provably a no-op. Raising this cannot change the map, only the ceiling —
+    /// on the sample fixture a run executes 2 of the 200 asked for.
+    ///
+    /// **Zero means snap and stop**, which is both the reproducible baseline
+    /// every measurement of the search is taken against and the way to ask for
+    /// projection and snapping alone.
     pub iterations: u32,
 
     /// The movement radius at the first sweep, in Chebyshev rings — **not** a
