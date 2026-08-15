@@ -1564,12 +1564,28 @@ last thing the roadmap's UI needs from the core.*
     the meaning of an unset field. A user writing a file with only the weights they
     care about is the common case, not the exotic one.
 
-    **And until it lands, every field this spec adds is a format break** — Phase 4's
-    `cluster_moves` invalidated every `LayoutParams` JSON written before it. That
-    costs nothing today, because no `--params` exists and nothing in the tree writes
-    one, which is why Phase 4's code review recorded it here rather than fixing it
-    out of phase. It stops being free the moment this phase ships the flag, so the
-    attribute goes on **before** the first file format is published, not after.
+    **And until it lands, ~~every field this spec adds~~ every non-`Option` field
+    this spec adds is a format break** — Phase 4's `cluster_moves` invalidated every
+    `LayoutParams` JSON written before it. That costs nothing today, because no
+    `--params` exists and nothing in the tree writes one, which is why Phase 4's code
+    review recorded it here rather than fixing it out of phase. It stops being free
+    the moment this phase ships the flag, so the attribute goes on **before** the
+    first file format is published, not after.
+
+    *(Corrected 2026-08-15, at Phase 5's close-out, and **measured against the
+    shipped structs rather than argued**. `serde`'s derive already treats a missing
+    `Option<T>` as `None` without the attribute, so `grid_spacing` and Phase 5's
+    `bundle_spacing` both deserialize fine when omitted and neither was ever a break;
+    `cluster_moves`, a bare `bool`, was one. The struck version is recorded rather
+    than replaced silently because it is what a reader reconstructs from the
+    `cluster_moves` example alone.*
+
+    *The correction does not weaken this bullet's case, which is the paragraph above
+    it and was measured in the same pass: `{"w_crossings": 9.0}` fails with `missing
+    field iterations`, and `{"stroke_width": 8.0}` with `missing field
+    units_per_cell`. What it narrows is the blast radius the attribute protects —
+    eight of `LayoutParams`' nine fields and three of `RenderParams`' four, not all
+    thirteen.)*
   - **Validation of the fields whose docs defer it here.** `grid_spacing` must be
     finite and positive; `initial_radius` needs an upper bound, because
     `candidate::spiral_offsets` materialises every cell of rings `1..=r` and a radius
