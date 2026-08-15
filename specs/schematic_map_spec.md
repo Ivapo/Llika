@@ -15,7 +15,7 @@ phases:
     cut: null
     by: null
   - name: "Phase 2 — the five cost criteria"
-    reviewed: null
+    reviewed: 2026-08-14
     shipped: null
     cut: null
     by: null
@@ -262,6 +262,86 @@ and independently meaningful.
 The five criteria have different natural scales and the source paper gives no
 canonical weights — OQ-2.
 
+#### The operational definitions (decision, recorded)
+
+The table above is vocabulary, not a specification: five one-line descriptions leave
+an implementer to invent five formulas, and a criterion nobody wrote down is a
+criterion the gate cannot check. So each is pinned here.
+
+**Domain: the grid.** Every criterion is evaluated over integer `GridPoint`
+coordinates, not over the projected metre plane. §2.4 moves stations between cells,
+so a criterion scored in metres would be scoring a different object from the one the
+search moves. An edge's direction is `atan2(Δj, Δi)` over the integer cell offset.
+
+- **`c1` — crossings.** For every unordered pair of edges **sharing no endpoint
+  station**, add 1 when their **closed** segments intersect. `c1` is therefore an
+  integer count. Sharing no endpoint is what makes a path graph score zero. The
+  closed test is deliberate: an endpoint lying in another edge's interior, and a
+  collinear overlap, both read as a crossing to the eye and both are reachable —
+  occupancy keeps two *stations* out of one cell, but nothing stops an edge running
+  over a cell some other station occupies.
+- **`c2` — edge length.** `c2 = Σ_e (|e| / L − 1)²`, over edges, with `|e|` the
+  Euclidean distance in cells and `L` the target length **OQ-6 settles**. Zero iff
+  every edge is exactly `L`. The functional form is fixed here; only `L` is open.
+- **`c3` — angular resolution.** For each station of degree `d ≥ 2`: order its
+  incident edges by direction, take the `d` consecutive angular gaps `θ_1…θ_d`
+  (which sum to `2π`), and let the ideal gap be `2π/d`. Then
+  `c3 = Σ_v Σ_k |θ_{v,k} − 2π/deg(v)|`, in radians. Degree 0 and 1 contribute
+  nothing. Two incident edges can share a direction, so ties in that ordering break
+  by neighbour station index, which keeps the gap sequence deterministic.
+
+  **`c3` has a positive floor at some degrees, by construction.** On an octilinear
+  grid every gap is a multiple of `π/4`, so an even spread needs `8/d` integral and
+  is reachable at exactly degree 1, 2, 4 and 8 — unreachable at 3, 5, 6 and 7. A
+  degree-3 station's best of the ten possible shapes is `135°/135°/90°`, scoring
+  `2·|3π/4 − 2π/3| + |π/2 − 2π/3| = π/3`. That is what a soft penalty does where the
+  grid forbids its optimum, not a defect — but it is stated because a gate demanding
+  `c3 = 0` at every degree would be unsatisfiable.
+
+  **Spell that floor `FRAC_PI_3`, not `PI / 3.0`.** They are different doubles, one
+  ulp apart — `1.04719755119659785336` against `1.04719755119659763132` — and the
+  computed floor is bit-exactly the former. A test written `assert_eq!(c3, PI / 3.0)`,
+  which is the natural spelling given the derivation above is written in π, fails on
+  a correct implementation.
+- **`c4` — line straightness.** For each line, walk its station list; at every
+  **interior** station of that walk whose **degree is 2**, let `φ` be the **interior
+  angle at the station** — both incident directions measured outward from it, never
+  the turn angle — and add `π − φ` — zero when the
+  line runs straight through, rising to `π` at a full reversal. Sum over all lines,
+  so two lines sharing a corridor each pay their own bend. Degree-2 only: a bend at a
+  junction is legitimate, and this criterion exists to stop a line kinking where
+  nothing forces it to.
+- **`c5` — four-gonality.** For each edge of direction `θ`: `r = θ mod π/4`,
+  `d = min(r, π/4 − r)`, and `c5 = Σ_e d`, in radians. Zero exactly at the eight
+  octilinear directions.
+
+  **That exactness is a property of this formulation over integer offsets, and the
+  gate depends on it.** `atan2` of an exact integer ratio returns an exact multiple
+  of `FRAC_PI_4` at the eight axis and diagonal directions, and `PI` is bit-for-bit
+  `4.0 * FRAC_PI_4`, so `d` is exactly `0.0` there. An equally faithful-looking
+  `|sin 4θ|` instead returns values of order `1e-16` at seven of the eight, and an
+  edge built from `cos`/`sin` rather than from an integer offset breaks exactness for
+  every formulation. The formula above is the specified one, and the gate's eight
+  edges are **unit cell offsets**. Measured on this machine, all eight give exactly
+  zero — but three of them give **negative** zero, from exactly the three offsets with
+  `Δj < 0`. `assert_eq!(d, 0.0)` passes on `-0.0` and a bit comparison does not, so
+  the gate is an equality assertion, never `to_bits`. That also covers the
+  implementation that normalises `θ` into `[0, 2π)` first, as `c3` needs anyway,
+  which yields `+0.0` at all eight.
+
+  One caveat, recorded rather than guarded: exactness at the eight directions rests
+  on the platform's `atan2` being correctly rounded at exact integer ratios. It holds
+  here and on glibc. It is the one thing in this phase that could behave differently
+  on another target, and a failure there is a gate to re-key, not a bug to chase.
+
+*(These five are this spec's operational definitions, not quotations from the 2011
+paper. They implement the criteria that paper names — the table is its vocabulary —
+but the exact functional forms are chosen here, and Phase 2's gate checks the
+properties each one must have rather than fidelity to a source nobody in this repo
+has yet re-read. OQ-1's paper re-read, which Phase 3 needs anyway, is the occasion to
+reconcile them; a difference found then is a change to these formulas, recorded as
+one, not a defect in the phase that shipped them.)*
+
 ### 2.4 Hill-climbing
 
 A fixed iteration count and **no randomness**, so a given input and parameter set
@@ -362,8 +442,13 @@ A Cargo workspace, two crates:
 
 *(Corrected 2026-08-14, at Phase 1's close-out. This section and both source
 documents said `metro-core` / `metro-cli`; the crates are named for the project
-instead. The correction is recorded rather than made silently because the names
-were a stated design decision, and `rules/` cites these paths as `file:symbol`.)*
+instead, since nothing in the pipeline is specific to a metro — a tram or bus
+network is stations and ordered line lists too. The correction is recorded rather
+than made silently because the names were a stated design decision, and `rules/`
+cites these paths as `file:symbol`. It applies **document-wide**: every path
+elsewhere in this spec was updated with it, including in phases already shipped,
+because a path that no longer resolves is a broken fact rather than a superseded
+decision.)*
 
 ```
 llika-core/src/
@@ -388,8 +473,11 @@ Dependencies: `petgraph`, `svg`, `serde`/`serde_json`, `clap`, `thiserror`. No
 projection crate and no force-directed-layout crate — §2.2 gives the reason for the
 first, and this algorithm is a bounded grid search rather than a physics simulation.
 
-*(No `file:symbol` citations appear in this spec: no code exists yet. Phases that
-land code are what put citable symbols in the tree, and later revisions cite them.)*
+*(This spec still carries no `file:symbol` citations, though Phase 1 has shipped and
+the tree now holds citable symbols. That is deliberate: the spec records decisions
+and does not track the code, so `rules/` is what cites symbols — all three files
+seeded at Phase 1's close-out do. A citation added here would rot in exactly the way
+§8.1 of the methodology describes, with nothing regenerating against it.)*
 
 ## 3. Open questions
 
@@ -529,8 +617,8 @@ it is an improvement to a picture that already exists.*
   requires to render. `run_layout` doing
   snap-only, with the iteration loop **absent rather than stubbed**.
   `render_to_string` drawing one `<path>` per line and one marker per station, no
-  bundling. `build_schematic_svg`. `metro-cli` with `--input` and `--output`.
-  **Author the fixture** at `metro-core/tests/fixtures/sample_network.json` to the
+  bundling. `build_schematic_svg`. `llika-cli` with `--input` and `--output`.
+  **Author the fixture** at `llika-core/tests/fixtures/sample_network.json` to the
   full shape OQ-5 describes, including the collision pair and the four-edge trunk —
   it does not exist and cannot be copied. Plus the two degenerate inputs assertion 5
   needs.
@@ -597,19 +685,50 @@ this is the one point in the pipeline where expected values can be computed by h
 on small graphs, and folding them into Phase 3 would mean debugging the scorer and
 the search together, with only a picture to tell them apart.*
 
-- **Scope:** `layout/cost.rs` — `c1` through `c5` and the weighted total.
-  `LayoutParams` gains `w1`-`w5` with a `Default` impl. `geometry.rs` gains segment
-  intersection and angle math, moved here from Phase 1 because `c1` and `c5` are
-  their first consumers and this is where they first get tested. Resolve OQ-6 and
-  implement the chosen `c2` target. Nothing calls these yet.
+- **Scope:** `layout/cost.rs` — `c1` through `c5` **to §2.3's operational
+  definitions** and the weighted total `t`. `geometry.rs` gains segment intersection
+  and angle math, moved here from Phase 1 because `c1` and `c5` are their first
+  consumers and this is where they first get tested. Resolve OQ-6 and implement the
+  chosen `c2` target `L`.
+
+  `LayoutParams` gains `w1`-`w5` with an **explicit** `Default` impl — not a derived
+  one. `#[derive(Default)]` gives every weight `0.0`, which makes `t ≡ 0`, and a
+  scorer that scores nothing would pass Phase 3's cost-decrease gate. The first
+  values are OQ-2's and are deliberately provisional.
+
+  Tests are **unit tests inside `layout/cost.rs`**: `Network`'s fields are
+  `pub(crate)` and `SchematicLayout` has no public constructor, so a hand-built graph
+  is constructible from a child module of the crate and not from `llika-core/tests/`.
+  Nothing calls any of this yet.
 - **Exit gate:** per-criterion unit tests over hand-built graphs with hand-computed
-  expected values, each criterion having both a zero case and a known-nonzero case.
-  Specifically: `c5` is exactly zero for an edge at each of the eight octilinear
-  angles and strictly positive at 22.5 degrees; `c1` is zero for a path graph and
-  exactly 1 for a hand-built single crossing; `c4` is zero where a line runs straight
-  through a degree-2 station and positive at a bend. The Phase 1 SVG for the fixture
-  is **byte-identical** before and after this phase.
-- **Close-out:** seeds `rules/layout-cost.md`. Records the OQ-6 resolution in §3.
+  expected values, each criterion having both a zero case and a known-nonzero case:
+  1. `c5` is exactly `0.0` for a single edge at each of the **eight unit cell
+     offsets** — `(1,0) (1,1) (0,1) (−1,1) (−1,0) (−1,−1) (0,−1) (1,−1)` — and
+     strictly positive at offset **`(2,1)`**, 26.565°. Not 22.5 degrees: that
+     direction is not constructible on an integer grid, `tan 22.5° = 0.414…`, and the
+     nearest offsets the grid admits are `(2,1)` at 26.565° and `(12,5)` at 22.620°.
+  2. `c1` is 0 for a path graph, exactly 1 for a hand-built proper crossing, and
+     exactly 1 for a hand-built pair that merely touch — an endpoint of one lying in
+     the other's interior — which §2.3's closed-segment test counts.
+  3. `c3` is exactly `0.0` for a degree-4 station whose edges leave at 0/90/180/270,
+     strictly positive for a degree-4 station with an uneven spread, and exactly
+     `π/3` for the best degree-3 station (`135°/135°/90°`) — the floor §2.3 derives.
+  4. `c4` is 0 where a line runs straight through a degree-2 station, positive at a
+     bend there, and **unchanged by a bend at a degree-3 station**.
+  5. `c2` is 0 when every edge is exactly the OQ-6 target and positive otherwise.
+  6. `t` is the weighted sum: with one weight at 1 and the other four at 0, `t`
+     equals that criterion, for each of the five in turn. And every weight in
+     `LayoutParams::default()` is non-zero.
+  7. The fixture's SVG is **byte-identical** before and after this phase, checked
+     against a golden file — `llika-core/tests/fixtures/golden/sample_network_phase1.svg`,
+     generated by the binary at this phase's **base commit** and committed as this
+     phase's first commit. The existing cross-process test compares two runs of the
+     same build and so cannot serve as the "before". The golden file is retired at
+     Phase 3, which is the phase that legitimately changes the picture.
+- **Close-out:** seeds `rules/layout-cost.md`, and **updates
+  `rules/projection-grid.md`**, which currently states that segment intersection and
+  angle math do not exist — this phase falsifies it. Records the OQ-6 resolution
+  in §3.
 
 ### Phase 3 — single-station hill-climbing
 *Produces the observable: **yes** — the first map that actually looks schematic.*
