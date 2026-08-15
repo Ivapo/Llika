@@ -43,6 +43,44 @@ pub const CROSSING_C1_AT_SNAP: f64 = 2.0;
 /// prove.
 pub const CROSSING_OCTILINEAR_AT_SNAP: f64 = 0.6;
 
+/// `t` at Phase 3's shipped layout on the fixture, under the default weights.
+///
+/// Unlike the positions below this is **not** a capture: it was measured
+/// independently by Phase 4's round-1 reviewer against the shipped
+/// `layout::cost::evaluate`, reproduced by the author, and written into
+/// `specs/schematic_map_spec.md` §3 before any of this phase's code existed. Six
+/// decimal places, so it is compared with a relative tolerance rather than for
+/// equality.
+pub const PHASE3_TOTAL_COST: f64 = 22.505867;
+
+/// Phase 3's shipped layout on the fixture, in input order.
+///
+/// **A capture, taken from the binary at this phase's base commit** — the same
+/// thing the Phase 1 golden file was, and legitimate here for the reason that
+/// one stopped being legitimate at Phase 3. A golden pinning the *SVG* fails on
+/// every improvement the layout is supposed to make; this pins a layout that must
+/// **never** change again, because it is what `cluster_moves: false` means. The
+/// independent check on it is [`PHASE3_TOTAL_COST`], asserted alongside.
+pub const PHASE3_POSITIONS: [(i64, i64); 17] = [
+    (-3, -1), // westgate
+    (-2, 0),  // riverside
+    (-1, 0),  // oldtown
+    (0, 0),   // eastbank
+    (1, 0),   // central
+    (2, 0),   // market
+    (3, -1),  // quayside
+    (4, -1),  // seacliff
+    (-2, 2),  // northgate
+    (-2, 1),  // hillcrest
+    (2, 1),   // fairview
+    (2, 2),   // millpond
+    (-1, 2),  // lakeside
+    (-1, 1),  // parkview
+    (0, 1),   // university
+    (1, -1),  // southgate
+    (2, -1),  // brookside
+];
+
 /// Parameters that project and snap and then stop.
 ///
 /// Phase 1's assertions are about the projection, the snap and the viewport,
