@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["metro-core", "metro-cli"]
+members = ["llika-core", "llika-cli"]
 
 [workspace.package]
 version = "0.1.0"

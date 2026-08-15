@@ -13,7 +13,7 @@
 mod common;
 
 use common::{SAMPLE_GRID_SPACING_M, close, sample};
-use metro_core::{LayoutParams, Network, run_layout};
+use llika_core::{LayoutParams, Network, run_layout};
 
 /// The literal is the 9th of the fixture's 17 sorted projected edge lengths —
 /// the `riverside` → `hillcrest` corridor — computed by an independent
@@ -44,7 +44,7 @@ fn the_default_grid_spacing_is_the_median_projected_edge_length() {
     assert_eq!(lengths.len(), common::SAMPLE_EDGES);
 }
 
-fn projected_edge_lengths(network: &Network, layout: &metro_core::SchematicLayout) -> Vec<f64> {
+fn projected_edge_lengths(network: &Network, layout: &llika_core::SchematicLayout) -> Vec<f64> {
     let points = layout.projected();
     network
         .graph()

@@ -6,8 +6,8 @@ mod common;
 use std::collections::BTreeSet;
 
 use common::{SAMPLE_EDGES, SAMPLE_LINES, SAMPLE_STATIONS, sample};
-use metro_core::grid::raw_cell;
-use metro_core::{LayoutParams, Network, run_layout};
+use llika_core::grid::raw_cell;
+use llika_core::{LayoutParams, Network, run_layout};
 
 /// Assertion 1 — the fixture is the network the spec's OQ-5 describes.
 #[test]

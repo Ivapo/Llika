@@ -8,8 +8,8 @@
 mod common;
 
 use common::load;
-use metro_core::grid::FALLBACK_GRID_SPACING_M;
-use metro_core::{LayoutParams, Network, RenderParams, build_schematic_svg, run_layout};
+use llika_core::grid::FALLBACK_GRID_SPACING_M;
+use llika_core::{LayoutParams, Network, RenderParams, build_schematic_svg, run_layout};
 
 #[test]
 fn one_station_and_no_lines_renders_at_the_fallback_spacing() {

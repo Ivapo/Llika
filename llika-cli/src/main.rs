@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Parser;
-use metro_core::{LayoutParams, Network, RenderParams, parse_input, render_to_string, run_layout};
+use llika_core::{LayoutParams, Network, RenderParams, parse_input, render_to_string, run_layout};
 
 #[derive(Parser)]
 #[command(name = "llika", about = "Draw a metro network as a schematic map.")]

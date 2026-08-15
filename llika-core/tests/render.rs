@@ -3,8 +3,8 @@
 mod common;
 
 use common::{SAMPLE_LINES, SAMPLE_STATIONS, sample};
-use metro_core::render::Viewport;
-use metro_core::{LayoutParams, Network, RenderParams, render_to_string, run_layout};
+use llika_core::render::Viewport;
+use llika_core::{LayoutParams, Network, RenderParams, render_to_string, run_layout};
 
 /// Assertion 8 — the y-flip. Latitude increases north and SVG `y` increases
 /// down, so a renderer that omits the flip draws the map upside down and passes
@@ -70,7 +70,7 @@ fn the_document_is_well_formed_with_one_path_per_line_and_a_marker_per_station()
 
 /// The same input and parameters give the same bytes. This is the in-process
 /// half; the cross-process half — which is the one that can see a per-process
-/// hasher seed — is `metro-cli/tests/byte_stability.rs`.
+/// hasher seed — is `llika-cli/tests/byte_stability.rs`.
 #[test]
 fn rendering_twice_in_one_process_gives_the_same_bytes() {
     let network = Network::from_input(&sample()).expect("the fixture is valid");

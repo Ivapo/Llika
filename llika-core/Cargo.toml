@@ -1,5 +1,5 @@
 [package]
-name = "metro-core"
+name = "llika-core"
 version.workspace = true
 edition.workspace = true
 description = "Schematic metro map pipeline: projection, grid layout and SVG rendering."

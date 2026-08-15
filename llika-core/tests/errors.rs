@@ -3,7 +3,7 @@
 //! The inputs are inline rather than fixture files so each one visibly violates
 //! exactly one condition — a test cannot quietly pass on the wrong error.
 
-use metro_core::{InputError, Network, parse_input};
+use llika_core::{InputError, Network, parse_input};
 
 fn reject(json: &str) -> InputError {
     let input = parse_input(json).expect("the JSON itself is well-formed");

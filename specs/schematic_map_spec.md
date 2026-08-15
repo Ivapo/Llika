@@ -356,11 +356,17 @@ format have exactly one kind each in v1.
 
 A Cargo workspace, two crates:
 
-- `metro-core` — library. Data model, projection, layout, renderer.
-- `metro-cli` — thin binary. Reads a network file, calls `metro-core`, writes SVG.
+- `llika-core` — library. Data model, projection, layout, renderer.
+- `llika-cli` — thin binary. Reads a network file, calls `llika-core`, writes SVG.
+  Its binary is named `llika`, which is §1's invocation.
+
+*(Corrected 2026-08-14, at Phase 1's close-out. This section and both source
+documents said `metro-core` / `metro-cli`; the crates are named for the project
+instead. The correction is recorded rather than made silently because the names
+were a stated design decision, and `rules/` cites these paths as `file:symbol`.)*
 
 ```
-metro-core/src/
+llika-core/src/
   lib.rs          build_schematic_svg()
   model.rs        Station, Line, Network
   io.rs           InputSchema, Network::from_input
@@ -452,7 +458,7 @@ land code are what put citable symbols in the tree, and later revisions cite the
     the fixture every later gate is keyed to.~~
 
   **RESOLVED 2026-08-14 by Phase 1, which authored it** at
-  `metro-core/tests/fixtures/sample_network.json`. 17 stations, 3 lines and **17**
+  `llika-core/tests/fixtures/sample_network.json`. 17 stations, 3 lines and **17**
   deduped corridors — the literal assertion 1 is keyed to, hand-counted as
   7 + 8 + 6 = 21 consecutive pairs less the 4 shared trunk pairs. Red and Green run
   the four-edge trunk `riverside` → `oldtown` → `eastbank` → `central` → `market`;

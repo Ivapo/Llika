@@ -15,7 +15,7 @@ fn fixture() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .expect("the workspace root is the crate's parent")
-        .join("metro-core/tests/fixtures/sample_network.json")
+        .join("llika-core/tests/fixtures/sample_network.json")
 }
 
 fn run_cli(output: &Path) {

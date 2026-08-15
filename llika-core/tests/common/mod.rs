@@ -9,7 +9,7 @@
 
 use std::path::PathBuf;
 
-use metro_core::{InputSchema, parse_input};
+use llika_core::{InputSchema, parse_input};
 
 /// Hand-counted from the JSON: Red contributes 7 consecutive pairs, Green 8 and
 /// Blue 6 — 21 in all — and the four trunk pairs (`riverside`-`oldtown`,
