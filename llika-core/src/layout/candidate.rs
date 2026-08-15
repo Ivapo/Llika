@@ -69,8 +69,14 @@ pub(super) fn is_valid_move(
 /// nobody has to work that out twice.
 ///
 /// Reused from [`cost::incident_directions`] rather than re-derived: that
-/// function sorts, and the comparator *is* the tie-break rule.
-fn ordered_neighbours(network: &Network, positions: &[GridPoint], station: usize) -> Vec<usize> {
+/// function sorts, and the comparator *is* the tie-break rule. Visible to the
+/// rest of `layout` for the same reason: [`super::cluster`] evaluates the order
+/// rule at a bridge's endpoints and must read the same sequence.
+pub(super) fn ordered_neighbours(
+    network: &Network,
+    positions: &[GridPoint],
+    station: usize,
+) -> Vec<usize> {
     cost::incident_directions(network, positions, station)
         .into_iter()
         .map(|(_, neighbour)| neighbour)
@@ -92,7 +98,11 @@ fn ordered_neighbours(network: &Network, positions: &[GridPoint], station: usize
 ///
 /// Neighbour indices are distinct, because two lines over one consecutive pair
 /// share a single corridor, so the shift below is unambiguous.
-fn is_rotation(before: &[usize], after: &[usize]) -> bool {
+///
+/// Visible to the rest of `layout`: the group form of this rejection is the same
+/// predicate over the same sequence, evaluated at a bridge's two endpoints, and
+/// one comparator written out twice is one that can drift.
+pub(super) fn is_rotation(before: &[usize], after: &[usize]) -> bool {
     if before.len() != after.len() {
         return false;
     }

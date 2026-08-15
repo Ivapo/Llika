@@ -27,13 +27,67 @@ fn the_baseline_reproduces_phase_threes_shipped_layout() {
         "the baseline layout moved"
     );
     assert!(
-        close(total_of(&network, &layout, &params), PHASE3_TOTAL_COST, 1e-6),
+        close(
+            total_of(&network, &layout, &params),
+            PHASE3_TOTAL_COST,
+            1e-6
+        ),
         "the baseline cost moved"
     );
 }
 
+/// Assertion 2 — the cluster pass improves the map.
+///
+/// Keyed to the committed 17-station fixture rather than to a purpose-built one,
+/// because OQ-7's resolution measured a real improving cluster move on it: a
+/// rigid move of `parkview`/`lakeside`, the side of the `university`–`parkview`
+/// bridge, takes `t` from the baseline to 16.222682 on its own.
+///
+/// **The direction is not free.** Hill-climbing is path-dependent, so an accepted
+/// cluster move can steer the run to a worse fixed point than the single-station
+/// search reaches. No literal is keyed to the final value for the same reason.
+#[test]
+fn cluster_moves_strictly_lower_the_total_cost() {
+    let network = Network::from_input(&sample()).expect("the fixture is valid");
+    let params = LayoutParams::default();
+
+    let before = total_of(&network, &run_layout(&network, &baseline()), &params);
+    let after = total_of(&network, &run_layout(&network, &params), &params);
+
+    assert!(
+        after < before,
+        "cluster moves left the cost at {after}, up from {before}"
+    );
+}
+
+/// Assertion 5's other half — that the new path is *reached* at the defaults.
+///
+/// Determinism across processes is delegated to
+/// `llika-cli/tests/byte_stability.rs`, which runs the binary twice on those same
+/// defaults; two in-process runs cannot see a per-process hasher seed. That test
+/// only covers the cluster pass if the cluster pass fires, which is what this
+/// says — confirmed rather than assumed.
+#[test]
+fn the_default_parameters_actually_move_a_cluster() {
+    let network = Network::from_input(&sample()).expect("the fixture is valid");
+
+    let before = run_layout(&network, &baseline());
+    let after = run_layout(&network, &LayoutParams::default());
+
+    assert_ne!(
+        before.positions(),
+        after.positions(),
+        "the defaults produced the single-station layout"
+    );
+}
+
+/// The single-station search, with the cluster pass switched off. `run_layout` is
+/// the only public entry, so this flag is the seam every comparison above needs.
 fn baseline() -> LayoutParams {
-    LayoutParams::default()
+    LayoutParams {
+        cluster_moves: false,
+        ..LayoutParams::default()
+    }
 }
 
 fn cells(pairs: &[(i64, i64)]) -> Vec<GridPoint> {

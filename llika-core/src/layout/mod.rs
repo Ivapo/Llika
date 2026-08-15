@@ -16,6 +16,7 @@ use crate::projection::Projector;
 pub mod cost;
 
 mod candidate;
+mod cluster;
 mod hillclimb;
 
 /// The layout's tunable surface.
@@ -52,6 +53,16 @@ pub struct LayoutParams {
     /// search ranges widely early and settles late.
     pub initial_radius: u32,
 
+    /// Whether the search also translates whole bridge-side clusters, after each
+    /// per-station sweep.
+    ///
+    /// **On by default**, because it removes a class of local minimum the
+    /// per-station sweep cannot see out of: a tight group hanging off the map by
+    /// one long edge cannot shorten that edge by moving any single member.
+    /// Switching it off reproduces the single-station search exactly, which is
+    /// the baseline every measurement of this step is taken against.
+    pub cluster_moves: bool,
+
     /// `w1` — edge crossings.
     pub w_crossings: f64,
     /// `w2` — edge length against the target.
@@ -80,6 +91,7 @@ impl Default for LayoutParams {
             grid_spacing: None,
             iterations: 200,
             initial_radius: 3,
+            cluster_moves: true,
             w_crossings: 5.0,
             w_edge_length: 1.0,
             w_angular_resolution: 1.0,

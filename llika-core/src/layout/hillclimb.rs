@@ -25,6 +25,7 @@ use crate::model::Network;
 
 use super::LayoutParams;
 use super::candidate::{is_valid_move, spiral_offsets};
+use super::cluster;
 use super::cost::total_cost;
 
 /// Hill-climb `positions` in place, keeping `occupancy` in step with them.
@@ -35,6 +36,14 @@ pub(super) fn run(
     target_edge_cells: f64,
     params: &LayoutParams,
 ) {
+    // Bridges are a property of the graph and not of the layout, so the cluster
+    // set is built **once** here and never recomputed as stations move.
+    let clusters = if params.cluster_moves {
+        cluster::find(network)
+    } else {
+        Vec::new()
+    };
+
     for k in 0..params.iterations {
         // `r` is fixed across a sweep, so the candidate offsets are built once
         // per iteration rather than once per station.
@@ -71,6 +80,18 @@ pub(super) fn run(
                 positions[station] = best.0;
             }
         }
+
+        // **After** the per-station sweep and inside the same iteration, so a
+        // cluster is offered the map the stations have just settled into.
+        cluster::pass(
+            network,
+            positions,
+            occupancy,
+            &clusters,
+            &offsets,
+            target_edge_cells,
+            params,
+        );
     }
 }
 
