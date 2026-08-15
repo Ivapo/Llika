@@ -7,6 +7,12 @@
 //! within a run and varies between them — which is exactly the §2.2 violation
 //! this assertion exists to catch, and the one Phase 2's byte-identical gate
 //! would otherwise inherit.
+//!
+//! Every phase since has delegated its own determinism clause here rather than
+//! re-asserting it weakly in-process. Phase 6 is the first since Phase 1 to
+//! rewrite the binary this file invokes, so it adds the `--params` run below:
+//! the file route reaches the same pipeline by a different door, and a new door
+//! is where a new hash-map walk would enter.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -18,31 +24,70 @@ fn fixture() -> PathBuf {
         .join("llika-core/tests/fixtures/sample_network.json")
 }
 
-fn run_cli(output: &Path) {
+fn run_cli(output: &Path, extra: &[&Path]) {
     let status = Command::new(env!("CARGO_BIN_EXE_llika"))
         .arg("--input")
         .arg(fixture())
         .arg("--output")
         .arg(output)
+        .args(extra)
         .status()
         .expect("the llika binary runs");
     assert!(status.success(), "llika exited with {status}");
 }
 
-#[test]
-fn two_separate_processes_write_the_same_bytes() {
-    let dir = std::env::temp_dir().join("llika-byte-stability");
-    std::fs::create_dir_all(&dir).expect("scratch directory");
+fn assert_two_processes_agree(dir: &Path, extra: &[&Path]) -> Vec<u8> {
     let (first, second) = (dir.join("first.svg"), dir.join("second.svg"));
 
-    run_cli(&first);
-    run_cli(&second);
+    run_cli(&first, extra);
+    run_cli(&second, extra);
 
     let a = std::fs::read(&first).expect("first output");
     let b = std::fs::read(&second).expect("second output");
 
     assert!(!a.is_empty());
     assert_eq!(a, b, "two processes produced different bytes");
+    a
+}
+
+#[test]
+fn two_separate_processes_write_the_same_bytes() {
+    let dir = std::env::temp_dir().join("llika-byte-stability");
+    std::fs::create_dir_all(&dir).expect("scratch directory");
+
+    assert_two_processes_agree(&dir, &[]);
+
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+/// The same, through `--params`.
+///
+/// The file holds a non-default value, so this is not the default picture
+/// repeated: it is the merge path, run twice, and the two runs must agree with
+/// each other **and** differ from the defaults — otherwise the parameters never
+/// reached the pipeline and this covers nothing new.
+#[test]
+fn two_processes_agree_through_a_params_file() {
+    let dir = std::env::temp_dir().join("llika-byte-stability-params");
+    std::fs::create_dir_all(&dir).expect("scratch directory");
+
+    let params = dir.join("params.json");
+    std::fs::write(
+        &params,
+        r#"{"layout": {"grid_spacing": 900.0}, "render": {"stroke_width": 8.0}}"#,
+    )
+    .expect("params file written");
+
+    let tuned = assert_two_processes_agree(&dir, &[Path::new("--params"), &params]);
+
+    let defaults_dir = dir.join("defaults");
+    std::fs::create_dir_all(&defaults_dir).expect("scratch directory");
+    let defaults = assert_two_processes_agree(&defaults_dir, &[]);
+
+    assert_ne!(
+        tuned, defaults,
+        "the params file changed nothing, so this run covers no new path"
+    );
 
     std::fs::remove_dir_all(&dir).ok();
 }

@@ -1,4 +1,10 @@
 //! Phase 1 gate, assertions 8 and 9: the document, and which way up it is.
+//!
+//! Assertion 9 doubles as **Phase 6's assertion 5, a regression guard and
+//! labelled as one**: it is parameter-invariant, so it cannot fail for any
+//! parameter reason. Phase 6's own copy of the shape check lives in
+//! `llika-cli/tests/params.rs`, where it can see `main.rs` — which is the
+//! rewrite that clause exists to catch, and which this file cannot reach.
 
 mod common;
 

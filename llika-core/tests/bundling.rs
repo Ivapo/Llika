@@ -5,6 +5,11 @@
 //! because the observable this phase produces is the picture. Coordinates come
 //! back through `Viewport::project` rather than a re-derived transform, on the
 //! rule `render.rs` already follows.
+//!
+//! Assertion 3 — interchange coincidence — is the other half of **Phase 6's
+//! assertion 5, carried as a regression guard and labelled as one**. Like the
+//! element counts in `render.rs` it is parameter-invariant and cannot fail for
+//! a parameter reason.
 
 mod common;
 

@@ -34,8 +34,17 @@ use serde::{Deserialize, Serialize};
 /// it is 400 040 000, which is not a slow run but an unresponsive machine.
 const MAX_INITIAL_RADIUS: u32 = 64;
 
+/// `allow_negative_numbers` because several of these fields legitimately take
+/// one and the validation table below sets no lower bound on them — a negative
+/// weight inverts a criterion, and a negative `bundle_spacing` mirrors a bundle.
+/// Without it clap reads `--w-crossings -1` as a missing value followed by an
+/// unknown flag, so a value the surface accepts could not be typed at all.
 #[derive(Parser)]
-#[command(name = "llika", about = "Draw a transit network as a schematic map.")]
+#[command(
+    name = "llika",
+    about = "Draw a transit network as a schematic map.",
+    allow_negative_numbers = true
+)]
 struct Args {
     /// Network JSON file to read.
     #[arg(long)]
@@ -334,7 +343,9 @@ fn validate(layout: &LayoutParams, render: &RenderParams, extent: Extent) -> Res
     if let Some(g) = layout.grid_spacing {
         // `round(x / g)` is a NaN at zero, and a NaN casts silently to cell 0.
         if !g.is_finite() || g <= 0.0 {
-            return Err(format!("--grid-spacing must be finite and above zero, got {g}"));
+            return Err(format!(
+                "--grid-spacing must be finite and above zero, got {g}"
+            ));
         }
     }
 
@@ -432,7 +443,10 @@ mod tests {
         // Nine layout fields and four render ones. A guard on the guard: a
         // struct that serialized to an empty object would pass the loop above
         // vacuously.
-        assert_eq!(checked, 13, "expected 13 parameter fields, walked {checked}");
+        assert_eq!(
+            checked, 13,
+            "expected 13 parameter fields, walked {checked}"
+        );
     }
 
     /// `--cluster-moves` takes an explicit value rather than being a bare flag.
