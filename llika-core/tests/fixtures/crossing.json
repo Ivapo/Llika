@@ -1,0 +1,18 @@
+{
+  "stations": [
+    { "id": "westport",   "name": "Westport",   "lat": 37.780000, "lon": -122.420000 },
+    { "id": "harbour",    "name": "Harbour",    "lat": 37.780000, "lon": -122.399542 },
+    { "id": "midtown",    "name": "Midtown",    "lat": 37.780000, "lon": -122.379083 },
+    { "id": "eastgate",   "name": "Eastgate",   "lat": 37.780000, "lon": -122.358625 },
+
+    { "id": "northpoint", "name": "Northpoint", "lat": 37.796170, "lon": -122.420000 },
+    { "id": "hollow",     "name": "Hollow",     "lat": 37.763830, "lon": -122.399542 },
+    { "id": "summit",     "name": "Summit",     "lat": 37.796170, "lon": -122.379083 }
+  ],
+  "lines": [
+    { "id": "coast", "name": "Coast Line", "color": "#E4002B",
+      "stations": ["westport", "harbour", "midtown", "eastgate"] },
+    { "id": "ridge", "name": "Ridge Line", "color": "#0057B8",
+      "stations": ["northpoint", "hollow", "summit"] }
+  ]
+}

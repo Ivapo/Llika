@@ -23,6 +23,26 @@ pub const SAMPLE_LINES: usize = 3;
 /// lengths, which is the `riverside` → `hillcrest` corridor.
 pub const SAMPLE_GRID_SPACING_M: f64 = 2269.9117477523614;
 
+/// `crossing.json`'s crossings at the snap, hand-counted from the cells its
+/// coordinates were designed to land on.
+///
+/// Coast runs along `j = 0` through `(-1,0) (0,0) (1,0) (2,0)`. Ridge dips under
+/// it: `northpoint (-1,1)` → `hollow (0,-1)` → `summit (1,1)`. So
+/// `northpoint`-`hollow` meets `j = 0` at `i = -0.5`, strictly inside the coast
+/// edge `westport`-`harbour`, and `hollow`-`summit` meets it at `i = 0.5`,
+/// strictly inside `harbour`-`midtown`. No other pair meets at all, and the two
+/// lines share no station, so `c1` counts both.
+pub const CROSSING_C1_AT_SNAP: f64 = 2.0;
+
+/// The share of `crossing.json`'s corridors within 5° of a multiple of 45 at the
+/// snap: the three coast edges run due east, and ridge's two run at
+/// `atan2(∓2, ±1)` — 63.4° off axis, 18.4° from the nearest diagonal. 3 of 5.
+///
+/// Unlike the sample fixture, whose corridors are all octilinear before the
+/// search touches them, this one leaves the octilinearity claim something to
+/// prove.
+pub const CROSSING_OCTILINEAR_AT_SNAP: f64 = 0.6;
+
 /// Parameters that project and snap and then stop.
 ///
 /// Phase 1's assertions are about the projection, the snap and the viewport,
