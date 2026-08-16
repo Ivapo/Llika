@@ -36,18 +36,19 @@ improved by eye.
 | 5 | Line-bundling renderer | ✅ shipped |
 | 6 | Full parameter surface | ✅ shipped |
 
-**GTFS import has started.** A separate spec adds `llika-gtfs`, a second binary that
+**GTFS import is done too.** A separate spec adds `llika-gtfs`, a second binary that
 turns a published GTFS feed into a network file the one above draws. Platforms collapse
 into the stations a rider changes at, so an interchange draws once and the lines through
-it share a corridor, and each route draws the line it is normally operated as. What has
-not happened yet is the one that counts: it has never been run on a real city's feed.
+it share a corridor, and each route draws the line it is normally operated as. And it
+has now been run on a real city's feed — BART's, committed to this repository, drawn
+in `gallery/bart.svg`.
 
 | Phase | | |
 |---|---|---|
 | 1 | A feed becomes a drawable network | ✅ shipped |
 | 2 | Platforms collapse to stations | ✅ shipped |
 | 3 | The representative trip | ✅ shipped |
-| 4 | A real city | planned |
+| 4 | A real city | ✅ shipped |
 
 Out of scope, deliberately: station-name labels, a GUI, and importing from
 OpenStreetMap.
@@ -69,9 +70,15 @@ Open `map.svg` in any browser.
 disk; it never goes to the network — and writes a network file:
 
 ```console
-$ llika-gtfs --input bart.zip --output bart.json --route-types 1
+$ llika-gtfs --input llika-gtfs/tests/fixtures/bart.zip --output bart.json --route-types 1
+wrote bart.json — 50 stations, 6 lines, 12 of 14 routes matched, 0 dropped, 6 merged
 $ llika --input bart.json --output bart.svg
+wrote bart.svg — 50 stations, 6 lines, grid 3322m, cost 511.450746 → 112.087766 over 3 iterations
 ```
+
+That is a real feed and those are real numbers — BART's published archive is
+committed at that path, with its provenance and licence in `bart.md` beside it. The
+map it draws is `gallery/bart.svg`.
 
 **Two commands, because the file between them is the point.** A metro network as
 published carries a depot spur nobody rides, a station name in shouting caps and one
@@ -88,7 +95,7 @@ Import is lossy on purpose, so it says what it did:
 
 ```console
 $ llika-gtfs --input feed --output city.json
-wrote city.json — 11 stations, 5 lines, 6 of 7 routes matched, 1 dropped
+wrote city.json — 11 stations, 5 lines, 6 of 7 routes matched, 1 dropped, 0 merged
 ```
 
 **A station is the thing a rider changes at, not a platform.** A GTFS stop with two
@@ -102,6 +109,13 @@ reading of a feed that does not model them.
 can be the line on the map. The one drawn is the pattern the most of its trips run, which
 is not the longest: a route's longest trip is often a rare special that runs twice a year
 and serves a depot, so drawing it puts a line on the poster no rider has taken.
+
+**Two routes that draw one line become one line.** A feed may publish each direction
+as its own route — BART's `Yellow-N` beside `Yellow-S`, same colour — and drawing both
+puts every line on the poster twice. A route whose stations are another's, equal or
+exactly reversed, is absorbed into the earlier one, and `merged` above is how many. The
+surviving line keeps the feed's own name, so `Yellow-S` is what you will find in the
+file; renaming it to `Yellow` is the kind of edit the file exists for.
 
 A route left with fewer than two stations once its platforms merge is **dropped**, and
 `dropped` above is how many. That is an ordinary outcome rather than a failure: the

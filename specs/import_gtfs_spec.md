@@ -27,7 +27,7 @@ phases:
     by: null
   - name: "Phase 4 — a real city"
     reviewed: 2026-08-15
-    shipped: null
+    shipped: 2026-08-16
     cut: null
     by: null
 
@@ -40,9 +40,10 @@ reference: >
   everything temporal — `calendar`, `calendar_dates`, `frequencies`, and the
   arrival/departure times in `stop_times` — plus `shapes`, fares, transfers,
   pathways and accessibility. This spec reads GTFS as a **topology** format and
-  discards the timetable it actually is. Nobody in this repo has yet validated
-  the field list in §2.1 against a real feed; §4's Phase 4 is where that happens,
-  and a difference found there is a recorded correction, not a defect.
+  discards the timetable it actually is. The field list in §2.1 was validated
+  against a real feed at Phase 4 on 2026-08-16 — BART, `llika-gtfs/tests/fixtures/`
+  — and stood without a correction, which was the outcome this note allowed for and
+  did not assume. It remains one feed.
 ---
 
 # GTFS network import
@@ -69,19 +70,27 @@ point:
 
 ```console
 $ llika-gtfs --input bart.zip --output bart.json --route-types 1
-wrote bart.json — 50 stations, 6 lines, 7 of 213 routes matched, 1 dropped
+wrote bart.json — 50 stations, 6 lines, 12 of 14 routes matched, 0 dropped, 6 merged
 
 $ llika --input bart.json --output bart.svg
-wrote bart.svg — 50 stations, 6 lines, grid 3410m, cost 812.431907 → 190.774521 over 14 iterations
+wrote bart.svg — 50 stations, 6 lines, grid 3322m, cost 511.450746 → 112.087766 over 3 iterations
 ```
 
-**Every number in that second block is illustrative and none has been measured**,
-which is stated here rather than discovered later: `llk-001` §1 wrote an invented
-cost pair into its own end-state block and carried it through six phases before
-Phase 6 corrected it in place, wrong by two orders of magnitude. The `llika` line's
-*format* is real — six decimals and the **executed** sweep count, per
-`llika-cli/src/main.rs:run` — and Phase 4 is where the figures are replaced with
-what the binary printed.
+*(Measured 2026-08-16 at Phase 4, replacing the invented figures this block carried
+through three phases. The station count was the one thing the guess got right. The
+guess is kept below rather than deleted, because what it got wrong is the record:*
+`50 stations, 6 lines, 7 of 213 routes matched, 1 dropped` *and* `grid 3410m, cost
+812.431907 → 190.774521 over 14 iterations`*. It was written expecting a big
+multi-modal city feed with a couple of hundred routes; BART publishes fourteen, and
+the six lines come out of OQ-7's merge rather than out of six route rows. The
+`llika` line's format was right, which is what §1 claimed for it.)*
+
+**The numbers above are the only measured ones in this document, and every other
+figure in it should be read as illustrative until a phase says otherwise.** This is
+stated rather than left to be discovered: `llk-001` §1 wrote an invented cost pair
+into its own end-state block and carried it through six phases before Phase 6
+corrected it in place, wrong by two orders of magnitude. The `llika` line's format is
+real — six decimals and the **executed** sweep count, per `llika-cli/src/main.rs:run`.
 
 `bart.json` is an ordinary `llk-001` input file: readable, hand-editable, and
 accepted by `llika-core/src/io.rs:Network::from_input` unchanged.
@@ -202,6 +211,16 @@ resolves that way, this table gains it and Phase 3 says so.)*
 *(Recorded 2026-08-16, at Phase 3's close-out. It does not: OQ-1 resolved to the
 modal stop pattern, which reads no column this table lacks, so the four-file, sixteen-column
 list above is final for this spec and only Phase 4 can correct it against a real feed.)*
+
+*(Recorded 2026-08-16, at Phase 4's close-out. It did not correct it. Every column
+above is present in BART's feed and reads as typed; OQ-7's merge, the one design
+addition that phase made, reads no column at all. So the table is final for this spec
+outright. Two things the phase found that this section did not have to change: BART's
+`stop_times.stop_sequence` starts at **0**, which the `u32` above already admits, and
+its `stops.txt` carries 132 `location_type = 2` entrance rows — every one of them with
+coordinates, so the case that motivated the `Option` typing is still unwitnessed
+outside the fixture. The `Option`s stay; a rule that has not yet been needed on one
+feed is not a rule that is wrong.)*
 
 ### 2.2 Station identity is the load-bearing problem (decision, recorded)
 
@@ -384,6 +403,14 @@ to `LineTooShort` alone, which is unreachable until platforms collapse. Phase 2 
 both the drop and the clause. A permanent `0 dropped` would have been format
 stability bought with a number that cannot move, and §1's block is the end state
 rather than a per-phase contract.)*
+
+*(Recorded 2026-08-16, at Phase 4's close-out. The line gains a fourth clause,
+`, N merged`, for OQ-7's absorption — `wrote bart.json — 50 stations, 6 lines, 12 of
+14 routes matched, 0 dropped, 6 merged`. It is **appended** rather than placed next to
+`matched`, where it belongs by meaning: Phase 2's gate asserts a substring of this
+line, and appending leaves that literal true instead of churning it for a tidier
+reading of a line nothing parses. `ImportReport` carries which route merged into
+which, and keeps it off stdout, as it already does for drops.)*
 
 ### 2.7 Reserved: importers
 
@@ -714,6 +741,84 @@ Nothing else here is a reserved namespace.
   the measured envelope and the ordering `llk-001` recommended costs nothing to
   break here. A feed that turns out to be much larger is the case that changes the
   answer, and Phase 4's timing is what would say so.
+
+  **DISCHARGED 2026-08-16 by Phase 4, into `llk-001` §3 OQ-9 where it belongs:
+  0.13 s release on BART** — 50 stations, 50 corridors, 3 executed sweeps, the rest
+  of the pipeline below the timer, so ~43 ms a sweep. The tension resolved the way
+  the paragraph above guessed: the judgement held, and it held because the early exit
+  `llk-001` Phase 4 shipped means BART pays 3 sweeps where the 72.9 s figure paid 200.
+  Which is also why the number retires nothing — it measures convergence on one
+  well-behaved network, not the cost of a sweep at scale, and `V · r² · E²` per sweep
+  stands exactly as `llk-001` states it. This question closes here because the fact it
+  was waiting for now lives in the spec that owns it.
+
+- **OQ-7** — ~~**May the importer fold two routes into one line?** A feed can
+  publish each direction of a line as its own `route_id`. *(design call.)*
+  **Blocks Phase 4**, and it exists because that phase's download surfaced it:
+  OQ-4's resolution named it "the phase's real subject" and recorded that §2 has no
+  answer for it — folding a route pair is a decision, not a repair.~~
+
+  **RESOLVED 2026-08-16 by Phase 4, in
+  `llika-gtfs/src/convert.rs:draws_the_same_line`: yes, and it is not a flag.** Two
+  surviving routes whose representative station lists are **equal or exactly
+  reversed** are one line; the earlier `routes.txt` row keeps its id, name, colour and
+  direction, and `llika-gtfs/src/lib.rs:MergedRoute` reports the absorption. On BART
+  that is all six pairs and nothing else, measured before it was built.
+
+  **The predicate is structural, and that is what makes it a rule rather than a
+  guess.** It reads no name, no colour and no `direction_id` — so §2.1's four-file,
+  sixteen-column table is final after this phase as well as before it, which is the
+  outcome the `reference` note said was possible and did not assume. A name-matching
+  rule (`Yellow-N` beside `Yellow-S`) would have been the reflex and is unwritable:
+  nothing in GTFS makes that convention a convention.
+
+  **Not a flag, on §2.2's own grounds.** That section refuses to make the platform
+  collapse optional because *a station is the thing a rider changes at*. A line is
+  the thing a rider rides, and a rider rides the Yellow Line. Where the intermediate
+  file is still the answer is the residue: the surviving line is named `Yellow-S`,
+  because §2.4 prefers `route_short_name` and BART's says so. Renaming it to `Yellow`
+  is exactly the editorial edit §1.1 assigns to the person, and exactly the kind of
+  judgement this rule does not make.
+
+  **One thing this decides that the question did not name, and it inverts the reason
+  the fold looked safe.** The argument for merging was that it changes nothing but
+  the strokes: `llika-core/src/model.rs:LineSet` keys a corridor on an unordered
+  pair, so a reversed duplicate adds no edge and the graph is identical. The graph
+  *is* identical — and the map is not.
+  `llika-core/src/layout/cost.rs:c4_straightness` sums over **lines**, so an unmerged
+  pair pays every bend twice and the search weights a route's straightness by how
+  many times its operator wrote it down. Fifty stations land somewhere else for it:
+  cost `112.087766` over 3 sweeps against `139.911271` over 5. Measured, not
+  reasoned, and it makes the case stronger rather than weaker — merging is what makes
+  the layout depend on the network instead of on the publisher's bookkeeping. It is
+  gated in `llika-gtfs/tests/real_feed.rs` so the day `c4` stops summing over lines is
+  the day a test says so.
+
+  **What was considered and refused.** Requiring the two routes to share a
+  `route_color` — stricter, and it would silently keep a doubled pair whose colours
+  differ, which is the worse failure of the two and the one nobody would see. A flag
+  defaulting on — an escape hatch for a predicate this exact buys a field on
+  `ImportParams`, a flag on the binary and a paragraph in two rule files, against a
+  case neither the fixture nor BART can produce. And merging a route into a *sub-path*
+  of another, which is the short-turn case: it shares corridors without being the same
+  line, and absorbing it loses the corridors it does not have.
+
+  **Where the merge sits is load-bearing and is OQ-3's rule extended.** The check runs
+  after the `LineTooShort` drop and **before** the route references a station or takes
+  a palette index, so a merged route contributes neither — the fallback colours still
+  run in order across the routes that actually become lines. The fixture cannot witness
+  that half (OQ-5 fixes its properties at Phase 1 and none of them is a reversed pair,
+  and extending it now moves every Phase 1 and Phase 2 literal), so it is stated as a
+  unit test in `convert.rs`, beside §2.4's colour predicate, and BART is the
+  integration witness.
+
+  **This also settles OQ-1's parked sub-question, by measurement.** That resolution
+  left open whether a pattern and its reverse should be voted as one pattern within a
+  route, saying Phase 4 is where a measurement is available. Measured on BART: **no
+  route has a pattern and its reverse among its own trips — zero, across all twelve.**
+  BART splits directions at the route level, so the case never arises inside a route
+  and the vote is unaffected. It stays unbuilt, now on evidence rather than on the
+  fixture's inability to witness it, and the next feed is where it can fire.
 
 ## 4. Implementation phases
 

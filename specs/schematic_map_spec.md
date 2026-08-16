@@ -6,7 +6,7 @@ note: >
   schematic map — projection, grid snap, Stott-Rodgers hill-climbing layout and a
   line-bundling renderer, behind a CLI.
 status: accepted
-last_updated: 2026-08-15
+last_updated: 2026-08-16
 
 phases:
   - name: "Phase 1 — thin end-to-end slice: JSON in, SVG out"
@@ -1175,6 +1175,24 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   the edges a move actually touches, which for a cluster move is the bridge alone — needs
   a phase or a spec of its own, and should get one before §1's promise of "a real metro
   network" is tested on a city rather than on a fixture.
+
+  **The real-network measurement exists now, recorded 2026-08-16 by `llk-002` Phase 4,
+  and it is a cross-spec write that spec's §4 named: 0.13 s release on BART.** 50
+  stations, 50 corridors, 3 executed sweeps, and the rest of the pipeline —
+  parse, project, snap, render, write — is below the timer at this size, so
+  essentially all of it is **~43 ms a sweep**. The 17-station fixture is under
+  10 ms. `llk-002`'s OQ-6 recorded that it was breaking the ordering the paragraph
+  above recommends, on the judgement that a metro network is the small case and 50
+  stations sits inside the envelope 200 was measured at. **The judgement held**, and
+  the paragraph above is what made it safe to make.
+
+  **It does not retire the term, and reading it that way would be the mistake.** The
+  early exit is doing the work: BART pays 3 sweeps where the 72.9 s figure paid 200,
+  so what this measures is convergence on one well-behaved network, not the cost of a
+  sweep at scale. `V · r² · E²` per sweep is untouched — a city with a denser graph,
+  or one whose search does not settle in three, still lands on it, and 50 stations is a
+  quarter of where the 72.9 s was taken. The delta score is still the fix, and this
+  number moves it from urgent to schedulable rather than closing it.
 
 ## 4. Implementation phases
 
