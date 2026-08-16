@@ -7,7 +7,7 @@ note: >
   the schematic map can be drawn from a real city rather than a hand-authored
   fixture.
 status: accepted
-last_updated: 2026-08-15
+last_updated: 2026-08-16
 
 phases:
   - name: "Phase 1 — thin end-to-end slice: a feed becomes a drawable network"
@@ -22,7 +22,7 @@ phases:
     by: null
   - name: "Phase 3 — the representative trip"
     reviewed: 2026-08-15
-    shipped: null
+    shipped: 2026-08-16
     cut: null
     by: null
   - name: "Phase 4 — a real city"
@@ -198,6 +198,10 @@ and by one that ignores `stop_sequence` entirely.
 *(One column is deliberately absent and would have to be added: `trips.direction_id`,
 which OQ-1 names as a candidate for choosing a route's representative trip. If OQ-1
 resolves that way, this table gains it and Phase 3 says so.)*
+
+*(Recorded 2026-08-16, at Phase 3's close-out. It does not: OQ-1 resolved to the
+modal stop pattern, which reads no column this table lacks, so the four-file, sixteen-column
+list above is final for this spec and only Phase 4 can correct it against a real feed.)*
 
 ### 2.2 Station identity is the load-bearing problem (decision, recorded)
 
@@ -408,12 +412,57 @@ Nothing else here is a reserved namespace.
 
 ## 3. Open questions
 
-- **OQ-1** — **Which trip represents a route?** A route has many trips: two
+- **OQ-1** — ~~**Which trip represents a route?** A route has many trips: two
   directions, short-turns, express variants, weekend patterns, and one-off
   specials. The station list a line draws with is whichever trip is picked.
   *(design call.)* **Blocks Phase 3**, and Phase 1 ships a deliberately naive
   answer so the question is decided against a drawn map rather than in the
-  abstract.
+  abstract.~~
+
+  **RESOLVED 2026-08-16 by Phase 3, in
+  `llika-gtfs/src/trips.rs:representative_stop_ids`: the modal stop pattern.**
+  The candidate below that the question already called "by construction the line
+  as normally operated", chosen against the drawn map Phase 1 shipped the naive
+  answer to produce. `direction_id` is not read, so §2.1's column table is final;
+  the union of all patterns stays refused on its own grounds, since it needs
+  `llk-001` to accept a line that is not a path.
+
+  Three things this decides that the question did not name, recorded here because
+  each is a real fork and only the second of them has a gate assertion of its own.
+
+  **The pattern is the *station* sequence, not the platform sequence** — the trip
+  resolved through §2.2's collapse and fold, which is the same reading of a trip
+  the line itself is written from. What this phase claims is that the line
+  **drawn** is the modal one, so two trips that draw the same line have to count
+  as one pattern; keyed on platform ids, a feed that hands one trip a terminus's
+  bay 1 and the next its bay 2 splits one line into two patterns and halves its
+  vote, letting back in precisely the platform noise §2.2 collapses to remove.
+  **The fixture cannot witness it** — OQ-5 fixed its properties at Phase 1 and
+  none of them is a per-trip bay assignment, and extending the feed now is the
+  churn that question exists to prevent — so it is stated as a unit test in
+  `trips.rs` instead, which is where §2.4's colour predicate and §2.2's collapse
+  rule are also stated cheaply.
+
+  **A tie goes to the pattern whose first trip is the earlier `trips.txt` row**,
+  which is Phase 1's tie-break lifted one level up. On `llk-001` §2.4's grounds:
+  two directions of a route usually run the same number of trips, so equal counts
+  are the ordinary case rather than the exotic one.
+
+  **Nothing is excluded from the vote for being too short.** A route whose modal
+  pattern falls under two stations is dropped by OQ-3's existing path rather than
+  falling back to its longest drawable pattern. The fallback looks like a repair
+  and is the rare-special failure wearing a different hat — it would crown a
+  pattern one trip in a hundred runs, which is the exact outcome this question
+  exists to prevent.
+
+  **One thing considered and not built, recorded so Phase 4 can settle it.** A
+  pattern and its reverse draw the same map — `llika-core/src/model.rs:LineSet`
+  keys an edge on an unordered pair — so a route's two directions could be voted
+  as one pattern rather than two. It is not, for two reasons: the fixture cannot
+  witness it either, and it changes the *picture* only in the second-order case
+  where a third pattern's count falls between one direction's and their sum.
+  Whether real feeds produce that case is a measurement, and Phase 4 is where a
+  measurement is available.
 
   The naive answer — **the trip with the most stops** — is wrong in a way worth
   recording, because it is what an implementer reaches for: a route's longest trip

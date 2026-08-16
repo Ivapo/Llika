@@ -37,16 +37,16 @@ improved by eye.
 | 6 | Full parameter surface | ✅ shipped |
 
 **GTFS import has started.** A separate spec adds `llika-gtfs`, a second binary that
-turns a published GTFS feed into a network file the one above draws. Phase 2 collapses
-a feed's platforms into the stations a rider changes at, so an interchange draws once
-and the lines through it share a corridor; the line each route draws is still picked
-from its longest trip rather than its usual one.
+turns a published GTFS feed into a network file the one above draws. Platforms collapse
+into the stations a rider changes at, so an interchange draws once and the lines through
+it share a corridor, and each route draws the line it is normally operated as. What has
+not happened yet is the one that counts: it has never been run on a real city's feed.
 
 | Phase | | |
 |---|---|---|
 | 1 | A feed becomes a drawable network | ✅ shipped |
 | 2 | Platforms collapse to stations | ✅ shipped |
-| 3 | The representative trip | planned |
+| 3 | The representative trip | ✅ shipped |
 | 4 | A real city | planned |
 
 Out of scope, deliberately: station-name labels, a GUI, and importing from
@@ -96,6 +96,12 @@ directions is two ids and an interchange can be six, so the platforms of one sta
 are merged into it — otherwise every interchange draws twice and no two lines ever
 share a corridor. A stop that names no parent is its own station, which is the right
 reading of a feed that does not model them.
+
+**A route draws the line it is normally operated as.** A published route has many trips
+— two directions, short-turns, weekend patterns, one-off specials — and only one of them
+can be the line on the map. The one drawn is the pattern the most of its trips run, which
+is not the longest: a route's longest trip is often a rare special that runs twice a year
+and serves a depot, so drawing it puts a line on the poster no rider has taken.
 
 A route left with fewer than two stations once its platforms merge is **dropped**, and
 `dropped` above is how many. That is an ordinary outcome rather than a failure: the

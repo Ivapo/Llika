@@ -105,12 +105,14 @@ decision, since `llk-001` §2.2 resolves two stations rounding to one grid cell 
 
 ## The conversions
 
-`llika-gtfs/src/trips.rs:representative_stop_ids` picks a route's trip: **the one with
-the most stops**, ties going to the earlier `trips.txt` row. **It is the one rule still
-unimplemented and it shows in the drawn map** — a route's longest trip is often a rare
-special serving a depot, and this stands so the question is settled against a drawn map.
-Its rows are sorted by `stop_sequence` **value**, never row order: the values need not
-be consecutive, nor stored in order.
+`llika-gtfs/src/trips.rs:representative_stop_ids` picks a route's trip: the one running
+**the pattern the most of that route's trips run**, ties going to the pattern whose first
+trip is the earlier `trips.txt` row. Not the longest, which is often a rare special
+serving a depot — a line no rider has taken. Two trips are one pattern by their **station**
+sequence, collapsed and folded, so a per-trip bay assignment cannot split one drawn line
+and halve its vote; a modal pattern under two stations is dropped rather than promoting a
+runner-up one trip in a hundred runs. Every trip's rows are sorted by `stop_sequence`
+**value** first, never row order: the values need not be consecutive, nor stored in order.
 
 `llika-gtfs/src/convert.rs:stated_color` prefixes `#`, GTFS writing six bare hex digits
 where `Line`'s `color` goes straight into an SVG `stroke`. The fallback fires only on
