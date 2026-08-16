@@ -103,9 +103,10 @@ fn the_split_platform_station_emits_once_and_its_routes_share_one_corridor() {
             "`{route}` does not run over the CEN–OLD corridor",
         );
     }
-    // Hand-counted from the fixture: `M1`, `M2`, `M3` and `M5` all run OLD–CEN.
-    // `M6` never touches CEN.
-    assert_eq!(corridor.len(), 4);
+    // Hand-counted from the fixture: `M1`, `M2` and `M3` all run OLD–CEN. `M6`
+    // never touches CEN, and since Phase 3 `M5` does not either — its modal
+    // pattern terminates at OLD, where its longest trip ran on through CEN.
+    assert_eq!(corridor.len(), 3);
 }
 
 /// Assertion 2, **both halves in one test**, because the first alone passes on a
@@ -120,10 +121,11 @@ fn the_interchange_degree_and_the_counts_both_fall() {
     let (schema, _) = import_fixture();
     let network = Network::from_input(&schema).expect("the imported schema is a legal network");
 
-    // Hand-counted from the fixture's corridors: CEN meets OLD, MKT, SOU and
-    // FAI. Discriminating, because before the collapse `CEN_1` had degree 5 and
-    // `CEN_2` degree 2 — 4 is neither, nor their sum.
-    assert_eq!(network.degree(index(&network, "CEN")), 4);
+    // Hand-counted from the fixture's corridors: CEN meets OLD, MKT and SOU.
+    // Discriminating, because uncollapsed `CEN_1` has degree 4 and `CEN_2`
+    // degree 2 — 3 is neither, nor their sum. (Both numbers are Phase 3's:
+    // `M5` no longer reaches CEN at all, which is what took this from 4.)
+    assert_eq!(network.degree(index(&network, "CEN")), 3);
 
     // Both counts against Phase 1's, whose relation the `const` assertions above
     // pin. Strictly below on stations, exactly one fewer line.

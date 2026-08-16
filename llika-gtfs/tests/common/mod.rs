@@ -112,6 +112,12 @@ pub fn line_color<'a>(schema: &'a InputSchema, id: &str) -> &'a str {
 /// The eight rows that are not here are `CEN_1`, `CEN_2`, `OLD_1`, `OLD_2`,
 /// `MKT_1` and `MKT_2` (platforms, whose identity is now the parent's),
 /// `CEN_E1` (an entrance) and `DEP` (served only by the filtered-out `B1`).
+///
+/// **Phase 3 does not move it, and that is counted rather than assumed.** `M5`
+/// stops drawing `CEN` and `FAI` when it switches to its modal pattern, but
+/// `M1`, `M2` and `M3` reference `CEN` and `M6` references `FAI`, so every one
+/// of the eleven is still referenced by something. What Phase 3 moves is the
+/// *graph*: `collapse.rs` counts one corridor and one degree fewer at `CEN`.
 pub const FIXTURE_STATIONS: usize = 11;
 
 /// Hand-counted from `routes.txt`: seven routes, less `B1` the bus and less

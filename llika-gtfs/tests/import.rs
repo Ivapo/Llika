@@ -2,6 +2,11 @@
 //! byte stability, and the `.zip` against the directory — need two processes and
 //! live in `byte_stability.rs`.
 //!
+//! Phase 1 also pinned the naive representative trip here, so that its
+//! replacement would read as a change rather than a coincidence. Phase 3 made
+//! the change, and both halves of the pin — with their controls inverted — are
+//! now `representative_trip.rs`.
+//!
 //! The fixture's engineered properties, and which assertion consumes each, are
 //! documented in `common/mod.rs`.
 
@@ -150,28 +155,6 @@ fn a_line_name_falls_from_short_to_long_to_the_route_id() {
     assert_eq!(name("M1"), "1", "route_short_name");
     assert_eq!(name("M6"), "Bay Loop", "route_long_name");
     assert_eq!(name("M5"), "M5", "route_id");
-}
-
-/// The naive representative trip this phase ships, pinned so Phase 3's change is
-/// visible as a change rather than a coincidence.
-///
-/// `M5`'s longest trip is a six-stop special and its modal one is the four-stop
-/// pattern three trips run; OQ-1 says the longest is the wrong answer and Phase 3
-/// replaces it. `M6`'s four trips all have three stops, so the tie-break decides
-/// — the earlier `trips.txt` row, which is `M6_R1`.
-#[test]
-fn the_representative_trip_is_the_longest_with_the_earlier_trip_winning_a_tie() {
-    let (schema, _) = import_fixture();
-
-    assert_eq!(
-        line_stations(&schema, "M5"),
-        ["NOR", "HIL", "RIV", "OLD", "CEN", "FAI"],
-    );
-    // The modal pattern, which Phase 3 will switch to.
-    assert_ne!(line_stations(&schema, "M5"), ["NOR", "HIL", "RIV", "OLD"]);
-
-    assert_eq!(line_stations(&schema, "M6"), ["MKT", "QUA", "FAI"]);
-    assert_ne!(line_stations(&schema, "M6"), ["FAI", "QUA", "SOU"]);
 }
 
 /// Assertion 9: `llika` draws the imported file without error.
