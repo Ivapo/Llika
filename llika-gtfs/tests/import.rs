@@ -8,8 +8,8 @@
 mod common;
 
 use common::{
-    FIXTURE_LINES, FIXTURE_ROUTES_SEEN, FIXTURE_STATIONS, FIXTURE_STOPS_SEEN, import_fixture,
-    line_color, line_stations,
+    FIXTURE_LINES, FIXTURE_ROUTES_KEPT, FIXTURE_ROUTES_SEEN, FIXTURE_STATIONS, FIXTURE_STOPS_SEEN,
+    import_fixture, line_color, line_stations,
 };
 use llika_core::{LayoutParams, Network, RenderParams, build_schematic_svg};
 
@@ -38,7 +38,7 @@ fn the_fixture_imports_to_the_counted_stations_lines_and_order() {
 
     assert_eq!(
         line_stations(&schema, "M1"),
-        ["WST", "OLD_1", "CEN_1", "MKT_1", "EAST"],
+        ["WST", "OLD", "CEN", "MKT", "EAST"],
     );
 
     // Stations come out in `stops.txt` row order and lines in `routes.txt` row
@@ -47,12 +47,11 @@ fn the_fixture_imports_to_the_counted_stations_lines_and_order() {
     assert_eq!(
         ids,
         [
-            "WST", "CEN_1", "CEN_2", "OLD_1", "OLD_2", "MKT_1", "MKT_2", "EAST", "SOU", "NOR",
-            "HIL", "RIV", "QUA", "FAI",
+            "CEN", "WST", "OLD", "MKT", "EAST", "SOU", "NOR", "HIL", "RIV", "QUA", "FAI",
         ],
     );
     let line_ids: Vec<&str> = schema.lines.iter().map(|l| l.id.as_str()).collect();
-    assert_eq!(line_ids, ["M1", "M2", "M3", "M4", "M5", "M6"]);
+    assert_eq!(line_ids, ["M1", "M2", "M3", "M5", "M6"]);
 }
 
 /// Assertion 3: the filter **removes** something, rather than passing vacuously.
@@ -65,7 +64,7 @@ fn the_route_type_filter_removes_the_bus_route_and_its_stop() {
     let (schema, report) = import_fixture();
 
     assert_eq!(report.routes_seen, FIXTURE_ROUTES_SEEN);
-    assert_eq!(report.routes_kept, FIXTURE_LINES);
+    assert_eq!(report.routes_kept, FIXTURE_ROUTES_KEPT);
     assert!(
         !schema.lines.iter().any(|line| line.id == "B1"),
         "the bus route survived the filter",
@@ -87,9 +86,9 @@ fn the_route_type_filter_removes_the_bus_route_and_its_stop() {
 fn a_trip_written_out_of_sequence_reads_in_sequence() {
     let (schema, _) = import_fixture();
 
-    assert_eq!(line_stations(&schema, "M2"), ["SOU", "CEN_2", "OLD_2"]);
+    assert_eq!(line_stations(&schema, "M2"), ["SOU", "CEN", "OLD"]);
     // The control: this is what a reader ignoring `stop_sequence` produces.
-    assert_ne!(line_stations(&schema, "M2"), ["OLD_2", "SOU", "CEN_2"]);
+    assert_ne!(line_stations(&schema, "M2"), ["OLD", "SOU", "CEN"]);
 }
 
 /// Assertion 5, both halves — and the **first** is the one that discriminates.
@@ -122,11 +121,12 @@ fn a_colourless_route_takes_the_first_palette_colour_and_an_explicit_white_stays
     assert_eq!(line_color(&schema, "M3"), "#E4002B");
     assert_eq!(line_color(&schema, "M5"), "#FFFFFF");
 
-    // Every other kept route states its own colour, so exactly one fallback
-    // fired and the index above is not an accident of a wider sweep.
+    // Every other surviving route states its own colour, so exactly one fallback
+    // fired and the index above is not an accident of a wider sweep. `M4` stated
+    // one too and is dropped, so this fixture cannot say whether a dropped route
+    // consumes an index; the code decides it by checking the drop first.
     assert_eq!(line_color(&schema, "M1"), "#0057B8");
     assert_eq!(line_color(&schema, "M2"), "#FF8200");
-    assert_eq!(line_color(&schema, "M4"), "#753BBD");
     assert_eq!(line_color(&schema, "M6"), "#00A3E0");
 }
 
@@ -165,12 +165,12 @@ fn the_representative_trip_is_the_longest_with_the_earlier_trip_winning_a_tie() 
 
     assert_eq!(
         line_stations(&schema, "M5"),
-        ["NOR", "HIL", "RIV", "OLD_1", "CEN_1", "FAI"],
+        ["NOR", "HIL", "RIV", "OLD", "CEN", "FAI"],
     );
     // The modal pattern, which Phase 3 will switch to.
-    assert_ne!(line_stations(&schema, "M5"), ["NOR", "HIL", "RIV", "OLD_1"]);
+    assert_ne!(line_stations(&schema, "M5"), ["NOR", "HIL", "RIV", "OLD"]);
 
-    assert_eq!(line_stations(&schema, "M6"), ["MKT_1", "QUA", "FAI"]);
+    assert_eq!(line_stations(&schema, "M6"), ["MKT", "QUA", "FAI"]);
     assert_ne!(line_stations(&schema, "M6"), ["FAI", "QUA", "SOU"]);
 }
 
@@ -189,9 +189,9 @@ fn llika_draws_the_imported_network() {
         .expect("the imported network draws");
 
     assert!(svg.starts_with("<svg"), "not an SVG document: {svg:.60}");
-    // One stroke per line and one marker per station. Before Phase 2's collapse
-    // that means `CEN`, `OLD` and `MKT` each appear twice — the picture this
-    // phase is meant to produce, and the one Phase 2 fixes.
+    // One stroke per line and one marker per station. Since the collapse `CEN`,
+    // `OLD` and `MKT` draw once each rather than twice, which is the difference
+    // between a transit diagram and a duplicated one.
     assert_eq!(svg.matches("<path").count(), FIXTURE_LINES);
     assert_eq!(svg.matches("<circle").count(), FIXTURE_STATIONS);
 }

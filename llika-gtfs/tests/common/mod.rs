@@ -29,9 +29,15 @@
 //!
 //! The interleave is the subtle one. Under the natural grouped layout
 //! `CEN, CEN_1, CEN_2, WST` the parent-row rule and the first-platform-row rule
-//! emit the identical array, so Phase 2's assertion on §2.5's emission position
-//! would pass for an implementation doing the opposite. Interleaved, the two
-//! readings give `[WST, CEN, …]` against `[CEN, WST, …]`.
+//! emit the identical array, so the assertion on §2.5's emission position would
+//! pass for an implementation doing the opposite. Interleaved, the two readings
+//! give `[WST, CEN, …]` against `[CEN, WST, …]`.
+//!
+//! Note what that costs a gate written against it: `OLD` and `MKT` **are** laid
+//! out grouped, so both readings put them in the same slot. The two arrays
+//! differ only at indices 0 and 1, and only an assertion on the order of `CEN`
+//! against `WST` discriminates — membership, the station count, and the position
+//! of any other station all pass under the wrong reading.
 //!
 //! Two rows exist only to be **absent** from the output: `DEP`, which only the
 //! filtered-out `B1` serves, and `CEN_E1`, the entrance.
@@ -39,6 +45,7 @@
 #![allow(dead_code)]
 
 use std::path::{Path, PathBuf};
+use std::process::{Command, Output};
 
 use llika_gtfs::{ImportParams, ImportReport};
 use llika_core::InputSchema;
@@ -47,6 +54,32 @@ use llika_core::InputSchema;
 /// builds the archive from these same files.
 pub fn feed_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/feed")
+}
+
+/// A scratch directory per test. The names are fixed rather than unique, so two
+/// tests sharing one would race; each is removed before it is created so a run
+/// never inherits the last one's files.
+pub fn scratch(name: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(name);
+    std::fs::remove_dir_all(&dir).ok();
+    std::fs::create_dir_all(&dir).expect("scratch directory");
+    dir
+}
+
+/// Run the real binary and hand back everything it did — status, stdout and
+/// stderr — so a caller can assert on the one it is about.
+///
+/// Raw rather than success-asserting because two gates want different halves of
+/// it: byte stability wants the bytes on disk, and OQ-3's answer is an exit
+/// status that a helper unwrapping it would have hidden.
+pub fn run_importer(input: &Path, output: &Path) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_llika-gtfs"))
+        .arg("--input")
+        .arg(input)
+        .arg("--output")
+        .arg(output)
+        .output()
+        .expect("the llika-gtfs binary runs")
 }
 
 pub fn import_fixture() -> (InputSchema, ImportReport) {
@@ -73,21 +106,41 @@ pub fn line_color<'a>(schema: &'a InputSchema, id: &str) -> &'a str {
         .color
 }
 
-/// Hand-counted from `stops.txt`: the fourteen rows some kept line references.
-/// The five that are not here are `CEN`, `OLD` and `MKT` (parents, which emit
-/// nothing of their own account), `CEN_E1` (an entrance) and `DEP` (served only
-/// by the filtered-out `B1`).
+/// Hand-counted from `stops.txt`: the eleven stations some surviving line
+/// references, once platforms carry their parent's identity.
 ///
-/// **Phase 2's gate 2 consumes this number**, which is why it is written down
-/// here rather than derived there: after the collapse nothing can produce a
-/// pre-collapse import, so the "before" has to carry forward.
-pub const FIXTURE_STATIONS: usize = 14;
+/// The eight rows that are not here are `CEN_1`, `CEN_2`, `OLD_1`, `OLD_2`,
+/// `MKT_1` and `MKT_2` (platforms, whose identity is now the parent's),
+/// `CEN_E1` (an entrance) and `DEP` (served only by the filtered-out `B1`).
+pub const FIXTURE_STATIONS: usize = 11;
 
-/// Hand-counted from `routes.txt`: seven routes, of which `B1` is a bus.
+/// Hand-counted from `routes.txt`: seven routes, less `B1` the bus and less
+/// `M4`, whose two platforms are one station after the collapse.
+pub const FIXTURE_LINES: usize = 5;
+
+/// The routes that **matched the `route_type` filter** — every route but `B1`.
 ///
-/// **Also consumed by Phase 2's gate 2** — it drops to five there, because
-/// `M4`'s two platforms are one station after the collapse and the route is no
-/// longer a line.
-pub const FIXTURE_LINES: usize = 6;
+/// Not the same as [`FIXTURE_LINES`] since the collapse: a matched route can
+/// still fail to become a line, and `M4` does.
+pub const FIXTURE_ROUTES_KEPT: usize = 6;
+
+/// The matched routes that did not become lines: `M4` alone.
+pub const FIXTURE_ROUTES_DROPPED: usize = 1;
+
 pub const FIXTURE_ROUTES_SEEN: usize = 7;
 pub const FIXTURE_STOPS_SEEN: usize = 19;
+
+/// Phase 1's committed counts, kept as the "before" its successor is measured
+/// against.
+///
+/// **They carry forward as literals rather than as a re-run**, and they have to:
+/// §2.2 makes the collapse neither an option nor a flag, so after Phase 2
+/// nothing in this crate can produce a pre-collapse import, and adding a flag to
+/// make the comparison runnable is exactly what that section forbids.
+///
+/// The two carry differently, which is deliberate. The **line** count is an
+/// exact delta — `M4` is the only route that can drop, so it is `FIXTURE_LINES +
+/// 1`. The **station** count carries only as a relation, strictly above, because
+/// its exact delta is not derivable from the spec.
+pub const PHASE_1_STATIONS: usize = 14;
+pub const PHASE_1_LINES: usize = 6;

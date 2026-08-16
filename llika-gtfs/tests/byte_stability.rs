@@ -16,26 +16,15 @@
 //! nested under a top-level directory is a named Phase 4 hazard, not this
 //! phase's subject.
 
+mod common;
+
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use common::{feed_dir, run_importer, scratch};
 use zip::write::SimpleFileOptions;
-
-/// A scratch directory per test. The names are fixed rather than unique, so two
-/// tests sharing one would race; each is removed before it is created so a run
-/// never inherits the last one's files.
-fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(name);
-    std::fs::remove_dir_all(&dir).ok();
-    std::fs::create_dir_all(&dir).expect("scratch directory");
-    dir
-}
-
-fn feed_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/feed")
-}
 
 /// The four tables §2.1 reads, plus the two it never opens — `agency.txt` and
 /// `calendar.txt` ride along so the archive is a plausible feed and extra
@@ -66,14 +55,8 @@ fn build_zip(at: &Path) -> PathBuf {
     path
 }
 
-fn run_importer(input: &Path, output: &Path) {
-    let result = Command::new(env!("CARGO_BIN_EXE_llika-gtfs"))
-        .arg("--input")
-        .arg(input)
-        .arg("--output")
-        .arg(output)
-        .output()
-        .expect("the llika-gtfs binary runs");
+fn run_ok(input: &Path, output: &Path) {
+    let result = run_importer(input, output);
     assert!(
         result.status.success(),
         "llika-gtfs exited with {}: {}",
@@ -84,8 +67,8 @@ fn run_importer(input: &Path, output: &Path) {
 
 fn import_twice(dir: &Path, input: &Path) -> Vec<u8> {
     let (first, second) = (dir.join("first.json"), dir.join("second.json"));
-    run_importer(input, &first);
-    run_importer(input, &second);
+    run_ok(input, &first);
+    run_ok(input, &second);
 
     let a = std::fs::read(&first).expect("first output");
     let b = std::fs::read(&second).expect("second output");
