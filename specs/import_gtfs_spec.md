@@ -12,7 +12,7 @@ last_updated: 2026-08-15
 phases:
   - name: "Phase 1 — thin end-to-end slice: a feed becomes a drawable network"
     reviewed: 2026-08-15
-    shipped: null
+    shipped: 2026-08-15
     cut: null
     by: null
   - name: "Phase 2 — station identity: platforms collapse to stations"
@@ -373,6 +373,14 @@ dropped and why, stops seen, stations emitted. The binary prints the summary lin
 §1 shows; the library returns the struct, so the later Tauri app can show the same
 thing in a panel.
 
+*(Recorded 2026-08-15, at Phase 1's close-out. The shipped summary line stops one
+clause short of §1's — `wrote city.json — 14 stations, 6 lines, 6 of 7 routes
+matched`, with no `, N dropped`. Nothing in Phase 1 can drop a route: OQ-3 deflates
+to `LineTooShort` alone, which is unreachable until platforms collapse. Phase 2 adds
+both the drop and the clause. A permanent `0 dropped` would have been format
+stability bought with a number that cannot move, and §1's block is the end state
+rather than a per-phase contract.)*
+
 ### 2.7 Reserved: importers
 
 This spec is one **kind** of importer. The reserved sibling is
@@ -417,11 +425,27 @@ Nothing else here is a reserved namespace.
   rather than a line — and would need `llk-001` to accept a line that is not a
   path.
 
-- **OQ-2** — **What does `--route-types` default to?** *(design call.)* **Blocks
-  Phase 1**, which needs a default to run at all. Metro alone (`1`) is the
+- **OQ-2** — ~~**What does `--route-types` default to?** *(design call.)* **Blocks
+  Phase 1**, which needs a default to run at all.~~ Metro alone (`1`) is the
   narrowest reading and draws nothing at all for a city whose system is trams;
   metro and tram and light rail (`0,1`) covers most of what reads as a metro map;
   adding rail (`2`) pulls in regional networks that sprawl past the poster form.
+
+  **RESOLVED 2026-08-15 by Phase 1, in `llika-gtfs/src/lib.rs:ImportParams`: `0,1`.**
+  The middle reading, and the argument is that the two ends each fail a real city
+  outright. `1` alone is the narrowest *statement* but not the safest default:
+  it hands a tram city an empty file, and §2.6's report saying "0 of 412 routes
+  matched" is a correct answer nobody asked for. `2` fails the other way — a
+  regional network is an order of magnitude past the 200 stations `llk-001`'s OQ-9
+  measured at 72.9 s, so the widest default is the one that makes `llika` look
+  broken on the first city someone tries.
+
+  What made this a default rather than a required flag is the half that closed in
+  review: an empty match is not an error, so a user whose system this misses gets a
+  valid file and a report that says so, and widens the flag themselves. The
+  asymmetry is the whole answer — being one mode too narrow is a flag away from
+  fixed, and being one mode too wide is a 72-second wait for a map that does not
+  read as a poster.
 
   **Half of this closed during review, against the code, per the methodology's §4
   rule that code-answerable questions are answered in the round rather than at
@@ -477,8 +501,22 @@ Nothing else here is a reserved namespace.
   run by default. Recorded rather than guessed because the answer changes what
   Phase 4's gate can assert.
 
-- **OQ-5** — **The fixture feed does not exist and must be authored.**
-  *(answerable now — it must be written.)* **Blocks Phase 1.** No GTFS data is in
+- **OQ-5** — ~~**The fixture feed does not exist and must be authored.**
+  *(answerable now — it must be written.)* **Blocks Phase 1.**~~
+  **RESOLVED 2026-08-15 by Phase 1**, which wrote it to
+  `llika-gtfs/tests/fixtures/feed/` — six CSVs, nineteen stops and seven routes,
+  carrying every property below including Phases 2 and 3's. The property-to-row map
+  lives in that crate's `tests/common/mod.rs`, beside the literals keyed to it.
+
+  One property needed a shape the list below does not fix, and it is recorded here
+  because the list is what a later phase will read: **the fixture's out-of-scope
+  route is a bus (`route_type` 3), not a tram.** A tram route would have made Phase
+  1's filter assertion depend on OQ-2's answer, and the two questions are supposed to
+  be separable. The same route is also the only one serving one stop (`DEP`), so the
+  filter is shown to remove a *station* and not merely a line — §2.1's emit rule has
+  no other witness in the gate.
+
+  No GTFS data is in
   the tree. Authoring a minimal feed by hand is cheap — four small CSVs — and
   licence-free, and it is the direct precedent of `llk-001`'s own OQ-5, whose
   lesson was that a fixture under-constrained at Phase 1 has to be re-authored at

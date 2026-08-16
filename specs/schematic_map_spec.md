@@ -921,10 +921,28 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   of two colliding stations keeps the cell — a gap that produces a different map
   either way, so the answer is now the pair of rules rather than one. The same
   ordering resolves equal-cost move candidates in §2.4, and Phase 1 gates it.
-- **OQ-4** — Which input method follows v1: click-to-place on an interactive map, or
+- **OQ-4** — ~~Which input method follows v1: click-to-place on an interactive map, or
   import from OpenStreetMap / a GTFS feed. *(deferred — explicitly out of v1 scope
   per §1.1.)* Deliberately left open so the core algorithm is built against
-  hand-authored data first and neither input path is designed around prematurely.
+  hand-authored data first and neither input path is designed around prematurely.~~
+  **RESOLVED 2026-08-15 by `llk-002` Phase 1, in `llk-002` §1.1 and §1.2.** Import,
+  and specifically **GTFS**; click-to-place stays out, as a GUI feature under a §1.1
+  this spec defers whole. OpenStreetMap is not merely later but a harder problem:
+  GTFS *stores* the ordered station list — a trip's `stop_times` sorted by
+  `stop_sequence` — where an OSM route relation stores members whose order is
+  unreliable, so recovering the list is a sub-problem of its own before any of the
+  conversion work begins. `llk-002` §2.7 reserves `import_osm_spec.md` as the sibling
+  that carries it.
+
+  The deferral did its job. `llk-002` §1.1 records that the importer writes a **file**
+  rather than handing a `Network` to the layout, and one of its three reasons is
+  §2.6's boundary here: an importer wired into the pipeline would put a zip decode
+  behind the seam this spec built so a desktop app could re-lay-out without
+  re-parsing. Designing that input path early is exactly what would have cost it.
+
+  Nothing in this spec changes. `llika`'s invocation, its thirteen flags and its
+  `--params` file are untouched, and there is no new subcommand — which is why
+  `llk-002` carries a `related:` edge rather than a `supersedes:` one.
 - **OQ-5** — ~~**The 17-station fixture does not exist.** The pointer chain dead-ends:
   the seed document points at two planning files, the plan file points at the agent
   research file, and the agent research file contains no JSON and no station ids at

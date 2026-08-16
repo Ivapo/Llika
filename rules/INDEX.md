@@ -2,10 +2,12 @@
 
 # Rules
 
-- **[cli](cli.md)** — generated 2026-08-15 · 1 source · 66/70 lines
+- **[cli](cli.md)** — generated 2026-08-15 · 1 source · 69/70 lines
   the flag surface and the rule that names it, the --params file and how flags override it, the validation bounds and why they live here, and the summary line
 - **[data-model](data-model.md)** — generated 2026-08-14 · 2 sources · 42/50 lines
   station/line/network types, the corridor edge and its line set, the five-condition input error contract, and input order as iteration order
+- **[gtfs-import](gtfs-import.md)** — generated 2026-08-15 · 5 sources · 85/85 lines
+  the four GTFS tables read and how their optional columns are typed, the route-type filter and its default, the rule deciding which stops become stations, the colour, name and representative-trip conversions, and what the importer reports
 - **[layout-cost](layout-cost.md)** — generated 2026-08-14 · 3 sources · 60/60 lines
   the plane and integer-grid geometry helpers, the five cost criteria and their zero-sets, the c2 target length, and the weights that combine them into t
 - **[layout-search](layout-search.md)** — generated 2026-08-15 · 3 sources · 82/85 lines

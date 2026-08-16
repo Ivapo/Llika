@@ -11,6 +11,9 @@ generated: 2026-08-15
 
 # CLI
 
+This is `llika`, which draws a network file. The workspace's other binary,
+`llika-gtfs`, writes one; its surface is `rules/gtfs-import.md`.
+
 `llika-cli/src/main.rs` is the whole binary — no lib target, so nothing under
 `llika-cli/tests/` can name its types and the field-to-flag test lives inside the
 file as a `#[cfg(test)]` module. It calls `parse_input`, `Network::from_input`,

@@ -36,8 +36,20 @@ improved by eye.
 | 5 | Line-bundling renderer | ✅ shipped |
 | 6 | Full parameter surface | ✅ shipped |
 
-Out of scope for v1, deliberately: station-name labels, a GUI, and importing a real
-network from OpenStreetMap or GTFS.
+**GTFS import has started.** A separate spec adds `llika-gtfs`, a second binary that
+turns a published GTFS feed into a network file the one above draws. Phase 1 ships the
+end-to-end slice; platforms do not yet collapse into stations, so an interchange still
+draws once per platform.
+
+| Phase | | |
+|---|---|---|
+| 1 | A feed becomes a drawable network | ✅ shipped |
+| 2 | Platforms collapse to stations | planned |
+| 3 | The representative trip | planned |
+| 4 | A real city | planned |
+
+Out of scope, deliberately: station-name labels, a GUI, and importing from
+OpenStreetMap.
 
 ## Try it
 
@@ -49,6 +61,38 @@ $ cargo run -p llika-cli -- \
 ```
 
 Open `map.svg` in any browser.
+
+## Importing a real network
+
+`llika-gtfs` reads a published GTFS feed — a `.zip` or an unpacked directory, from
+disk; it never goes to the network — and writes a network file:
+
+```console
+$ llika-gtfs --input bart.zip --output bart.json --route-types 1
+$ llika --input bart.json --output bart.svg
+```
+
+**Two commands, because the file between them is the point.** A metro network as
+published carries a depot spur nobody rides, a station name in shouting caps and one
+branch that makes the map worse. A schematic map is a designed object, not a projection
+of a database, and `bart.json` is an ordinary input file — readable and hand-editable —
+where that editing happens before anything is drawn.
+
+`--route-types` takes a comma-separated list of GTFS `route_type` values and defaults to
+`0,1`: tram, streetcar and light rail, plus subway and metro. Filtering is not optional.
+A city feed is mostly buses, a schematic poster of a bus network is a different design
+problem, and the layout is superlinear in both stations and edges.
+
+Import is lossy on purpose, so it says what it did:
+
+```console
+$ llika-gtfs --input feed --output city.json
+wrote city.json — 14 stations, 6 lines, 6 of 7 routes matched
+```
+
+Only the topology is read — stops, routes, trips and stop times. Calendars,
+frequencies, transfers, fares and `shapes.txt` are ignored; the real track geometry is
+precisely what schematization throws away.
 
 ## Tuning
 
@@ -139,12 +183,15 @@ rather than merely intended.
 
 ## Layout
 
-A Cargo workspace, two crates:
+A Cargo workspace, three crates:
 
 - **`llika-core`** — the library: data model, projection, grid, layout, renderer. Parse,
   lay out and render are each public in their own right, so a caller can parse a file
   once and re-render on every parameter change.
 - **`llika-cli`** — a thin binary named `llika`.
+- **`llika-gtfs`** — the GTFS importer, library and binary. It depends on `llika-core`
+  for the schema types and on nothing of its layout or renderer, and adds no dependency
+  to it in return.
 
 ## Development
 
