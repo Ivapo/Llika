@@ -4,5 +4,5 @@
 
 - **[schematic-map-pipeline](schematic_map_spec.md)** — `llk-001` · accepted · done
   The v1 pipeline turning a JSON metro network into one static octilinear SVG schematic map — projection, grid snap, Stott-Rodgers hill-climbing layout and a line-bundling renderer, behind a CLI.
-- **[gtfs-network-import](import_gtfs_spec.md)** — `llk-002` · draft · pending
+- **[gtfs-network-import](import_gtfs_spec.md)** — `llk-002` · accepted · pending
   Turning a published GTFS feed into a Llika input file — stop and route tables read, platforms collapsed to stations, one representative trip per route — so the schematic map can be drawn from a real city rather than a hand-authored fixture.
