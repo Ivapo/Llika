@@ -1,5 +1,7 @@
 # Llika
 
+[![CI](https://github.com/Ivapo/Llika/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Ivapo/Llika/actions/workflows/ci.yml)
+
 **Llika** is Quechua for *net* — a mesh woven from threads. A transit schematic is
 exactly that: a mesh of stations and lines, drawn as threads that run parallel along a
 shared trunk and converge to a single point at every real interchange.
