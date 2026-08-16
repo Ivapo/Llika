@@ -43,8 +43,7 @@ fn build_zip(at: &Path) -> PathBuf {
     let mut writer = zip::ZipWriter::new(BufWriter::new(
         File::create(&path).expect("the archive is creatable"),
     ));
-    let options =
-        SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
     for name in FEED_FILES {
         let bytes = std::fs::read(feed_dir().join(name)).expect("the fixture table is readable");

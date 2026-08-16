@@ -160,15 +160,16 @@ pub enum ImportError {
     },
 
     #[error("{table} is not readable as CSV: {source}")]
-    Csv {
-        table: String,
-        source: csv::Error,
-    },
+    Csv { table: String, source: csv::Error },
 
-    #[error("route `{route}` stops at `{stop_id}`, which stops.txt does not define as a stop or a station")]
+    #[error(
+        "route `{route}` stops at `{stop_id}`, which stops.txt does not define as a stop or a station"
+    )]
     UnknownStop { route: String, stop_id: String },
 
-    #[error("stop `{stop_id}` names `{parent}` as its parent_station, which stops.txt does not define as a station")]
+    #[error(
+        "stop `{stop_id}` names `{parent}` as its parent_station, which stops.txt does not define as a station"
+    )]
     UnknownParentStation { stop_id: String, parent: String },
 
     #[error("stop `{stop_id}` has no coordinates")]

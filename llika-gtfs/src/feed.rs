@@ -171,12 +171,11 @@ impl Source {
             path: path.display().to_string(),
             source,
         })?;
-        let archive = zip::ZipArchive::new(BufReader::new(file)).map_err(|source| {
-            ImportError::Archive {
+        let archive =
+            zip::ZipArchive::new(BufReader::new(file)).map_err(|source| ImportError::Archive {
                 path: path.display().to_string(),
                 source,
-            }
-        })?;
+            })?;
         Ok(Self::Archive(Box::new(archive)))
     }
 
@@ -215,12 +214,11 @@ impl Source {
                 Ok(Box::new(BufReader::new(file)))
             }
             Self::Archive(archive) => {
-                let mut entry =
-                    archive
-                        .by_name(name)
-                        .map_err(|_| ImportError::MissingTable {
-                            table: name.to_string(),
-                        })?;
+                let mut entry = archive
+                    .by_name(name)
+                    .map_err(|_| ImportError::MissingTable {
+                        table: name.to_string(),
+                    })?;
                 let mut bytes = Vec::new();
                 entry
                     .read_to_end(&mut bytes)

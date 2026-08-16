@@ -174,7 +174,10 @@ mod tests {
         let rows = feed(&[
             ("t1", &[("A", 1), ("B", 2), ("C", 3)]),
             ("t2", &[("A", 1), ("B", 2), ("C", 3)]),
-            ("special", &[("A", 1), ("B", 2), ("C", 3), ("D", 4), ("E", 5)]),
+            (
+                "special",
+                &[("A", 1), ("B", 2), ("C", 3), ("D", 4), ("E", 5)],
+            ),
             ("t3", &[("A", 1), ("B", 2), ("C", 3)]),
         ]);
 
@@ -223,7 +226,13 @@ mod tests {
             ("special", &[("A", 1), ("X_1", 2), ("B", 3), ("C", 4)]),
             ("bay2", &[("A", 1), ("X_2", 2), ("B", 3)]),
         ]);
-        let parents = [("X_1", "X"), ("X_2", "X"), ("A", "A"), ("B", "B"), ("C", "C")];
+        let parents = [
+            ("X_1", "X"),
+            ("X_2", "X"),
+            ("A", "A"),
+            ("B", "B"),
+            ("C", "C"),
+        ];
 
         // The winner is a trip, so its own platform ids come back; `resolve`
         // turns them into stations. What this asserts is which trip won.

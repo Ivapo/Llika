@@ -362,7 +362,13 @@ mod tests {
         // Case is the feed's to choose; nothing here normalises it.
         assert_eq!(stated_color(Some("0057b8")).as_deref(), Some("#0057b8"));
 
-        for absent_or_malformed in [None, Some(""), Some("#0057B8"), Some("57B8"), Some("GGGGGG")] {
+        for absent_or_malformed in [
+            None,
+            Some(""),
+            Some("#0057B8"),
+            Some("57B8"),
+            Some("GGGGGG"),
+        ] {
             assert_eq!(
                 stated_color(absent_or_malformed),
                 None,

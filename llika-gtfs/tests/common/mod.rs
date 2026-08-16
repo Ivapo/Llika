@@ -47,8 +47,8 @@
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
-use llika_gtfs::{ImportParams, ImportReport};
 use llika_core::InputSchema;
+use llika_gtfs::{ImportParams, ImportReport};
 
 /// The unpacked feed. `.zip` handling is asserted in `byte_stability.rs`, which
 /// builds the archive from these same files.
