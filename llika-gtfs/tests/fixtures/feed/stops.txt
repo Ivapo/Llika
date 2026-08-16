@@ -1,0 +1,20 @@
+stop_id,stop_name,stop_lat,stop_lon,location_type,parent_station
+CEN,Central,37.780000,-122.416590,1,
+WST,Westgate,37.788085,-122.513199,0,
+CEN_1,Central Platform 1,37.780100,-122.416590,0,CEN
+CEN_2,Central Platform 2,37.779900,-122.416590,0,CEN
+CEN_E1,Central East Entrance,,,2,CEN
+OLD,Old Town,37.778653,-122.466031,1,
+OLD_1,Old Town Platform 1,37.778753,-122.466031,0,OLD
+OLD_2,Old Town Platform 2,37.778553,-122.466031,0,OLD
+MKT,Market,37.779102,-122.392722,1,
+MKT_1,Market Platform 1,37.779202,-122.392722,0,MKT
+MKT_2,Market Platform 2,37.779002,-122.392722,0,MKT
+EAST,East Bank,37.782695,-122.370100,,
+SOU,Southgate,37.758441,-122.409771,,
+NOR,Northgate,37.822670,-122.493309,,
+HIL,Hillcrest,37.802458,-122.492741,,
+RIV,Riverside,37.782246,-122.489331,,
+QUA,Quayside,37.762932,-122.375674,,
+FAI,Fairview,37.799314,-122.376810,,
+DEP,Depot,37.750000,-122.470000,,

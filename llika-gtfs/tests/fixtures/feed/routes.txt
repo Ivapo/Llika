@@ -1,0 +1,8 @@
+route_id,agency_id,route_short_name,route_long_name,route_type,route_color
+M1,LLK,1,Harbour Line,1,0057B8
+M2,LLK,2,Ridge Line,1,FF8200
+B1,LLK,40,Depot Shuttle,3,
+M3,LLK,3,Old Town Express,1,
+M4,LLK,4,Market Shuttle,1,753BBD
+M5,LLK,,,1,FFFFFF
+M6,LLK,,Bay Loop,1,00A3E0

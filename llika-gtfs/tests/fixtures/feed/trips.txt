@@ -1,0 +1,14 @@
+route_id,service_id,trip_id,trip_headsign,direction_id
+M1,WD,M1_t1,East Bank,0
+M2,WD,M2_t1,Old Town,0
+B1,WD,B1_t1,Market,0
+M3,WD,M3_t1,Southgate,0
+M4,WD,M4_t1,Market,0
+M5,WD,M5_P1,Old Town,0
+M5,WD,M5_P2,Old Town,0
+M5,WD,M5_P3,Old Town,0
+M5,WD,M5_Q1,Fairview,0
+M6,WD,M6_R1,Fairview,0
+M6,WD,M6_R2,Fairview,0
+M6,WD,M6_S1,Southgate,1
+M6,WD,M6_S2,Southgate,1
