@@ -84,7 +84,7 @@ pub fn to_schema(
             .get(route.route_id.as_str())
             .cloned()
             .unwrap_or_default();
-        let platform_ids = representative_stop_ids(&trip_ids, &rows_by_trip);
+        let platform_ids = representative_stop_ids(&trip_ids, &rows_by_trip, &station_of);
         let stations = resolve(&platform_ids, &station_of, &route.route_id)?;
 
         // OQ-3. The drop comes before anything else this iteration touches, and
