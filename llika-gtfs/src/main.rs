@@ -69,7 +69,11 @@ fn run(args: &Args) -> Result<String, Box<dyn std::error::Error>> {
     let (schema, report) = import(&args.input, &params)?;
     std::fs::write(&args.output, to_json(&schema)?)?;
 
-    Ok(summary(&args.output.display().to_string(), &schema, &report))
+    Ok(summary(
+        &args.output.display().to_string(),
+        &schema,
+        &report,
+    ))
 }
 
 /// The summary line §2.6 asks for.
@@ -80,17 +84,23 @@ fn run(args: &Args) -> Result<String, Box<dyn std::error::Error>> {
 ///
 /// The dropped clause prints unconditionally, which it could not do before
 /// platforms collapsed: a permanent `0 dropped` would have been format stability
-/// bought with a number that cannot move. It can move now.
+/// bought with a number that cannot move. It can move now, and so can `merged`.
 ///
-/// **Which** route was dropped stays in [`ImportReport`] and off stdout. A caller
-/// that needs the ids has the struct; the line stays one line.
+/// The merged clause is **appended** rather than slotted next to `matched`,
+/// which is where it belongs by meaning. The gate asserting this line matches on
+/// a substring, and appending leaves that literal true instead of churning it
+/// for a tidier reading of a line nothing parses.
+///
+/// **Which** route was dropped or merged stays in [`ImportReport`] and off
+/// stdout. A caller that needs the ids has the struct; the line stays one line.
 fn summary(output: &str, schema: &llika_core::InputSchema, report: &ImportReport) -> String {
     format!(
-        "wrote {output} — {} stations, {} lines, {} of {} routes matched, {} dropped",
+        "wrote {output} — {} stations, {} lines, {} of {} routes matched, {} dropped, {} merged",
         schema.stations.len(),
         schema.lines.len(),
         report.routes_kept,
         report.routes_seen,
         report.routes_dropped.len(),
+        report.routes_merged.len(),
     )
 }

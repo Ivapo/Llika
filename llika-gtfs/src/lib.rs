@@ -67,10 +67,11 @@ impl Default for ImportParams {
 
 /// What the import kept, and what it did not.
 ///
-/// Import is lossy by design — routes are filtered out, platforms are merged and
-/// some routes dropped. Silence about that is how someone concludes the tool
-/// lost a line. The binary prints the summary line; the library returns this, so
-/// a later desktop app can show the same thing in a panel.
+/// Import is lossy by design — routes are filtered out, platforms are merged,
+/// some routes are dropped and some are absorbed into another line. Silence
+/// about that is how someone concludes the tool lost a line. The binary prints
+/// the summary line; the library returns this, so a later desktop app can show
+/// the same thing in a panel.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ImportReport {
     pub routes_seen: usize,
@@ -81,11 +82,16 @@ pub struct ImportReport {
     /// The two were equal until platforms collapsed, and they diverge because a
     /// matched route can still fail to become a line. This is the reading that
     /// closes the arithmetic: `routes_seen` is `routes_kept` plus the filtered
-    /// out, and the lines written are `routes_kept` minus `routes_dropped`.
+    /// out, and the lines written are `routes_kept` minus `routes_dropped` and
+    /// minus `routes_merged`.
     pub routes_kept: usize,
 
     /// The matched routes that did not become lines, in `routes.txt` row order.
     pub routes_dropped: Vec<DroppedRoute>,
+
+    /// The matched routes absorbed into an earlier line, in `routes.txt` row
+    /// order. So the lines written are `routes_kept` minus these and the dropped.
+    pub routes_merged: Vec<MergedRoute>,
 
     pub stops_seen: usize,
     pub stations_emitted: usize,
@@ -96,6 +102,18 @@ pub struct ImportReport {
 pub struct DroppedRoute {
     pub route_id: String,
     pub reason: DropReason,
+}
+
+/// A route that drew a line an earlier route had already drawn.
+///
+/// A published feed may model each direction of one line as its own route —
+/// BART's `1` is `Yellow-S` and `2` is `Yellow-N` — and the two draw the same
+/// corridors. `into` is the route that kept the line: the earlier `routes.txt`
+/// row, per the input-order rule this crate holds everywhere else.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MergedRoute {
+    pub route_id: String,
+    pub into: String,
 }
 
 /// Why a matched route was dropped.

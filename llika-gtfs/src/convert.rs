@@ -32,7 +32,7 @@ use llika_core::{InputSchema, Line, Station};
 use crate::feed::{Feed, StopTime};
 use crate::stations::{collapse_map, resolve};
 use crate::trips::representative_stop_ids;
-use crate::{DropReason, DroppedRoute, ImportError, ImportParams, ImportReport};
+use crate::{DropReason, DroppedRoute, ImportError, ImportParams, ImportReport, MergedRoute};
 
 /// The fallback colours, in order, for a route whose `route_color` is absent or
 /// malformed. The first three are `sample_network.json`'s, so an imported map
@@ -69,6 +69,7 @@ pub fn to_schema(
     let mut referenced: HashSet<String> = HashSet::new();
     let mut routes_kept = 0usize;
     let mut routes_dropped: Vec<DroppedRoute> = Vec::new();
+    let mut routes_merged: Vec<MergedRoute> = Vec::new();
     // Counted over the kept routes that need a fallback, so every colour in the
     // palette is used before any repeats.
     let mut fallbacks_used = 0usize;
@@ -99,6 +100,23 @@ pub fn to_schema(
                 reason: DropReason::LineTooShort {
                     stations: stations.len(),
                 },
+            });
+            continue;
+        }
+
+        // A route that draws a line an earlier route already drew is absorbed
+        // into it. This is checked in the same place and for the same reasons as
+        // the drop above: an absorbed route references no station the survivor
+        // has not already referenced, and it takes no palette index, so the
+        // fallback colours still run in order across the routes that become
+        // lines.
+        if let Some(into) = lines
+            .iter()
+            .find(|line| draws_the_same_line(&line.stations, &stations))
+        {
+            routes_merged.push(MergedRoute {
+                route_id: route.route_id.clone(),
+                into: into.id.clone(),
             });
             continue;
         }
@@ -151,11 +169,40 @@ pub fn to_schema(
         routes_seen: feed.routes.len(),
         routes_kept,
         routes_dropped,
+        routes_merged,
         stops_seen: feed.stops.len(),
         stations_emitted: stations.len(),
     };
 
     Ok((InputSchema { stations, lines }, report))
+}
+
+/// Whether a candidate route would draw a line already drawn.
+///
+/// **Equal or exactly reversed**, and the predicate is structural on purpose: it
+/// reads no name, no colour and no `direction_id`, so §2.1's column table is
+/// untouched by it. A feed may publish each direction of one line as its own
+/// route — BART's `Yellow-N` and `Yellow-S` — and the second contributes no
+/// consecutive pair the first did not, since
+/// `llika-core/src/model.rs:LineSet` keys a corridor on an *unordered* pair.
+///
+/// **It does not follow that the map is unchanged, and measuring that was worth
+/// the trouble.** The graph is identical, so `c1`, `c2`, `c3` and `c5` are; but
+/// `llika-core/src/layout/cost.rs:c4_straightness` sums over **lines**, so a
+/// route published twice pays its bends twice and the search weights its
+/// straightness by how many times its operator wrote it down. On BART that is
+/// not a rounding difference — 50 stations converge to a different arrangement,
+/// at cost `112.087766` over 3 sweeps against `139.911271` over 5. Merging is
+/// what makes the layout depend on the network instead of on the publisher's
+/// bookkeeping.
+///
+/// Reversed **and** equal, because two routes with the same list forward draw
+/// coincident strokes for the same reason. A route can absorb at most one other
+/// anyway: if `a == rev(b)` and `a == rev(c)` then `b == c`, which is the equal
+/// case.
+fn draws_the_same_line(drawn: &[String], candidate: &[String]) -> bool {
+    drawn.len() == candidate.len()
+        && (drawn == candidate || drawn.iter().eq(candidate.iter().rev()))
 }
 
 /// The colour the feed actually stated, or `None` when the fallback should fire.
@@ -178,7 +225,133 @@ fn stated_color(cell: Option<&str>) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::stated_color;
+    use super::{FALLBACK_PALETTE, draws_the_same_line, stated_color, to_schema};
+    use crate::feed::{Feed, Route, Stop, StopTime, Trip};
+    use crate::{ImportParams, MergedRoute};
+
+    fn ids(list: &[&str]) -> Vec<String> {
+        list.iter().map(|id| id.to_string()).collect()
+    }
+
+    fn stop(id: &str) -> Stop {
+        Stop {
+            stop_id: id.to_string(),
+            stop_name: None,
+            stop_lat: Some(0.0),
+            stop_lon: Some(0.0),
+            location_type: None,
+            parent_station: None,
+        }
+    }
+
+    /// Colourless on purpose: the palette index is what the merge must not move.
+    fn route(id: &str) -> Route {
+        Route {
+            route_id: id.to_string(),
+            route_short_name: None,
+            route_long_name: None,
+            route_type: 1,
+            route_color: None,
+        }
+    }
+
+    fn trip((route_id, trip_id): (&str, &str)) -> Trip {
+        Trip {
+            route_id: route_id.to_string(),
+            trip_id: trip_id.to_string(),
+        }
+    }
+
+    fn stop_time((trip_id, stop_id, stop_sequence): (&str, &str, u32)) -> StopTime {
+        StopTime {
+            trip_id: trip_id.to_string(),
+            stop_id: Some(stop_id.to_string()),
+            stop_sequence,
+        }
+    }
+
+    /// The reversed-pair rule, stated here rather than in the fixture feed.
+    ///
+    /// OQ-5 fixes that feed's properties at Phase 1 precisely so a later phase
+    /// does not extend it and move every literal keyed to it, and this rule
+    /// arrived at Phase 4. So it is stated where §2.4's colour predicate and
+    /// §2.2's collapse rule are also stated cheaply, and BART is the integration
+    /// witness.
+    #[test]
+    fn a_line_already_drawn_absorbs_its_reverse_and_its_twin_and_nothing_else() {
+        let drawn = ids(&["A", "B", "C", "D"]);
+
+        assert!(draws_the_same_line(&drawn, &ids(&["D", "C", "B", "A"])));
+        assert!(draws_the_same_line(&drawn, &ids(&["A", "B", "C", "D"])));
+
+        // Every station in common and a different order: a genuinely different
+        // line through the same stops, and it contributes corridors this one
+        // does not.
+        assert!(!draws_the_same_line(&drawn, &ids(&["A", "C", "B", "D"])));
+        // A sub-path, which is the short-turn case. It shares corridors without
+        // being the same line, and merging it would lose the two it lacks.
+        assert!(!draws_the_same_line(&drawn, &ids(&["B", "C"])));
+        assert!(!draws_the_same_line(&drawn, &ids(&["A", "B", "C", "E"])));
+    }
+
+    /// The half of the rule the predicate alone cannot show: which route keeps
+    /// the line, and that the absorbed one costs the palette nothing.
+    ///
+    /// Every route here is colourless, so the fallback index is observable — and
+    /// it is the thing that would silently drift if the merge were checked after
+    /// the colour rather than before it. The same ordering argument OQ-3 records
+    /// for a dropped route.
+    #[test]
+    fn the_earlier_route_keeps_the_line_and_the_absorbed_one_takes_no_palette_index() {
+        let feed = Feed {
+            stops: ["A", "B", "C"].map(stop).into_iter().collect(),
+            routes: ["R1", "R2", "R3"].map(route).into_iter().collect(),
+            trips: [("R1", "t1"), ("R2", "t2"), ("R3", "t3")]
+                .map(trip)
+                .into_iter()
+                .collect(),
+            stop_times: [
+                ("t1", "A", 1),
+                ("t1", "B", 2),
+                ("t1", "C", 3),
+                // R2 is R1 backwards, the shape a feed publishing each direction
+                // as its own route produces.
+                ("t2", "C", 1),
+                ("t2", "B", 2),
+                ("t2", "A", 3),
+                ("t3", "A", 1),
+                ("t3", "C", 2),
+            ]
+            .map(stop_time)
+            .into_iter()
+            .collect(),
+        };
+
+        let (schema, report) =
+            to_schema(&feed, &ImportParams::default()).expect("the feed imports");
+
+        let lines: Vec<&str> = schema.lines.iter().map(|line| line.id.as_str()).collect();
+        assert_eq!(lines, ["R1", "R3"], "the earlier row keeps the line");
+        assert_eq!(
+            schema.lines[0].stations,
+            ids(&["A", "B", "C"]),
+            "and keeps its own direction"
+        );
+        assert_eq!(
+            report.routes_merged,
+            [MergedRoute {
+                route_id: "R2".to_string(),
+                into: "R1".to_string(),
+            }]
+        );
+        assert_eq!(report.routes_kept, 3, "merging is not filtering");
+
+        assert_eq!(schema.lines[0].color, FALLBACK_PALETTE[0]);
+        assert_eq!(
+            schema.lines[1].color, FALLBACK_PALETTE[1],
+            "R2 must not have consumed the second palette colour"
+        );
+    }
 
     /// The one conversion whose two branches look alike and are not. A gate
     /// assertion covers both ends of it on the fixture; this is the cheaper
