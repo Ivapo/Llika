@@ -17,7 +17,7 @@ phases:
     by: null
   - name: "Phase 2 — station identity: platforms collapse to stations"
     reviewed: 2026-08-15
-    shipped: null
+    shipped: 2026-08-16
     cut: null
     by: null
   - name: "Phase 3 — the representative trip"
@@ -457,8 +457,26 @@ Nothing else here is a reserved namespace.
   network and §2.6's report says nothing matched. What stays open is only the
   default set.
 
-- **OQ-3** — **What happens when a real feed trips one of `llk-001`'s five error
-  conditions?** *(design call.)* **Blocks Phase 2.**
+- **OQ-3** — ~~**What happens when a real feed trips one of `llk-001`'s five error
+  conditions?** *(design call.)* **Blocks Phase 2.**~~
+
+  **RESOLVED 2026-08-16 by Phase 2, in `llika-gtfs/src/convert.rs:to_schema` and
+  `llika-gtfs/src/lib.rs:DropReason`: the route is dropped, the drop is reported,
+  and the binary exits 0.** The shape below was already settled; what this phase
+  decided is the half it left open, whether a dropped route is an ordinary outcome
+  or a reported failure. Ordinary — and the argument is the one the question
+  predicted: the file written is a valid, drawable network, so a non-zero status
+  would mark a successful import as failed and break a `llika-gtfs && llika` chain
+  over a route the user cannot fix. It also matches OQ-2's resolution, where a feed
+  matching nothing is likewise not an error. The count rides on §2.6's report and
+  in the summary line's new `, N dropped` clause, so the outcome is visible without
+  being fatal.
+
+  One thing the implementation had to decide that this question did not name: the
+  drop is checked **before** the route contributes stations or takes a palette
+  index, which is what makes §2.1's "a dropped route is not a kept line" true of
+  both. The fixture cannot witness the palette half — its short route states a
+  colour — so that is recorded here rather than gated.
 
   **Only one condition is actually live, and saying so is most of the answer.**
   §2.2 settles `RepeatedStation`: consecutive duplicates are folded, because that

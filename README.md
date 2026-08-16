@@ -37,14 +37,15 @@ improved by eye.
 | 6 | Full parameter surface | ✅ shipped |
 
 **GTFS import has started.** A separate spec adds `llika-gtfs`, a second binary that
-turns a published GTFS feed into a network file the one above draws. Phase 1 ships the
-end-to-end slice; platforms do not yet collapse into stations, so an interchange still
-draws once per platform.
+turns a published GTFS feed into a network file the one above draws. Phase 2 collapses
+a feed's platforms into the stations a rider changes at, so an interchange draws once
+and the lines through it share a corridor; the line each route draws is still picked
+from its longest trip rather than its usual one.
 
 | Phase | | |
 |---|---|---|
 | 1 | A feed becomes a drawable network | ✅ shipped |
-| 2 | Platforms collapse to stations | planned |
+| 2 | Platforms collapse to stations | ✅ shipped |
 | 3 | The representative trip | planned |
 | 4 | A real city | planned |
 
@@ -87,8 +88,19 @@ Import is lossy on purpose, so it says what it did:
 
 ```console
 $ llika-gtfs --input feed --output city.json
-wrote city.json — 14 stations, 6 lines, 6 of 7 routes matched
+wrote city.json — 11 stations, 5 lines, 6 of 7 routes matched, 1 dropped
 ```
+
+**A station is the thing a rider changes at, not a platform.** A GTFS stop with two
+directions is two ids and an interchange can be six, so the platforms of one station
+are merged into it — otherwise every interchange draws twice and no two lines ever
+share a corridor. A stop that names no parent is its own station, which is the right
+reading of a feed that does not model them.
+
+A route left with fewer than two stations once its platforms merge is **dropped**, and
+`dropped` above is how many. That is an ordinary outcome rather than a failure: the
+file is still written and still drawn, because one degenerate route in someone else's
+published data should not make a whole city unimportable.
 
 Only the topology is read — stops, routes, trips and stop times. Calendars,
 frequencies, transfers, fares and `shapes.txt` are ignored; the real track geometry is
