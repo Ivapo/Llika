@@ -1,23 +1,27 @@
-# The first CI in this repository, and it checks one thing.
+# CI runs the three checks every phase gate in `specs/` already names, one job
+# each so a red run says which one without opening it.
 #
-# Formatting drift here is silent and arrives from outside: rustfmt's output
-# changes with the toolchain, so a tree formatted by hand goes stale on a Rust
-# release rather than on a commit. That is how 96f5a2b happened — six files in
-# `llika-gtfs` reformatted by rustfmt 1.9.0, discovered months later in the
-# middle of an unrelated phase, where the only honest options were to mix the
-# reformat into a feature diff or to revert it by hand. This job is what turns
-# that into a notification.
+# `cargo test --workspace` is the gate itself. Every phase in both specs exits
+# on it being green, and until now that was asserted by whoever ran it locally.
+# It includes `llika-gtfs/tests/real_feed.rs`, which reads the committed BART
+# archive — ~5 s in debug, and the reason `llk-002`'s OQ-4 committed the feed
+# rather than documenting a download.
 #
-# `stable` rather than a pinned version, deliberately: the drift is the thing
-# being watched, and pinning would hide it until the pin moved. The cost is
-# that a rustfmt release can redden this job on a change that did not cause it
-# — which is the job reporting correctly, and is one `cargo fmt --all` commit
-# to clear. Pin here (or add a `rust-toolchain.toml`) if that trade stops being
-# worth it.
+# `cargo fmt --all --check` catches drift that arrives from outside rather than
+# from a commit: rustfmt's output changes with the toolchain, so a tree
+# formatted by hand goes stale on a Rust release and is found later in the
+# middle of unrelated work. That is how 96f5a2b happened — six files in
+# `llika-gtfs`, where the only honest options were to mix the reformat into a
+# feature diff or to revert it by hand.
 #
-# Deliberately not here yet: `cargo test --workspace` and `cargo clippy`, which
-# every phase gate in `specs/` already names as its own exit condition. Adding
-# them is a job each and no new machinery.
+# `cargo clippy` runs with `-D warnings`, which is the only setting that means
+# anything: a warning nothing fails on is a warning that accumulates.
+#
+# `stable` rather than a pinned toolchain, deliberately: rustfmt and clippy
+# drift is the thing being watched, and a pin hides it until the pin moves. The
+# cost is that a Rust release can redden a job on a change that did not cause
+# it — which is the job reporting correctly, and is one commit to clear. Pin
+# here (or add a `rust-toolchain.toml`) if that trade stops being worth it.
 
 name: CI
 
@@ -27,6 +31,28 @@ on:
   pull_request:
 
 jobs:
+  test:
+    name: cargo test --workspace
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace
+
+  clippy:
+    name: cargo clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      # `--all-targets` so tests and benches are linted too, not just the
+      # library and binary targets a bare `clippy` would reach.
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
   fmt:
     name: cargo fmt --check
     runs-on: ubuntu-latest
@@ -35,7 +61,7 @@ jobs:
 
       # Explicit rather than the runner image's Rust: the workspace is edition
       # 2024, so a manifest this job never builds still needs a toolchain new
-      # enough to parse it.
+      # enough to parse it. No cache — this one compiles nothing.
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
