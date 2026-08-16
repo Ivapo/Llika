@@ -1,0 +1,59 @@
+<svg height="760.000" viewBox="0 0 760.000 760.000" width="760.000" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#ffffff" height="760.000" width="760.000" x="0" y="0"/>
+<path d="M 400.000 80.000 L 360.000 80.000 L 320.000 80.000 L 280.000 80.000 L 280.000 120.000 L 280.000 160.000 L 280.000 200.000 L 280.000 240.000 L 280.000 280.000 L 280.000 320.000 L 240.000 360.000 L 280.000 354.000 L 320.000 360.000 L 200.000 400.000 L 209.000 360.000 L 209.000 311.000 L 160.000 311.000 L 111.000 311.000 L 111.000 360.000 L 111.000 400.000 L 111.000 449.000 L 160.000 449.000 L 200.000 440.000 L 237.000 443.000 L 237.000 480.000 L 237.000 520.000 L 240.000 560.000" fill="none" stroke="#FFFF33" stroke-linecap="round" stroke-linejoin="round" stroke-width="6.000"/>
+<path d="M 680.000 680.000 L 637.879 642.121 L 597.879 602.121 L 557.879 562.121 L 517.879 522.121 L 477.879 482.121 L 437.879 442.121 L 400.000 400.000 L 360.000 400.000 L 320.000 400.000 L 280.000 400.000 L 240.000 400.000 L 320.000 360.000 L 280.000 360.000 L 240.000 360.000 L 243.000 320.000 L 243.000 277.000 L 200.000 277.000 L 160.000 277.000 L 120.000 277.000 L 80.000 280.000" fill="none" stroke="#FF9933" stroke-linecap="round" stroke-linejoin="round" stroke-width="6.000"/>
+<path d="M 680.000 680.000 L 642.121 637.879 L 602.121 597.879 L 562.121 557.879 L 522.121 517.879 L 482.121 477.879 L 442.121 437.879 L 400.000 400.000 L 360.000 394.000 L 320.000 400.000 L 280.000 394.000 L 240.000 400.000 L 200.000 400.000 L 197.000 360.000 L 197.000 323.000 L 160.000 323.000 L 123.000 323.000 L 123.000 360.000 L 123.000 400.000 L 123.000 437.000 L 160.000 437.000 L 200.000 440.000" fill="none" stroke="#339933" stroke-linecap="round" stroke-linejoin="round" stroke-width="6.000"/>
+<path d="M 80.000 280.000 L 120.000 283.000 L 160.000 283.000 L 200.000 283.000 L 237.000 283.000 L 237.000 320.000 L 240.000 360.000 L 280.000 366.000 L 320.000 360.000 L 200.000 400.000 L 191.000 360.000 L 191.000 329.000 L 160.000 329.000 L 129.000 329.000 L 129.000 360.000 L 129.000 400.000 L 129.000 431.000 L 160.000 431.000 L 200.000 440.000 L 243.000 437.000 L 243.000 480.000 L 243.000 520.000 L 240.000 560.000 L 240.000 600.000" fill="none" stroke="#FF0000" stroke-linecap="round" stroke-linejoin="round" stroke-width="6.000"/>
+<path d="M 520.000 400.000 L 480.000 400.000 L 440.000 400.000 L 400.000 400.000 L 360.000 406.000 L 320.000 400.000 L 280.000 406.000 L 240.000 400.000 L 200.000 400.000 L 203.000 360.000 L 203.000 317.000 L 160.000 317.000 L 117.000 317.000 L 117.000 360.000 L 117.000 400.000 L 117.000 443.000 L 160.000 443.000 L 200.000 440.000" fill="none" stroke="#0099CC" stroke-linecap="round" stroke-linejoin="round" stroke-width="6.000"/>
+<path d="M 320.000 440.000 L 320.000 400.000" fill="none" stroke="#B0BEC7" stroke-linecap="round" stroke-linejoin="round" stroke-width="6.000"/>
+<circle cx="320.000" cy="360.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="280.000" cy="360.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="240.000" cy="360.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="200.000" cy="400.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="200.000" cy="360.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="200.000" cy="320.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="160.000" cy="320.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="120.000" cy="320.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="120.000" cy="360.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="120.000" cy="400.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="120.000" cy="440.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="160.000" cy="440.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="200.000" cy="440.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="240.000" cy="400.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="280.000" cy="400.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="320.000" cy="400.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="360.000" cy="400.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="400.000" cy="400.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="440.000" cy="440.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="480.000" cy="480.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="520.000" cy="520.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="560.000" cy="560.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="280.000" cy="320.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="280.000" cy="280.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="280.000" cy="240.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="280.000" cy="200.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="280.000" cy="160.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="280.000" cy="120.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="280.000" cy="80.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="320.000" cy="80.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="240.000" cy="320.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="240.000" cy="280.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="200.000" cy="280.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="160.000" cy="280.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="120.000" cy="280.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="80.000" cy="280.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="440.000" cy="400.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="480.000" cy="400.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="520.000" cy="400.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="240.000" cy="440.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="240.000" cy="480.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="240.000" cy="520.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="240.000" cy="600.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="240.000" cy="560.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="320.000" cy="440.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="360.000" cy="80.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="400.000" cy="80.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="600.000" cy="600.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="640.000" cy="640.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+<circle cx="680.000" cy="680.000" fill="#ffffff" r="5.400" stroke="#1a1a1a" stroke-width="1.800"/>
+</svg>
