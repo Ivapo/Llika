@@ -25,6 +25,7 @@ use thiserror::Error;
 
 pub mod convert;
 pub mod feed;
+pub mod stations;
 pub mod trips;
 
 pub use convert::FALLBACK_PALETTE;
@@ -66,17 +67,54 @@ impl Default for ImportParams {
 
 /// What the import kept, and what it did not.
 ///
-/// Import is lossy by design — routes are filtered out and, from Phase 2,
-/// platforms are merged and some routes dropped. Silence about that is how
-/// someone concludes the tool lost a line. The binary prints the summary line;
-/// the library returns this, so a later desktop app can show the same thing in a
-/// panel.
+/// Import is lossy by design — routes are filtered out, platforms are merged and
+/// some routes dropped. Silence about that is how someone concludes the tool
+/// lost a line. The binary prints the summary line; the library returns this, so
+/// a later desktop app can show the same thing in a panel.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ImportReport {
     pub routes_seen: usize,
+
+    /// The routes that **matched the `route_type` filter**, which is not the
+    /// same as the number of lines written.
+    ///
+    /// The two were equal until platforms collapsed, and they diverge because a
+    /// matched route can still fail to become a line. This is the reading that
+    /// closes the arithmetic: `routes_seen` is `routes_kept` plus the filtered
+    /// out, and the lines written are `routes_kept` minus `routes_dropped`.
     pub routes_kept: usize,
+
+    /// The matched routes that did not become lines, in `routes.txt` row order.
+    pub routes_dropped: Vec<DroppedRoute>,
+
     pub stops_seen: usize,
     pub stations_emitted: usize,
+}
+
+/// A route that matched the filter and still did not become a line.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DroppedRoute {
+    pub route_id: String,
+    pub reason: DropReason,
+}
+
+/// Why a matched route was dropped.
+///
+/// **One variant, and that is OQ-3's answer rather than an omission.** Of
+/// `llk-001`'s five conditions, `RepeatedStation` is folded by
+/// `stations.rs:resolve`, `DuplicateStation` and `DuplicateLine` are discharged
+/// by GTFS ids being unique per file, and `UnknownStation` cannot arise on a
+/// conforming feed. That leaves the one below, which is reachable on a feed that
+/// breaks no rule.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DropReason {
+    /// After collapsing, the representative trip had fewer than two stations.
+    ///
+    /// Dropping is the only available answer: failing the whole import would
+    /// make a city unimportable over one bad route in someone else's published
+    /// data, and there is no repair — a route with one station is not a line,
+    /// and inventing a second station is not a thing an importer may do.
+    LineTooShort { stations: usize },
 }
 
 /// Everything that can stop an import.
@@ -111,6 +149,9 @@ pub enum ImportError {
 
     #[error("route `{route}` stops at `{stop_id}`, which stops.txt does not define as a stop or a station")]
     UnknownStop { route: String, stop_id: String },
+
+    #[error("stop `{stop_id}` names `{parent}` as its parent_station, which stops.txt does not define as a station")]
+    UnknownParentStation { stop_id: String, parent: String },
 
     #[error("stop `{stop_id}` has no coordinates")]
     MissingCoordinates { stop_id: String },

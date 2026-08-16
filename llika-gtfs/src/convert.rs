@@ -2,12 +2,21 @@
 //!
 //! Two rules govern this file and both are load-bearing.
 //!
-//! **A station is emitted iff some kept line's station list references it.** So
-//! a `location_type = 1` parent row is read — Phase 2 collapses platforms into
-//! it — but emits nothing on its own account, and a stop serving only a
-//! filtered-out route emits nothing either. Without the rule those rows draw as
+//! **A station is emitted iff some kept line's station list references it**, and
+//! the reference is whatever identity is current — since `stations.rs` collapses
+//! platforms, that is the parent's id. So the platform rows are read and emit
+//! nothing on their own account, and a stop serving only a filtered-out or
+//! dropped route emits nothing either. Without the rule those rows draw as
 //! stray isolated markers, which `Network::from_input` accepts as legal and
 //! which nobody wants on a poster.
+//!
+//! The rule is also what puts a collapsed station at its **parent's** row rather
+//! than its first platform's: the emission loop walks `stops.txt` in row order
+//! and the parent row is the one whose id is now referenced. That is a picture
+//! decision and not a tidiness one — `llk-001` §2.2 resolves two stations
+//! rounding to one grid cell by `stations` array order, first claim wins, so the
+//! two readings hand the layout the same network in different orders and get
+//! different maps.
 //!
 //! **Input order is the iteration order.** Stations come out in `stops.txt` row
 //! order and lines in `routes.txt` row order. The `HashMap`s below are built for
@@ -20,9 +29,10 @@ use std::collections::{HashMap, HashSet};
 
 use llika_core::{InputSchema, Line, Station};
 
-use crate::feed::{Feed, Stop, StopTime};
+use crate::feed::{Feed, StopTime};
+use crate::stations::{collapse_map, resolve};
 use crate::trips::representative_stop_ids;
-use crate::{ImportError, ImportParams, ImportReport};
+use crate::{DropReason, DroppedRoute, ImportError, ImportParams, ImportReport};
 
 /// The fallback colours, in order, for a route whose `route_color` is absent or
 /// malformed. The first three are `sample_network.json`'s, so an imported map
@@ -35,11 +45,9 @@ pub fn to_schema(
     feed: &Feed,
     params: &ImportParams,
 ) -> Result<(InputSchema, ImportReport), ImportError> {
-    let stops_by_id: HashMap<&str, &Stop> = feed
-        .stops
-        .iter()
-        .map(|stop| (stop.stop_id.as_str(), stop))
-        .collect();
+    // Every read stop, mapped onto the station a rider changes at. Built once
+    // for the whole feed: it is a property of `stops.txt`, not of any route.
+    let station_of = collapse_map(&feed.stops)?;
 
     let mut rows_by_trip: HashMap<&str, Vec<&StopTime>> = HashMap::new();
     for row in &feed.stop_times {
@@ -58,7 +66,9 @@ pub fn to_schema(
     }
 
     let mut lines: Vec<Line> = Vec::new();
-    let mut referenced: HashSet<&str> = HashSet::new();
+    let mut referenced: HashSet<String> = HashSet::new();
+    let mut routes_kept = 0usize;
+    let mut routes_dropped: Vec<DroppedRoute> = Vec::new();
     // Counted over the kept routes that need a fallback, so every colour in the
     // palette is used before any repeats.
     let mut fallbacks_used = 0usize;
@@ -68,30 +78,32 @@ pub fn to_schema(
         .iter()
         .filter(|route| params.route_types.contains(&route.route_type))
     {
+        routes_kept += 1;
+
         let trip_ids = trips_by_route
             .get(route.route_id.as_str())
             .cloned()
             .unwrap_or_default();
-        let stations = representative_stop_ids(&trip_ids, &rows_by_trip);
+        let platform_ids = representative_stop_ids(&trip_ids, &rows_by_trip);
+        let stations = resolve(&platform_ids, &station_of, &route.route_id)?;
 
-        for id in &stations {
-            match stops_by_id.get(id.as_str()) {
-                Some(stop) if stop.is_stop_or_station() => {
-                    referenced.insert(stop.stop_id.as_str());
-                }
-                // A `stop_times` row naming an id `stops.txt` omits, or one that
-                // resolves to a row §2.1 does not read. Both mean a malformed
-                // feed, and both are errors here rather than skips: a skip
-                // cascades into `InputError::UnknownStation` one step later,
-                // where the message names the wrong problem.
-                _ => {
-                    return Err(ImportError::UnknownStop {
-                        route: route.route_id.clone(),
-                        stop_id: id.clone(),
-                    });
-                }
-            }
+        // OQ-3. The drop comes before anything else this iteration touches, and
+        // both halves of that matter: §2.1 says a dropped route is not a kept
+        // line, so it references nothing and contributes no stations — the
+        // station it uniquely served would otherwise emit as exactly the stray
+        // isolated marker the emit rule exists to prevent — and a route that
+        // never becomes a line does not consume a palette index either.
+        if stations.len() < 2 {
+            routes_dropped.push(DroppedRoute {
+                route_id: route.route_id.clone(),
+                reason: DropReason::LineTooShort {
+                    stations: stations.len(),
+                },
+            });
+            continue;
         }
+
+        referenced.extend(stations.iter().cloned());
 
         let color = match stated_color(route.route_color.as_deref()) {
             Some(color) => color,
@@ -115,6 +127,8 @@ pub fn to_schema(
         if !referenced.contains(stop.stop_id.as_str()) {
             continue;
         }
+        // A collapsed station takes its parent row's name and coordinates too,
+        // which is what makes it "Central" rather than "Central Platform 1".
         // GTFS makes the coordinates Conditionally Required and the condition is
         // satisfied for exactly the rows kept here, so an empty cell is a
         // malformed feed. A hard error naming the stop, rather than a skip that
@@ -135,7 +149,8 @@ pub fn to_schema(
 
     let report = ImportReport {
         routes_seen: feed.routes.len(),
-        routes_kept: lines.len(),
+        routes_kept,
+        routes_dropped,
         stops_seen: feed.stops.len(),
         stations_emitted: stations.len(),
     };

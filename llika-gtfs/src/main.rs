@@ -74,17 +74,23 @@ fn run(args: &Args) -> Result<String, Box<dyn std::error::Error>> {
 
 /// The summary line §2.6 asks for.
 ///
-/// It carries no dropped-route count yet, and that is deliberate: nothing in
-/// this phase can drop a route. `LineTooShort` is the one condition OQ-3 is
-/// still about, it is reachable only after platforms collapse, and Phase 2 is
-/// where both the drop and this clause arrive. A permanent `0 dropped` would be
-/// format stability bought with a number that cannot move.
+/// `matched` counts the routes that passed the `route_type` filter and `dropped`
+/// the ones that then failed to become lines, so the two numbers bracket the
+/// line count rather than restating it.
+///
+/// The dropped clause prints unconditionally, which it could not do before
+/// platforms collapsed: a permanent `0 dropped` would have been format stability
+/// bought with a number that cannot move. It can move now.
+///
+/// **Which** route was dropped stays in [`ImportReport`] and off stdout. A caller
+/// that needs the ids has the struct; the line stays one line.
 fn summary(output: &str, schema: &llika_core::InputSchema, report: &ImportReport) -> String {
     format!(
-        "wrote {output} — {} stations, {} lines, {} of {} routes matched",
+        "wrote {output} — {} stations, {} lines, {} of {} routes matched, {} dropped",
         schema.stations.len(),
         schema.lines.len(),
         report.routes_kept,
         report.routes_seen,
+        report.routes_dropped.len(),
     )
 }
