@@ -1,0 +1,45 @@
+# The first CI in this repository, and it checks one thing.
+#
+# Formatting drift here is silent and arrives from outside: rustfmt's output
+# changes with the toolchain, so a tree formatted by hand goes stale on a Rust
+# release rather than on a commit. That is how 96f5a2b happened — six files in
+# `llika-gtfs` reformatted by rustfmt 1.9.0, discovered months later in the
+# middle of an unrelated phase, where the only honest options were to mix the
+# reformat into a feature diff or to revert it by hand. This job is what turns
+# that into a notification.
+#
+# `stable` rather than a pinned version, deliberately: the drift is the thing
+# being watched, and pinning would hide it until the pin moved. The cost is
+# that a rustfmt release can redden this job on a change that did not cause it
+# — which is the job reporting correctly, and is one `cargo fmt --all` commit
+# to clear. Pin here (or add a `rust-toolchain.toml`) if that trade stops being
+# worth it.
+#
+# Deliberately not here yet: `cargo test --workspace` and `cargo clippy`, which
+# every phase gate in `specs/` already names as its own exit condition. Adding
+# them is a job each and no new machinery.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  fmt:
+    name: cargo fmt --check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Explicit rather than the runner image's Rust: the workspace is edition
+      # 2024, so a manifest this job never builds still needs a toolchain new
+      # enough to parse it.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      # `--all` covers every workspace member; `--check` writes nothing and
+      # prints the diff it would have made.
+      - run: cargo fmt --all --check
