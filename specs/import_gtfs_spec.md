@@ -559,14 +559,59 @@ Nothing else here is a reserved namespace.
   expects real feeds to carry them; a phase that measures how often it actually
   fires is a better place to settle it than this one.
 
-- **OQ-4** — **Which real feed does Phase 4 use, and is it committed?**
+- **OQ-4** — ~~**Which real feed does Phase 4 use, and is it committed?**
   *(needs-input — a licence decision and a download.)* **Blocks Phase 4.** Feeds
   are typically ODbL or CC-BY and often tens of megabytes, so committing one is a
   licensing question and a repository-weight question at once. The alternative is
   a documented download URL and a test that skips when the file is absent, which
   keeps `cargo test` green on a fresh clone at the cost of a gate that does not
   run by default. Recorded rather than guessed because the answer changes what
-  Phase 4's gate can assert.
+  Phase 4's gate can assert.~~
+
+  **RESOLVED 2026-08-16, input provided: BART, committed, at
+  `llika-gtfs/tests/fixtures/bart.zip` with its provenance in `bart.md` beside
+  it.** The input this question was waiting for arrived before Phase 4 ran rather
+  than during it, which is what a `needs-input` question is entitled to — the
+  phase now opens with the answer instead of the ask. **Phase 4's scope loses its
+  first line and nothing else.**
+
+  Both halves went the same way and for the same reason. **BART's Developer
+  License Agreement grants "non-exclusive, limited and revocable rights to use,
+  reproduce, and redistribute BART Data"**, so the licensing half this question
+  feared is simply absent: redistribution is granted in terms. And the weight half
+  is absent too — the feed is **892 KB**, of which 1.5 MB unpacked is the
+  `shapes.txt` §1.2 never opens. A committed feed is what makes this spec's last
+  gate run on `cargo test` from a fresh clone, and for the phase whose whole
+  subject is data nobody here authored, a gate that skips by default is most of
+  the phase not running.
+
+  Three findings from the download that Phase 4 inherits rather than discovers,
+  each measured against the shipped binary on 2026-08-16 and none of them
+  planning:
+
+  - **The importer already reads it end to end.** `50 stations, 12 lines, 12 of
+    14 routes matched, 0 dropped`, then drawn: `grid 3322m, cost 774.823528 →
+    139.911271 over 5 iterations`, 0.34 s user in release. **None of the four
+    hazards §4's Phase 4 names actually fire on this feed** — no BOM, entries at
+    the archive root, `stop_times.txt` only 2.7 MB, no GTFS-Flex rows, and not
+    one row with an empty coordinate cell. They stay named there because they are
+    hazards of the *format*, and the next feed is where they get their test.
+  - **The reading in §1's end-state block is close and not exact, and the
+    difference is one fact.** It guessed 50 stations, which is right, and six
+    lines, which is not: **BART models each direction as its own `route_id`** —
+    `1` is "Yellow-S" and `2` is "Yellow-N", same colour — so twelve lines come
+    out where a poster wants six, drawn as coincident doubled strokes. That is
+    editorial rather than a defect, and §1.1 named this exact class of thing as
+    what the intermediate file is for. **It is the phase's real subject**, and it
+    is a question §2 has no answer for: whether an importer may fold a route pair
+    into one line is a decision, not a repair.
+  - **OQ-6's measurement exists now** and is not alarming: 50 stations is a fifth
+    of where `llk-001`'s OQ-9 measured 72.9 s, and the layout finished in under a
+    second. Phase 4's close-out still owns writing it into that spec.
+
+  Recorded against this question rather than §2 because none of it changes a
+  decision — §2.1's tables and §2.3's filter stand exactly as written, which is
+  the outcome the `reference` note said was possible and did not assume.
 
 - **OQ-5** — ~~**The fixture feed does not exist and must be authored.**
   *(answerable now — it must be written.)* **Blocks Phase 1.**~~
