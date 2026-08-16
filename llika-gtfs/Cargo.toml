@@ -1,0 +1,37 @@
+[package]
+name = "llika-gtfs"
+version.workspace = true
+edition.workspace = true
+description = "Turn a published GTFS feed into a Llika network file."
+
+# The binary is `llika-gtfs`, which is the invocation the spec's §1 observable
+# names. Declared rather than left to auto-detection so `CARGO_BIN_EXE_llika-gtfs`
+# is a name the gate can rely on.
+[[bin]]
+name = "llika-gtfs"
+path = "src/main.rs"
+
+[dependencies]
+# Schema types only. Nothing here reaches into the layout or the renderer, and
+# `llika-core` gains no dependency in return — spec §2.5.
+llika-core = { path = "../llika-core" }
+clap = { version = "4", features = ["derive"] }
+csv = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+# GTFS archives are Stored or Deflated. The default feature set adds aes, bzip2,
+# lzma, zstd, xz, ppmd and zopfli for formats no published feed uses.
+zip = { version = "6", default-features = false, features = ["deflate-flate2"] }
+# `zip`'s `deflate-flate2` turns flate2 on with no features, and flate2 is a
+# `compile_error!` until a backend is chosen. Naming it here picks the default
+# `rust_backend` (miniz_oxide) — pure Rust, no C zlib to link against. It is
+# declared for that choice and is not called directly.
+flate2 = "1"
+
+# Test-only. The exit gate's assertion 8 builds the `.zip` from the committed
+# feed directory rather than committing a binary blob that can drift from it, and
+# an integration test cannot reach a regular dependency. Cargo unifies the two
+# declarations, so this costs no second build.
+[dev-dependencies]
+zip = { version = "6", default-features = false, features = ["deflate-flate2"] }

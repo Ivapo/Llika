@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["llika-core", "llika-cli"]
+members = ["llika-core", "llika-cli", "llika-gtfs"]
 
 [workspace.package]
 version = "0.1.0"
