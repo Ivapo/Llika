@@ -918,13 +918,19 @@ Nothing else here is a reserved namespace.
   publishes" — which is right, and which turns a city feed into a permanent multi-megabyte
   blob, re-committed on every refresh.
 
-  **Validity windows differ by an order of magnitude and are part of the choice.** BART's
-  committed copy spans 2026-01-12 → 2026-08-30. CTA's `calendar.txt` runs
-  **20260805–20260822** — seventeen days — and it ships no `feed_info.txt`, so a
+  **Validity windows differ ~~by an order of magnitude~~ and are part of the choice.**
+  BART's committed copy spans 2026-01-12 → 2026-08-30. CTA's `calendar.txt` runs
+  ~~**20260805–20260822** — seventeen days —~~ and it ships no `feed_info.txt`, so a
   provenance file has no published-validity field to read. Under `bart.md`'s refresh
   discipline every hand-counted literal moves on each refresh, and since `llk-001` Phase 7
-  the criteria vector moves too. A feed that turns over fortnightly makes that a standing
-  cost rather than an annual one.
+  the criteria vector moves too. A feed that turns over ~~fortnightly~~ quickly makes that
+  a standing cost rather than an annual one.
+
+  *(Corrected 2026-08-18 against the downloaded archive, per the findings below: the
+  window is **20260805 → 20261031**, about 88 days across 173 services. The seventeen-day
+  reading takes the 20260822 cohort — 42 services — for the whole file, where 85 of the
+  173 run to 20261031. Against BART's ~230 days that is **2.6×, not an order of
+  magnitude**. The objection survives and is much weaker than this paragraph made it.)*
 
   **What the answer must supply for Phase 6 to be plannable**: the feed, ~~its size,~~ its
   validity window, its licence and whether it grants redistribution, its `route_type`
@@ -937,11 +943,62 @@ Nothing else here is a reserved namespace.
   **Chicago is the standing candidate and is not yet the answer.** It was chosen for shape
   before any of the above was measured; its licence grants redistribution in terms and
   ships inside the archive, and its ≈143 rail stations and Loop are what the shape argument
-  wanted. Against it: ~~99.6 MB,~~ a seventeen-day window, and — measured — no
-  `draws_the_same_line` hazard at all, since CTA publishes eight rail routes with no
-  per-direction split. *(Its size is struck for the reason above; the window and the
-  missing hazard are what remain against it, and both are about the feed rather than the
-  repository.)*
+  wanted. Against it: ~~99.6 MB,~~ ~~a seventeen-day window,~~ a short window, and —
+  measured — no `draws_the_same_line` hazard at all, since CTA publishes eight rail routes
+  with no per-direction split. *(Its size is struck for the reason above; the window and
+  the missing hazard are what remain against it, and both are about the feed rather than
+  the repository.)*
+
+  **Findings from a local draw, 2026-08-18 — evidence for the open half, and not a
+  resolution of it.** The archive was downloaded, imported and drawn on one machine.
+  **Nothing was committed**, which is what makes these free of the licence reading below:
+  a measurement is not CTA Data. Recorded here in OQ-4's precedent, which likewise carried
+  what a download taught before its phase ran.
+
+  - **Phase 5's premise, confirmed against the live archive.** 99,567,748 bytes, sha256
+    `31300c36442ef36ccd06def27a6c7d07582d4cbc688cae984cb86f8ef3218bed`, `last-modified`
+    2026-08-06, and a `stop_times.txt` of **372,947,364 bytes** — the figure Phase 5 is
+    written against, to the byte. It imports in **1.9 s at 46.6 MB peak RSS** in release.
+    Entries sit at the archive root, so Phase 4's nested-directory hazard is **still
+    unfired**, as are the BOM and GTFS-Flex ones.
+  - **`ImportParams::default()` selects the intended routes without being told.** 133
+    routes — 8 at `route_type` 1 and 125 at 3 — giving `141 stations, 8 lines, 8 of 133
+    routes matched, 0 dropped, 0 merged`. The zero merges confirm from the feed itself
+    what this question had measured from outside: CTA publishes no per-direction split.
+  - **All three of Phase 6's "different shape" properties are present**, where that
+    section could only argue for one of them and hedged the other two:
+    - **It crosses. `c1 = 4`**, all four inside the Loop — Quincy–LaSalle against
+      Monroe–Washington, and three more around Clark/Lake and Merchandise Mart. **This is
+      the first network in this tree that crosses at all.** `llk-001` Phase 7 recorded
+      `c1 = 0` for every surviving weighting on both fixtures *and* BART, so nothing here
+      has ever constrained `w_crossings`; Phase 6's third property is satisfied rather
+      than reported absent. **Measured by segment intersection over the drawn SVG, not by
+      `llika-core/src/layout/cost.rs:c1_crossings`** — a phase re-measures it through the
+      shipped function, and gate 4 is where that lands.
+    - **A substantial cycle.** 141 stations, 146 corridors, one connected component —
+      **cyclomatic number 6**, against BART's 1 and the 17-station fixture's 1.
+    - **A line that revisits a station.** Three of the eight — `Pink`, `Org` and `Brn`,
+      the Loop services — so **Phase 6's gate 3 is not removed**, which that gate names
+      OQ-8's resolution as the place to decide.
+  - **The picture, which is the human half and the one that disappoints.** `grid 855m,
+    cost 677.764756 → 108.949779 over 13 iterations`, 8.7 s release at 141 stations. It
+    reads as Chicago at macro scale — Blue's two western branches, the Red spine, Purple
+    with Yellow as a stub, Green and Orange south. **The Loop does not read**: the city's
+    most recognisable feature draws as a tangle of Brown, Pink and Orange with the four
+    crossings in it. That is the inverse of the failure Phase 6's gate 6 names — not a
+    structurally perfect map that is unrecognisable, but a recognisable one whose core is
+    wrong — and it is the first evidence that `w_crossings` is doing too little.
+  - **The licence, read from `developers_license_agreement.htm` inside the archive.**
+    §I grants "use, reproduce, distribute, display, process and **create derivative works
+    of** CTA Data", so a committed derived network is permitted in terms — more than
+    "grants redistribution" conveys about a *derivative*, which is what OQ-8's own answer
+    now turns on. Three clauses narrow it where BART's does not: the grant is for "the
+    sole purpose of assisting mass transportation riders or in furtherance of promoting
+    public transportation" (§I); "you may not transfer the CTA Data outside your
+    application" (§III); and on termination "you will promptly delete all CTA Data from
+    your application, computer systems or other storage devices" (§V), which a git history
+    cannot honour. **All three engage only on publication.** None bears on holding the
+    feed locally to develop the layout, which is how the findings above were taken.
 
 ## 4. Implementation phases
 
