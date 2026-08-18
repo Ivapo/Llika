@@ -55,9 +55,10 @@ not in core, where `run_layout` is infallible by design.
 | `bundle_spacing` | finite; 0 is the supported disable seam |
 
 The five weights carry no bound: any real number weights a criterion, zero switches
-it off. `--initial-radius` is inert at the shipped weights and its `--help` says so
-— `c2` prices every ring-2-or-further move out of contention, so 1, 2, 3, 5 and 8
-give bit-identical positions while costing `O(r²)` candidates each.
+it off. `--initial-radius` costs `O(r²)` candidates and buys little: on the fixture 1,
+2, 3, 5 and 8 are bit-identical. Its `--help` generalises that to every network and
+overstates — on BART 1 differs from 2, and 3, 5 and 8 differ from 2 in 8 of 50 stations
+at an identical `t`. Saturation is by cost there, not by position (`llk-001` OQ-2).
 
 `llika-cli/src/main.rs:Extent` supplies the conditional half of the `margin_cells`
 row, measured on the **projected plane** so a network straddling a pole is judged on

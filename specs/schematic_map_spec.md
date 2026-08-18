@@ -6,7 +6,7 @@ note: >
   schematic map — projection, grid snap, Stott-Rodgers hill-climbing layout and a
   line-bundling renderer, behind a CLI.
 status: accepted
-last_updated: 2026-08-16
+last_updated: 2026-08-17
 
 phases:
   - name: "Phase 1 — thin end-to-end slice: JSON in, SVG out"
@@ -37,6 +37,11 @@ phases:
   - name: "Phase 6 — full parameter surface"
     reviewed: 2026-08-15
     shipped: 2026-08-15
+    cut: null
+    by: null
+  - name: "Phase 7 — the weights, corrected against a real network"
+    reviewed: 2026-08-17
+    shipped: null
     cut: null
     by: null
 
@@ -910,6 +915,122 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   which §1.1 puts out of v1 scope. Phase 6 exposes them as flags, which is what lets someone
   else disagree cheaply — and that is the honest end state for a value nobody has yet had a
   way to falsify.
+
+  **JUDGED A THIRD TIME 2026-08-17, against BART, and this time the numbers did not
+  stand. 5.0 / 1.0 / 1.0 / 2.0 / 5.0 are dominated and should change.** The entry above
+  named the missing measurement as "a second network with a different shape, which §1.1
+  puts out of v1 scope". `llk-002` shipped and that bar is gone: BART is committed, it is
+  50 stations against the fixture's 17, and it is the first network in this repo capable of
+  falsifying these values. It did.
+
+  **The comparison is by criteria vector, never by `t`.** `t` is *defined* by the weights,
+  so it is not comparable across settings; the only weight-free comparison available is
+  Pareto dominance over the five unweighted `c1..c5`, and every number below is that. All
+  were measured against the shipped `layout::cost::evaluate` at
+  `llika-gtfs/tests/fixtures/bart.zip --route-types 1`.
+
+  | | `c1` | `c2` | `c3` | `c4` | `c5` | octilinear |
+  |---|---|---|---|---|---|---|
+  | snap only (`iterations = 0`) | 12 | 47.888 | 124.486 | 131.686 | 3.141 | 40/50 |
+  | **shipped 5/1/1/2/5** | 0 | 7.576 | 46.316 | 27.489 | 0.644 | **48/50** |
+  | 5/1/1/0.5/10 | 0 | 1.373 | 29.322 | 18.850 | **0.000** | **50/50** |
+  | 5/1/0.5/0.25/10 | 0 | 0.515 | 24.609 | 15.708 | **0.000** | **50/50** |
+
+  **176 of 324 settings in a coarse five-dimensional grid dominate the shipped defaults on
+  all five criteria at once.** Not a marginal miss — over half of an unselective grid beats
+  them outright, which is what makes this a correction rather than a preference.
+
+  **The grid, because a number nobody can rebuild is not evidence.** Round 1 could not
+  reproduce this figure and said so; two independent reconstructions gave 184 and 175, and
+  a third 103 of 180 — consistent in magnitude, but not the same experiment. It is
+  `w1 ∈ {2.5, 5, 10} × w2 ∈ {0.5, 1, 2} × w3 ∈ {0.5, 1, 2} × w4 ∈ {0.25, 0.5, 1, 2} ×
+  w5 ∈ {5, 10, 20}` — 3·3·3·4·3 = 324 — each cell run through `run_layout` on BART and
+  scored by `layout::cost::evaluate` at the resulting positions.
+
+  **"Dominate" is `≤` on all five and `<` on at least one**, with a `1e-9` guard. It has
+  to be: the shipped point already has `c1 = 0`, so strict improvement on all five is
+  unattainable by construction, and a reading that demanded it would score zero cells and
+  conclude the opposite.
+
+  **The mechanism is the `w5:w4` ratio, and it is a threshold rather than a gradient.**
+  Holding `w5 = 5` and walking `w4`, BART reaches `c5 = 0.000` at `w4 ≤ 0.5` and sits at
+  `c5 = 0.644` for every `w4 ≥ 0.75` — the shipped 5:2 = 2.5 is on the wrong side of a cliff
+  at roughly 10. `c4` and `c5` are the two criteria that both price what an edge's *angle*
+  does, and at the shipped ratio `c4` outbids `c5`: the search buys a straight line through
+  a station by paying for an off-angle edge, and two corridors never recover. Raising `w5`
+  with `w4` held reaches `c5 = 0` too, but only at `w5 ≥ 15`, and every such layout carries
+  `c1 = 1` — a crossing, the most visually damaging thing on the map. Lowering `w4` gets
+  there with `c1 = 0`, so **that is the direction to take**.
+
+  **Why neither prior judgement could have caught it, which is the finding that matters
+  most: it is OQ-8's fixture property, striking a second time.** OQ-8 records that
+  `sample_network.json` snaps to `c5 = 0.0` *exactly* — all 17 corridors already octilinear
+  before any search runs. A fixture whose `c5` is zero at the baseline cannot exhibit a
+  weight that under-prices `c5`; there is no error left for the criterion to fail to
+  correct. Both earlier judgements were taken on the one network in the tree structurally
+  incapable of showing this defect, and the Phase 5 entry's "the bundled half is now drawn
+  and it does not change the reading" was true and still blind for the same reason. **The
+  lesson generalises past the weights: a gate keyed to this fixture is weaker than it
+  looks**, and OQ-8's cheap resolution — assert non-decreasing octilinearity — bought less
+  coverage than the expensive one would have.
+
+  **Two candidates, both verified by eye at `gallery/`-equivalent renders.** `5/1/1/0.5/10`
+  is the minimal change — it moves only the ratio the mechanism names, leaves `w1`, `w2`
+  and `w3` alone, and is the conservative pick. `5/1/0.5/0.25/10` is better on every
+  criterion and drew the best picture of anything tested: the doubled-back Red line inside
+  the western trunk resolves, one 45° connector survives so the map does not read as a
+  circuit board, and it is fully octilinear with no crossings. Both leave
+  `sample_network.json` **byte-identical** — 0 of 17 stations move — and both leave the
+  `llika-gtfs` fixture feed byte-identical too.
+
+  **That byte-identity is luck and must not be sold as structure.** `5/1/1/0.25/10` — one
+  step away from the first candidate — moves 10 of the 11 stations in the GTFS fixture, and
+  `5/1/0.25/0.5/10` moves 5 of them. The search is chaotic in the weights at this scale, so
+  "no gate literal changes" is a property of the two settings named and not of the
+  direction. Any other value needs the same check run again.
+
+  **A correction to this question's own `initial_radius` finding, which was over-general.**
+  The entry above records `r_0` of 1, 2, 3, 5 and 8 giving bit-identical positions, and
+  concludes the knob is inert. On the fixture that reproduces exactly. On BART it is false:
+  `r_0 = 1` differs from `r_0 ≥ 2` in all 50 stations. So what the fixture
+  measurement actually established is a saturation, not an inertness, and the two got
+  conflated because the fixture's live step happens to be a no-op there.
+
+  **A first draft of this correction then over-generalised in exactly the way it was
+  correcting**, saying the knob is "saturated above [2] on both networks and at every
+  weighting tested". Round 1 falsified that too: on BART at the *shipped* weights, `r_0` of
+  3, 5 and 8 each differ from `r_0 = 2` in **8 of 50 stations** while reaching an identical
+  `t = 112.087766`. That is cost-saturation, not position-saturation. Position-saturation
+  above 2 holds at both candidate weightings and on the fixture at all three — so it is a
+  property the reweight *creates*, and any rule or help text asserting it is describing the
+  post-change tree. Recorded because two successive attempts to state this knob's behaviour
+  both reached further than the measurement did.
+
+  Worse for the shipped values, and better for the candidates: **at 5/1/1/2/5 the default
+  `initial_radius: 3` is the wrong side of that step.** `r_0 = 1` reaches `t = 84.332220`
+  where `r_0 = 3` reaches `112.087766` — the default explores more and lands worse. At both
+  candidate weightings the ordering is the intended one (`r_0 ≥ 2` strictly better:
+  `16.746281` against `36.517509` at `5/1/0.5/0.25/10`), so the same change that fixes the
+  weights also makes the radius default behave as its own doc-comment claims.
+
+  **Unresolved, and deliberately so.** This is one more network, not a calibration — the
+  third judgement by the same party, and the first that could fail. What is settled is
+  *negative* and needs no further evidence: 5/1/1/2/5 is dominated, by a mechanism that is
+  identified and reproducible. Which replacement is right is a weaker claim resting on one
+  city, and picking the grid's argmax would be exactly the overfitting this question has
+  warned about twice. The change belongs in a phase of its own with its own review round,
+  because it moves shipped defaults, the `--initial-radius` help text and three `rules/`
+  files together. **That phase is Phase 7**, and it does not resolve this question either —
+  §4 says so in terms.
+
+  **What would resolve it, and what it is attached to.** A second real network of a
+  different shape, imported and drawn, with the criteria vector compared across at least
+  three weightings — the measurement this entry has now demanded three times. That is
+  `llk-002` Phase 4's shape done once more (a feed, a licence check, a committed fixture),
+  and it is named here rather than left floating because the methodology's §4 is explicit
+  that an open question with no phase attached is one nothing will ever force. Until such a
+  phase exists this question stays open with a *known* answer to its negative half and an
+  unforced one to its positive half.
 - **OQ-3** — ~~Deterministic tie-break when two stations snap to the same grid cell
   before hill-climbing starts. Proposed: spiral search outward to the nearest free
   cell, in a fixed order so the result is reproducible. *(design call.)* **Blocks
@@ -1863,3 +1984,313 @@ last thing the roadmap's UI needs from the core.*
   change** — its observable line carries no invocation, so the prior wording's "updates
   the `CLAUDE.md` observable line if the invocation in §1 has drifted" had no referent;
   revisit only if §1's rewrite changes what the observable *is*, which it should not.
+
+### Phase 7 — the weights, corrected against a real network
+*Produces the observable: **yes**, and more directly than any phase since Phase 5 — it
+is the same fifty stations drawn better. Nothing is added to the pipeline; one struct
+literal changes and BART goes from 48 of 50 corridors octilinear to 50 of 50, with the
+Red line's diagonal cut across the trunk and its doubling-back inside the western bundle
+both gone. A phase that changes only a default has to argue it produces the observable,
+and this one does it by pointing at the picture.*
+
+- **Scope:** the five values in `llika-core/src/layout/mod.rs:LayoutParams`'s `Default`
+  impl, from **5.0 / 1.0 / 1.0 / 2.0 / 5.0** to **5.0 / 1.0 / 0.5 / 0.25 / 10.0**; the
+  doc-comment above it, which argues for the old numbers; the `--initial-radius` help
+  text, which states something now measured false; and the documentation and one test
+  literal that quote figures derived from the weights. **No algorithm changes and no new
+  parameter.** Every criterion, every rejection and the whole search are untouched.
+
+  #### The numbers come from OQ-2's third judgement, and the direction is not the argmax (decision)
+
+  §3's OQ-2 entry of 2026-08-17 is this phase's whole evidentiary base and is not
+  restated here. What it establishes and this phase acts on: **176 of 324 settings in a
+  coarse grid dominate the shipped defaults on all five unweighted criteria at once**, so
+  the shipped point is not a near-miss; and the lever is the `w5:w4` ratio, where at 5:2
+  `c4` outbids `c5` and buys a straight line through a station by paying for an off-angle
+  edge.
+
+  **The chosen point is `5 / 1 / 0.5 / 0.25 / 10` and the runner-up is recorded rather
+  than discarded.** `5 / 1 / 1 / 0.5 / 10` moves only the ratio the mechanism names and
+  is the more conservative change; it reaches `c5 = 0.000` and 50 of 50 too, and differs
+  from the chosen point by being worse on `c2` (1.373 against 0.515), `c3` (29.322
+  against 24.609) and `c4` (18.850 against 15.708). The chosen point wins on every
+  criterion and drew the better picture — the western doubling-back resolves, and one 45°
+  connector survives so the map does not read as a circuit board, which the all-axis
+  layouts at `w5 ≥ 15` do.
+
+  **The runner-up is a substitution, not a drop-in, and an earlier draft of this phase
+  called it one.** Round 1 measured what switching costs: the fixture reaches
+  `t = 8.982526` and BART `40.118892`, so gate assertion 3's pinned constant and all four
+  rows of the summary-line table move — roughly eight measured figures, one of them a
+  gate literal. It remains the substitution to make if the review round prefers the
+  smaller blast radius; it is not a one-line change, and this phase says so rather than
+  leaving an implementer to discover it against a red test. *(`8.982526` and `40.118892`
+  are the two summary-line figures; assertion 3's constant would separately become
+  `16.615381`.)*
+
+  **It is deliberately not the grid's argmax.** OQ-2 has warned twice against mistaking
+  one party's eye for a calibration, and the grid's best cell is a measurement on one
+  city. The chosen point is a *round* setting inside the dominating region, picked to be
+  explainable — `w3` and `w4` halved and quartered from where they were, `w5` doubled —
+  rather than the cell that scored highest. Someone re-running this on a second city
+  should expect to move it again, and §3 says so.
+
+  #### What this phase does not do, stated so a reader does not infer it (decision)
+
+  **It does not resolve OQ-2**, and the close-out must not mark it resolved. What BART
+  settles is negative and needs no more evidence: 5/1/1/2/5 is dominated by a reproducible
+  mechanism. Which replacement is *right* still rests on one network, and the second city
+  that would settle it is not in this tree. OQ-2 stays open with its third entry standing.
+
+  **It does not add a second real network.** That is the measurement OQ-2 actually wants
+  and it is a feed acquisition, a licence check and a fixture commit — `llk-002` Phase 4's
+  whole scope, done once. Folding it in here would make a one-literal change into that
+  phase again, and the honest version of this phase is small.
+
+  **It does not touch `c4` itself**, and the reason is *not* the one an earlier draft of
+  this phase gave. That draft argued `w4 = 0` is strictly worse than `0.25` on `c3`
+  (37.176 against 34.558) and `c4` (25.133 against 21.206). **Those figures are real but
+  come from the `w5 = 5` sweep, and the claim is false at the point this phase ships**:
+  at `5 / 1 / 0.5 / w4 / 10`, `w4 = 0` and `w4 = 0.25` produce **byte-identical BART
+  layouts** — 0 of 50 stations differ, `c2 0.514719 / c3 24.609142 / c4 15.707963` both.
+  Round 1 caught it; it is recorded rather than quietly corrected because the wrong
+  version is what a reader reconstructs from the sweep table alone.
+
+  So on BART at the shipped weighting, `w4 = 0.25` and `w4 = 0` are **not
+  distinguishable**, and no measurement in this repo argues for keeping `c4`. Keeping it
+  is therefore a **design call, stated as one**: `c4` is one of §2.3's five criteria with
+  its own zero-set, `w4` is a flag someone can raise, and a network whose lines bend where
+  BART's do not is exactly the case it exists for. Deleting a criterion because one city
+  cannot see it is the overfitting this phase refuses everywhere else. `0.25` prices it
+  low; it does not switch it off.
+
+  **The integration points, measured against the shipped tree rather than predicted** —
+  the whole blast radius was established by applying the change, running
+  `cargo test --workspace`, and reading the failures:
+
+  - **Exactly one test literal changes in the entire workspace**:
+    `llika-core/tests/common/mod.rs:PHASE3_TOTAL_COST`, `22.505867` → **`8.565050`**. `t`
+    is defined by the weights, so a pinned `t` cannot survive a reweight; that is
+    arithmetic, not a regression.
+  - **`PHASE3_POSITIONS` survives untouched**, which is the load-bearing half. The
+    `cluster_moves: false` layout is byte-identical before and after, so the assertion
+    that "pins a layout that must never change again" is not being quietly relaxed — the
+    same test's *positions* clause passes unaltered and only its *cost* clause moves.
+  - **`llika-core/tests/golden.rs` passes unchanged**, and it is an independent witness
+    worth naming: it renders the fixture through `LayoutParams::default()` and compares
+    against a committed SVG. It passing *is* the proof that the reweight does not disturb
+    the fixture, obtained at no cost.
+  - **`llika-core/tests/cost_on_fixture.rs` passes unchanged, by its own foresight.** Its
+    header says it "asserts shape and finiteness, never a magnitude — the weights are
+    provisional (OQ-2), so any number pinned here would be pinning an artefact of
+    something still expected to change." That judgement is why this phase is one literal
+    and not thirty.
+  - **`gallery/bart.svg` is regenerated; `gallery/sample-network.svg` and
+    `gallery/gtfs-fixture.svg` must NOT be.** Both are byte-identical under the new
+    weights — verified by `cmp` against the committed files — so re-rendering them would
+    produce a no-op diff that falsely implies they moved.
+  - **`llika-cli/src/main.rs`'s `--initial-radius` help text is wrong and this phase owns
+    it.** It says "1, 2, 3, 5 and 8 all give bit-identical positions", unqualified. That
+    reproduces on the fixture and fails on BART.
+
+    **The corrected text must be written against the *new* defaults, not the old**, and
+    round 1 found that the two differ in a way that matters. At `5 / 1 / 0.5 / 0.25 / 10`
+    on BART, `r_0` of 2, 3, 5 and 8 are bit-identical and `r_0 = 1` differs in **33 of 50**
+    stations. At the *old* weights the picture is messier: `r_0 = 1` differs from `r_0 ≥ 2`
+    in all 50, and `r_0` of 3, 5 and 8 each differ from `r_0 = 2` in **8 of 50** while
+    reaching an identical `t = 112.087766` — cost-saturation, not position-saturation.
+    **Position-saturation above 2 is therefore something this phase creates rather than
+    something it documents**, which is the honest form of the claim and the one the help
+    text should carry. The "all 50" figure belongs to the pre-phase state only.
+  - **Four summary lines change wherever they are quoted**, all measured at the new
+    weights:
+
+    | | before | after |
+    |---|---|---|
+    | fixture, defaults | `37.166633 → 11.338720 over 2` | `13.539238 → 4.662836 over 2` |
+    | fixture, §1's flags | `54.817110 → 12.747375 over 3` | `48.328948 → 5.357277 over 3` |
+    | GTFS fixture feed | `45.227136 → 5.055535 over 3` | `28.079276 → 2.699340 over 3` |
+    | BART | `511.450746 → 112.087766 over 3` | `234.460102 → 16.746281 over 6` |
+
+    **Only BART's *picture* changes**; the other three rows are the same layout priced
+    differently. A close-out that regenerates art on the strength of a moved number would
+    be reading this table wrong.
+  - **`c1` stops being the heaviest weight, and four places in the tree say it is.**
+    `w_octilinearity` at 10.0 against `w_crossings` 5.0 falsifies
+    `rules/layout-search.md`'s "left to `c1`, weighted heaviest",
+    `llika-core/src/layout/candidate.rs`'s module header, the doc on
+    `llika-core/src/layout/cluster.rs:bridge_overlaps`, and §2.4's own OQ-1 argument
+    ("`c1`, weighted 5.0 and the heaviest term in §2.3"). **Two of those are the sources
+    `rules/layout-search.md` is generated from, so `/sync-rules` would regenerate the
+    error rather than catch it** — which is why this bullet exists rather than a
+    close-out line.
+
+    **The design intent survives and the arithmetic is what to write instead.** The
+    ranking was always over the weight numbers, not over influence, and the two criteria
+    are not commensurable: `c1` counts crossings, so one crossing costs `5.0`, while `c5`
+    sums a deviation of at most `π/8` per edge, so the most expensive single off-angle
+    edge costs `10 × π/8 = 3.926991`. **A crossing still costs more than any one
+    off-angle edge**, which is precisely what "the most visually damaging thing on the
+    map" was asserting. The four sites get that sentence, not a deletion.
+  - **Two cross-spec writes into `llk-002`, not one, and a third site left deliberately.**
+    `specs/import_gtfs_spec.md` §1's end-state block quotes BART's `112.087766` and is a
+    live end-state promise, so it is corrected in place with a dated note naming this
+    phase — `llk-001` §3's own precedent in reverse, since `llk-002` Phase 4 wrote BART's
+    timing into this spec's OQ-9 because OQ-9 owns the question. `llika-gtfs/src/convert.rs`'s
+    `draws_the_same_line` doc comment is the second and carries **both** numbers.
+
+    **The third, `specs/import_gtfs_spec.md` §3's OQ-7 resolution, is left as it stands**,
+    and the phase says so rather than missing it. It is a dated record of why a decision
+    was made, which §6.1 sanctions leaving; and the decision survives, measured — at the
+    new weights the merged network costs `16.746281` against the doubled network's
+    `25.277674`, so merging is still cheaper. **The sweep counts invert** (3-against-5
+    becomes 6-against-3), so the doc comment's phrasing "over 3 sweeps against 5" must be
+    rewritten rather than renumbered; `llika-gtfs/tests/real_feed.rs:re_adding_the_absorbed_directions_moves_the_layout`
+    asserts only that the layouts differ and passes unchanged.
+  - **Test prose moves that no test literal does.** `PHASE3_TOTAL_COST`'s doc comment in
+    `llika-core/tests/common/mod.rs` records a provenance — measured by Phase 4's round-1
+    reviewer, written into §3 before the code existed — which will not describe the new
+    value; it gets this phase's provenance instead. And
+    `llika-core/tests/cluster.rs`'s assertion-2 comment quotes `16.222682`, which is
+    weight-derived and moves. Neither is a literal the compiler or the suite can catch.
+  - **`README.md` line 24 says "All 6 phases shipped — v1 is complete."** A seventh phase
+    falsifies it, and it sits one line above the table row the close-out already names.
+  - **`gallery/README.md`'s "What it also shows" paragraph is the sentence this phase most
+    directly falsifies**, and it is not the summary line. It reads "Not every stroke lands
+    on a multiple of 45 degrees … it stops with a handful of edges off-angle and a few
+    corridors kinked", then names OQ-2 and says "a second network with a different shape
+    is what would settle them. This is that network." **That paragraph asked this phase's
+    question and this phase answers it** — 50 of 50 corridors octilinear, `c5` exactly
+    zero — so it is rewritten to say what the second network settled, not merely
+    renumbered.
+- **Exit gate:** `cargo test --workspace` green, and five assertions:
+  1. **BART draws to the measured criteria vector at the shipped defaults** — imported
+     from `llika-gtfs/tests/fixtures/bart.zip` through `ImportParams::default()`, laid out
+     through `LayoutParams::default()`, then **all five** criteria asserted:
+     `c1 == 0.0` and `c5 == 0.0` by exact equality, and `c2 == 0.51471863`,
+     `c3 == 24.60914245`, `c4 == 15.70796327` to an **absolute** `1e-6`, written inline as
+     `(actual - expected).abs() < 1e-6`.
+
+     **Absolute and inline, for two reasons round 2 established.** `common::close` is
+     `llika-core/tests/common/mod.rs`'s and is a *relative* comparison
+     (`|a − e| ≤ tol · |e|`); `llika-gtfs/tests/common/mod.rs` has no such function and
+     `real_feed.rs` is the one test in that crate declaring no `mod common;`, so the name
+     does not resolve where this assertion lands. And a relative `1e-6` against a
+     six-decimal literal is only sound for values `≥ 0.5` — `c2` at `0.5147…` sits inside
+     it with 27% headroom today, and a future re-measure landing `c2` below 0.5 would fail
+     a correct implementation. Eight decimals and an absolute bound remove both hazards.
+
+     **The last three are the assertion, and `c1`/`c5` alone would be a gate that passes
+     for the wrong reason** — round 1 found this and it is OQ-8's own lesson landing on
+     this phase. `c5 == 0` is met by the entire `w4 ≤ 0.5` family, so shipping
+     `5 / 1 / 0.5 / 0.25 / **5**` — the doubling of `w5` omitted, which is the one lever
+     this phase's mechanism argument names — satisfies `c1 = 0` and `c5 = 0` while drawing
+     a materially worse map: `c2` 1.887302, `c3` 34.557519, `c4` 21.205750, measured. Only
+     `c2`, `c3` and `c4` tell the shipped point from that near-miss.
+
+     **Exact for `c1` and `c5`, tolerant for the rest.** §2.3 records that all eight unit
+     offsets give exactly `+0.0` from `octilinear_deviation`, so a sum over octilinear
+     edges is exactly zero and a tolerance would only hide a near-miss; `c1` is an integer
+     count. The other three are sums of transcendentals and take `common::close`.
+
+     **`ImportParams::default()`, not `--route-types 1`**, matching
+     `llika-gtfs/tests/real_feed.rs:import_bart`: the default is `[0, 1]`, BART's feed
+     carries no `route_type = 0`, and both select the same twelve routes. The assertion
+     belongs beside `llika_draws_the_bart_network` in that file.
+
+     **What this gate cannot pin, stated rather than left to be rediscovered: `w1`.**
+     Round 2 scanned 720 weight tuples against the whole gate and found **exactly two
+     survivors — the shipped point and `10 / 1 / 0.5 / 0.25 / 10`** — so every plausible
+     mis-implementation of this phase is caught, including `w5` left at 5, `w3` left at 1,
+     `w4` left at 0.5 or 2, the runner-up, and every uniform rescaling (assertion 3 is
+     scale-sensitive where assertion 1 is scale-invariant, which is what makes the pair
+     complementary). The one exception is `w_crossings`: both fixtures and BART reach
+     `c1 = 0` at every weighting that survives the other clauses, so nothing in the gate —
+     or in the tree — constrains it. That is not a defect of this phase, which leaves `w1`
+     alone and states the tuple verbatim in its scope; closing it would need a
+     crossing-bearing real fixture, which §1.1 and this phase's second decision both put
+     out of scope.
+
+     **This pins a qualitative property to a third-party snapshot that expires.**
+     `llika-gtfs/tests/fixtures/bart.md` records the copy valid to 2026-08-30, and its
+     "Refreshing it" section calls that a deliberate act because "every literal a gate
+     hand-counts from it moves too". A refreshed BART could fail this assertion with
+     nothing wrong in the code, so **this phase adds a line to that refresh note** saying
+     the criteria vector moves with the feed. It is an amendment to prose, not an entry
+     appended to an inventory — that file holds no list, and the hand-counted totals live
+     in `real_feed.rs`. It is the first item there that is a property of the *layout*
+     rather than of the feed.
+  2. **The fixture is unmoved** — `run_layout` at `LayoutParams::default()` on
+     `sample_network.json` gives positions bit-identical to the pre-phase layout. Already
+     covered by `golden.rs`, so the clause is *confirm it still passes*, not write it
+     again; it is listed because a phase that changes a default must state which pictures
+     it is promising not to change, and this is that promise.
+  3. **`PHASE3_TOTAL_COST` is re-measured, not adjusted until green.** The new value is
+     obtained by evaluating the shipped `cost::evaluate` at the `cluster_moves: false`
+     layout and reading `total`, and it must equal `8.565050` to `1e-6`. The distinction
+     is the assertion: a constant edited until the test passes asserts nothing, which is
+     precisely why the old one was measured by Phase 4's reviewer rather than captured.
+  4. **`--initial-radius` behaves as its corrected help text claims**, on BART: `r_0` of
+     2, 3, 5 and 8 give bit-identical positions, and `r_0 = 1` differs from them. Both
+     halves, because the first alone is what the old text asserted and the second is the
+     correction. On the fixture all five remain identical, which is what makes the
+     over-general claim explicable rather than merely wrong.
+
+     **Its cost is accepted rather than unnoticed.** Five BART layouts run ≈32 s under a
+     debug `cargo test` (`r_0 = 8` alone is 19.1 s; ≈2 s release), against
+     `llika-gtfs/tests/real_feed.rs`'s current 6.2 s — so this assertion makes that file
+     roughly six times slower. That is the price of the only clause that keeps a shipped
+     `--help` string honest, and it is paid. An implementer who finds it intolerable drops
+     `r_0 = 5`, not the `r_0 = 1` comparison, which is the half that carries the
+     correction.
+  5. **Determinism across processes**, delegated to `llika-cli/tests/byte_stability.rs`
+     and `llika-gtfs/tests/byte_stability.rs` as every phase since Phase 3 has. No source
+     file those tests invoke is rewritten here, so this is a confirmation rather than a
+     new risk — recorded because skipping it on that reasoning is how a phase discovers
+     otherwise.
+
+  **A crossing count on the fixture is not an assertion**: it is 0 before and after, so
+  the clause would pass without the phase.
+- **Close-out.** Three `rules/` files, not two. **`rules/layout-cost.md`** — its weights
+  paragraph names all five values and carries the dominated finding; **its body is at 60
+  lines against `max_lines: 60`, so the rewrite must free a line or raise the cap**, the
+  way Phases 4 and 5 both named theirs. **`rules/cli.md`**, whose `--initial-radius`
+  sentence records that the `--help` overstates — that sentence retires once this phase
+  corrects the help text, and the rule keeps position-saturation stated as this phase's
+  own doing — and **it too is at its cap, 70 lines against `max_lines: 70`**, so it carries
+  the same free-a-line-or-raise-it instruction as `layout-cost.md`; the replacement
+  paragraph is likely shorter than what it retires, so this may cost nothing.
+  **`rules/layout-search.md`**, for the `c1`-heaviest correction, together with
+  the two doc comments it is generated from — regenerating it without those first would
+  restore the error.
+
+  **`README.md`**: two summary lines, the "One knob does nothing at the shipped weights"
+  paragraph, the "All 6 phases shipped — v1 is complete" status sentence, and a Phase 7
+  row on the `llk-001` table. **`gallery/README.md`**: BART's summary line *and* the "What
+  it also shows" paragraph. Regenerates **`gallery/bart.svg`** alone — the other two
+  gallery files are byte-identical and re-rendering them would fake a diff. Corrects
+  **§1's `CORRECTED 2026-08-15` block** with a second dated correction beneath the first,
+  not an edit of it. Makes the two `llk-002` writes named above.
+
+  **`CLAUDE.md`: none needed** — its observable line carries no invocation and no
+  parameter values, and this phase changes neither what the observable is nor how it is
+  produced. Stated rather than omitted, per §3's reconciliation step.
+
+  **`llika-gtfs/tests/fixtures/bart.md`** gets the refresh-note amendment gate assertion 1
+  requires — enumerated here because this list is where an implementer counts the
+  artifacts, and the assertion alone is easy to read past.
+
+  **`specs/INDEX.md` must be regenerated** by `spec-lint --write-index`: writing `shipped`
+  flips the rollup `partial → done`, and `.spec-lint.yaml`'s `index.mode: check` makes a
+  stale index a lint failure.
+
+  **Writes `shipped` into `phases[]`.** **Leaves OQ-2 open**, per this phase's second
+  decision — the close-out adds one line to its third entry recording which point shipped.
+  **`llk-001` §3's OQ-9 is left with a note rather than a correction**: its BART reading
+  (0.13 s, 3 executed sweeps, ≈43 ms a sweep) doubles to 6 sweeps at the new defaults, and
+  its conclusion — the delta score is schedulable, not urgent — survives that. The
+  asymmetry with §1, which *is* corrected, is deliberate: §1 is a live promise about what
+  the binary prints, OQ-9 is a dated measurement. **Phase 6's recorded fork is reversed
+  and gets one line saying so**: that phase decided "the flag ships with the inertness
+  stated … rather than the weights changing first", and this phase takes the other branch
+  on both halves.

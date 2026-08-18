@@ -67,6 +67,6 @@ for collinear opposite offsets at any angle, octilinear or not.
 `w_edge_length` 1.0, `w_angular_resolution` 1.0, `w_straightness` 2.0,
 `w_octilinearity` 5.0 — named for what they weigh, since the names are serde-visible
 and `rules/cli.md` derives a flag from each by kebab-casing it. `Default` is
-**written out, never derived**: a
-derived one zeroes every weight, making `t ≡ 0` and every cost-decrease gate vacuous.
-The values are provisional (OQ-2), judged by eye and left as they are at Phase 3.
+**written out, never derived**: a derived one zeroes every weight, making `t ≡ 0` and
+every cost-decrease gate vacuous. The values are provisional (OQ-2) and **dominated on
+BART** — 176 of 324 grid settings beat all five at once; at `w5:w4` = 5:2, `c4` outbids `c5`.

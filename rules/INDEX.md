@@ -2,7 +2,7 @@
 
 # Rules
 
-- **[cli](cli.md)** — generated 2026-08-15 · 1 source · 69/70 lines
+- **[cli](cli.md)** — generated 2026-08-15 · 1 source · 70/70 lines
   the flag surface and the rule that names it, the --params file and how flags override it, the validation bounds and why they live here, and the summary line
 - **[data-model](data-model.md)** — generated 2026-08-14 · 2 sources · 42/50 lines
   station/line/network types, the corridor edge and its line set, the five-condition input error contract, and input order as iteration order
