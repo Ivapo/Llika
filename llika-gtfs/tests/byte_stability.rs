@@ -15,6 +15,14 @@
 //! to do with the reader. Entries go in at the archive root, Deflated — a zip
 //! nested under a top-level directory is a named Phase 4 hazard, not this
 //! phase's subject.
+//!
+//! **Phase 5's gate, assertion 2, extends the second of those to an archive that
+//! is actually large.** That phase rewrote the `Source::Archive` branch from a
+//! `read_to_end` into a stream, and every case above it is 48 rows — one deflate
+//! block, decompressed in a single call, which is the one size at which a
+//! streaming bug cannot show. So the same comparison runs again over a feed
+//! whose `stop_times.txt` crosses many block boundaries and the window they are
+//! written against.
 
 mod common;
 
@@ -29,6 +37,10 @@ use zip::write::SimpleFileOptions;
 /// The four tables §2.1 reads, plus the two it never opens — `agency.txt` and
 /// `calendar.txt` ride along so the archive is a plausible feed and extra
 /// members are shown to be harmless.
+/// Rows of filler on the large case's `stop_times.txt` — ~3.4 MB, against the
+/// 32 KiB window deflate is written against.
+const FILLER_ROWS: usize = 150_000;
+
 const FEED_FILES: [&str; 6] = [
     "agency.txt",
     "calendar.txt",
@@ -38,7 +50,12 @@ const FEED_FILES: [&str; 6] = [
     "stop_times.txt",
 ];
 
-fn build_zip(at: &Path) -> PathBuf {
+/// Zip the six files of `from` into `at/feed.zip`.
+///
+/// `from` is a parameter rather than always `feed_dir()` because assertion 2's
+/// large case builds its own feed directory first: the archive and the directory
+/// have to hold the same bytes for the comparison to be about the reader.
+fn build_zip(at: &Path, from: &Path) -> PathBuf {
     let path = at.join("feed.zip");
     let mut writer = zip::ZipWriter::new(BufWriter::new(
         File::create(&path).expect("the archive is creatable"),
@@ -46,7 +63,7 @@ fn build_zip(at: &Path) -> PathBuf {
     let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
     for name in FEED_FILES {
-        let bytes = std::fs::read(feed_dir().join(name)).expect("the fixture table is readable");
+        let bytes = std::fs::read(from.join(name)).expect("the fixture table is readable");
         writer.start_file(name, options).expect("archive entry");
         writer.write_all(&bytes).expect("archive entry written");
     }
@@ -93,13 +110,72 @@ fn the_archive_and_the_directory_produce_identical_output() {
 
     let archive_dir = dir.join("archive");
     std::fs::create_dir_all(&archive_dir).expect("scratch directory");
-    let zip = build_zip(&archive_dir);
+    let zip = build_zip(&archive_dir, &feed_dir());
     let from_archive = import_twice(&archive_dir, &zip);
 
     assert_eq!(
         from_directory, from_archive,
         "the .zip and the unpacked directory disagree",
     );
+}
+
+/// Phase 5's gate, assertion 2: the two doors still agree on an archive big
+/// enough for the streaming reader to be doing something.
+///
+/// The feed is the committed one with `stop_times.txt` extended by 150,000 rows
+/// on a `trip_id` no trip declares — ~3.4 MB, which is a hundred times the
+/// 32 KiB window deflate is written against and many blocks past the single one
+/// the 48-row case fits in. **The filler is discarded rather than kept**, which
+/// makes this the large-scale statement of assertion 4 as well: the output must
+/// still be the committed fixture's, byte for byte, from both doors.
+///
+/// It costs ~1.4 s under a debug `cargo test` — four binary runs over the large
+/// feed — against `real_feed.rs`'s ~25 s radius test.
+#[test]
+fn the_archive_and_the_directory_agree_across_deflate_block_boundaries() {
+    let dir = scratch("llika-gtfs-large-zip-vs-directory");
+
+    let feed = dir.join("feed");
+    std::fs::create_dir_all(&feed).expect("scratch directory");
+    for name in FEED_FILES {
+        std::fs::copy(feed_dir().join(name), feed.join(name)).expect("a fixture table is copied");
+    }
+
+    let mut stop_times = std::fs::read_to_string(feed.join("stop_times.txt"))
+        .expect("the fixture's stop_times is readable");
+    for row in 0..FILLER_ROWS {
+        stop_times.push_str(&format!("FILLER_t1,07:00:00,07:00:00,NOR,{row}
+"));
+    }
+    std::fs::write(feed.join("stop_times.txt"), &stop_times).expect("the large table is written");
+    assert!(
+        stop_times.len() > 3_000_000,
+        "the table is too small to cross a deflate block boundary"
+    );
+
+    let from_directory = import_twice(&dir, &feed);
+
+    let archive_dir = dir.join("archive");
+    std::fs::create_dir_all(&archive_dir).expect("scratch directory");
+    let zip = build_zip(&archive_dir, &feed);
+    let from_archive = import_twice(&archive_dir, &zip);
+
+    assert_eq!(
+        from_directory, from_archive,
+        "the .zip and the unpacked directory disagree on a large feed",
+    );
+    // The filler belongs to no trip, so it changes nothing: this is the
+    // committed fixture's own output, which `golden.rs` pins.
+    assert_eq!(
+        from_directory,
+        std::fs::read(feed_dir().parent().unwrap().join("golden/fixture.json"))
+            .expect("the golden is readable"),
+        "150,000 rows of no trip's stop times moved the output",
+    );
+
+    // ~3.4 MB in the system temp directory, and `scratch` only removes a
+    // directory on the *next* create. It cleans up after itself.
+    std::fs::remove_dir_all(&dir).ok();
 }
 
 /// A feed missing one of the four tables fails loudly and leaves nothing behind.
