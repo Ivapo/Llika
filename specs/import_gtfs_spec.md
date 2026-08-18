@@ -840,8 +840,46 @@ Nothing else here is a reserved namespace.
   and the vote is unaffected. It stays unbuilt, now on evidence rather than on the
   fixture's inability to witness it, and the next feed is where it can fire.
 
-- **OQ-8** — **Which second feed?** ~~**And does committing one whole still make sense at
-  city scale?**~~ *(needs-input — a measurement and a licence check.)* **Blocks Phase 6**, the
+- **OQ-8** — ~~**Which second feed?**~~ ~~**And does committing one whole still make sense
+  at city scale?**~~ *(needs-input — a measurement and a licence check.)*
+
+  **RESOLVED 2026-08-18, both halves. The feed is MBTA's**, fetched and not committed, with
+  `golden/mbta.json` and `mbta.md` landing in its place per the second half below. Both
+  candidates were measured first — the two findings blocks further down — which is what this
+  question asked for and what the earlier draft of Phase 6 tried to predict from outside.
+
+  **The licence decided it, because it is the only factor here that cannot be worked
+  around.** MassDOT's §3.1 grant is BART's sentence — "use, reproduce, and redistribute the
+  Data" — and carries none of the three clauses that narrow CTA's. Under the second half's
+  answer this repository publishes a *derived* file, which is exactly the act CTA's
+  "may not transfer the CTA Data outside your application" and its delete-on-termination
+  obligation bear on, and which a git history cannot undo. Every other difference between
+  the two is a cost this project can absorb or a property it can do without.
+
+  **What choosing Boston costs, stated rather than discovered at the phase.** Its shape is
+  thinner: cyclomatic 2 against Chicago's 6, and **no line revisits a station, so Phase 6's
+  gate 3 is removed** — that gate names this resolution as the place to decide, and this is
+  the decision. And its validity window is the shortest of the three at 27 days, which under
+  `bart.md`'s refresh discipline is a standing cost rather than an annual one; the
+  `feed_info.txt` it ships, which CTA lacks, is what makes that cost cheap to state.
+
+  **Chicago is not discarded, and that is the point of the second half's answer.** No feed
+  is committed either way, so keeping CTA as a **local** development feed costs this
+  repository nothing and is where `llk-001`'s **OQ-10** gets its test case — the four Loop
+  crossings no weighting can shift. The feed choice is about what gets *published*, and
+  those are different questions now that they were not before 2026-08-18.
+
+  **The format hazards, named here because Phase 6's scope says they are named at this
+  resolution rather than predicted from outside.** All three of Phase 4's survivors were
+  checked against the archive and **none fires**: entries sit at the archive root, no table
+  carries a UTF-8 BOM, and `stop_times.txt` has no GTFS-Flex columns and not one empty
+  `stop_id` in 2,223,848 rows. `stop_sequence` starts at **0**, as BART's does. What MBTA
+  *does* exercise harder than anything so far is §2.1's read-only-0-and-1 rule: 10,298
+  `stops.txt` rows, of which **1,921 are `location_type = 3` generic nodes and 332 are
+  entrances** — and no kept row carries an empty coordinate cell, so the `Option` typing that
+  motivated the rule is still unwitnessed on a real feed after three of them. Phase 6
+  inherits this rather than discovering it; **its scope loses the hazard question and
+  nothing else.** **Blocks Phase 6**, the
   way OQ-4 blocked Phase 4 and was resolved before it ran. Two halves, and the second is
   the one nobody had asked.
 
@@ -1388,23 +1426,40 @@ of what this repository commits, and that is what this phase fixes.*
 
 ### Phase 6 — a second city, of a different shape
 *Produces the observable: **yes** — a second real city drawn, and the measurement
-`llk-001`'s OQ-2 has demanded three times. **Blocked on OQ-8**, which names the feed;
+`llk-001`'s OQ-2 has demanded three times. ~~**Blocked on OQ-8**, which names the feed;
 the phase is not plannable until that question is resolved, exactly as OQ-4 blocked
-Phase 4 and was resolved before it ran.*
+Phase 4 and was resolved before it ran.~~ **Unblocked 2026-08-18: OQ-8 resolved to MBTA**,
+fetched and not committed, and this phase is plannable. It remains `reviewed: null` and
+takes its own review round.*
 
 - **Scope:** import the feed OQ-8 names, fix what breaks, draw it, and score it at three
   weightings. Two products: the map, and the criteria vector `llk-001`'s weights are
   judged against on a network that is not BART.
 
-  #### The feed is fetched; the imported network is committed (OQ-8)
+  #### The feed is MBTA's, fetched; the imported network is committed (OQ-8)
+
+  **The feed is `https://cdn.mbta.com/MBTA_GTFS.zip`**, 18,590,242 bytes at 2026-08-17,
+  read at `ImportParams::default()` — its eight rapid-transit routes are `route_type` 0 and
+  1, so the default selects them without being told, and the 369 bus, 14 commuter-rail and
+  9 ferry routes are filtered out. It imports to `119 stations, 8 lines, 8 of 400 routes
+  matched, 0 dropped, 0 merged`, which the gate re-measures and pins rather than inheriting
+  from here.
 
   **No second archive lands in this repository.** OQ-8's second half settles it: the feed
   which earns a place in the tree is the one that serves as the example, and BART already
   does. What is committed instead is `llika-gtfs/tests/fixtures/golden/<city>.json` — the
   imported network, in the idiom Phase 5 shipped for `golden/bart.json` — beside a
-  `<city>.md` provenance file carrying the source URL, licence, retrieval date, sha256,
+  `mbta.md` provenance file carrying the source URL, licence, retrieval date, sha256,
   validity window and the exact download-and-regenerate commands, in `bart.md`'s shape
-  minus the redistribution claim it has no bytes to make.
+  minus the redistribution claim it has no bytes to make. **The validity window is read
+  from `feed_info.txt`'s `feed_start_date`/`feed_end_date`** — 20260810 → 20260905 on the
+  measured copy — rather than derived from `calendar.txt`, which is what CTA would have
+  forced. **MassDOT's §4.1 asks for acknowledgement and forbids its logos**, so `mbta.md`
+  credits MassDOT and this repository carries no MBTA mark, which is `bart.md`'s own
+  pattern.
+
+  *(`<city>` is `mbta` throughout this phase; the placeholder is kept in the gate below
+  where it reads as a filename pattern rather than as an open choice.)*
 
   **So this phase's work happens against a feed on the author's disk**, and the gate below
   is split accordingly: the two assertions about the *import* read the archive and skip
@@ -1442,26 +1497,44 @@ Phase 4 and was resolved before it ran.*
   **What survives is narrower and still worth the acquisition.** Three properties, each
   checkable and none of them the discredited one:
 
-  - **A line that revisits a station** drives §2.5's *coincident-endpoint* run and its
+  - ~~**A line that revisits a station** drives §2.5's *coincident-endpoint* run and its
     `(line, position-in-that-line's-list)` offset rule. `llika-core/src/io.rs` rejects
     only *consecutive* repeats, so this is legal input; neither committed fixture
     contains it, and no **integration** test — a real `Network` reaching
     `station_frames` — covers it. Round-trip services that circle a loop and come back
-    are where it occurs.
+    are where it occurs.~~
+
+    **Struck at OQ-8's resolution: MBTA has none.** No line of its eight repeats a
+    station id at all, so this property is absent from the chosen feed and **gate 3 is
+    removed** rather than left to pass vacuously. The gap it names is real and stays open
+    — nothing in this tree drives the coincident-endpoint run on a real `Network` — and it
+    is **Chicago** that would close it, with three such lines. Recorded so a later feed
+    question knows the property is still unclaimed rather than satisfied.
   - **A cycle makes the cluster pass inert where the map is densest.** `llk-001` §2.4:
     "A graph with no bridges — a pure cycle — yields no clusters and an inert pass."
     BART is 47 bridges over 50 corridors; a network with a substantial cycle exercises
-    `cluster.rs` differently. *(Not "the first network that is not a tree" — an earlier
+    `cluster.rs` differently. **MBTA is cyclomatic 2 against BART's 1** — the thinnest of
+    the three candidates on this property, and Chicago's 6 is what the phase gives up by
+    choosing the licence. *(Not "the first network that is not a tree" — an earlier
     draft said that and it is false: BART's Oakland Wye and the 17-station fixture both
     have cyclomatic number 1.)*
-  - **A network that can cross.** `llk-001` Phase 7 records that every weighting
-    surviving its gate reaches `c1 = 0` on both fixtures *and* BART, so nothing in that
-    tree constrains `w_crossings`, and closing it "would need a crossing-bearing real
-    fixture". Whether the chosen feed is one is reported either way — a second network
-    that also never crosses is itself the finding that `w1` may be unpinnable from real
-    feeds.
+  - **A network that can cross — and MBTA is the one that does it usefully.** `llk-001`
+    Phase 7 records that every weighting surviving its gate reaches `c1 = 0` on both
+    fixtures *and* BART, so nothing in that tree constrains `w_crossings`. ~~Whether the
+    chosen feed is one is reported either way — a second network that also never crosses
+    is itself the finding that `w1` may be unpinnable from real feeds.~~ **Measured
+    2026-08-18: it crosses, and the knob moves it.** One crossing at the shipped weights,
+    **zero** at `--w-crossings 100`, which is the first evidence in this project that `w1`
+    is pinnable at all — and the reason this property, not the ring, is what the feed was
+    finally worth acquiring for. `llk-001`'s OQ-2 carries the table. **Chicago crosses
+    four times and no weighting moves any of them**, which is that spec's new **OQ-10**
+    and is a search problem rather than this phase's.
 
-  **Hazards are named at OQ-8's resolution, not here.** Phase 4's four were nameable in
+  **Hazards are named at OQ-8's resolution, and that resolution has named them** — none of
+  Phase 4's three survivors fires on MBTA, and the check is recorded there rather than
+  repeated here. The paragraph below stands as the reasoning that put them there.
+
+  ~~**Hazards are named at OQ-8's resolution, not here.**~~ Phase 4's four were nameable in
   advance because the feed was known; this phase's cannot be, and an earlier draft's
   list was measurably wrong about the one feed it had in view — it named a
   `draws_the_same_line` misfire that CTA cannot produce, publishing eight rail routes
@@ -1484,7 +1557,10 @@ Phase 4 and was resolved before it ran.*
   `feed.rs`'s shape beyond Phase 5, that is a decision and gets its own phase or OQ —
   not a repair folded in here. Corrections to §2.1's *column* table are in scope and are
   recorded as corrections, which is Phase 4's precedent.
-- **Exit gate:** `cargo test --workspace` green, and six assertions.
+- **Exit gate:** `cargo test --workspace` green, and ~~six~~ **five** assertions —
+  gate 3 is removed at OQ-8's resolution, which that gate names as its own condition, and
+  is struck below rather than renumbered so the other four keep the numbers this document
+  refers to them by.
   1. **Needs the fetched feed; skips without it. The feed imports to literals measured
      once and then pinned**, in a new
      `llika-gtfs/tests/<city>_feed.rs` mirroring `llika-gtfs/tests/real_feed.rs`:
@@ -1498,16 +1574,18 @@ Phase 4 and was resolved before it ran.*
   2. **Reads the committed network. `Network::from_input` accepts it and `llika` draws
      it** — circle count equals the station count, path count the line count, as
      `llika_draws_the_bart_network` asserts.
-  3. **Reads the committed network. The revisited-station path is exercised, or its
+  3. ~~**Reads the committed network. The revisited-station path is exercised, or its
      absence is a stated fact.** The
      assertion is on the **network**, not on the renderer's private internals: some
      line's station list contains a repeated id at non-consecutive positions, asserted
-     from the public `InputSchema`. If OQ-8's feed contains none, **this assertion is
-     removed at OQ-8's resolution rather than left to pass vacuously** — a gate item with
-     two passing outcomes is not an assertion, and an earlier draft of this phase had
-     one. `llika-core/src/render/corridor.rs` is a private module, so nothing here can
-     assert that a renderer branch *executed*; that gap is real and is not this phase's
-     to close.
+     from the public `InputSchema`.~~ **REMOVED 2026-08-18 at OQ-8's resolution — MBTA
+     contains no such line**, which is the condition this assertion set for itself: *"If
+     OQ-8's feed contains none, this assertion is removed at OQ-8's resolution rather than
+     left to pass vacuously — a gate item with two passing outcomes is not an assertion,
+     and an earlier draft of this phase had one."* It is removed, not softened.
+     `llika-core/src/render/corridor.rs` is a private module, so nothing here could have
+     asserted that a renderer branch *executed* either; **that gap is real, is now
+     unclaimed by any phase, and Chicago is what would close it.**
   4. **Reads the committed network — and this is the assertion the split exists to keep
      running. The criteria vector at three weightings, pinned as literals to an absolute
      `1e-6`** — the shipped `5/1/0.5/0.25/10`, Phase 7's runner-up `5/1/1/0.5/10`, and
@@ -1519,6 +1597,17 @@ Phase 4 and was resolved before it ran.*
      five and `<` on at least one, with a `1e-9` guard**, never by `t`, which is defined
      by the weights and is not comparable across them. Whether any weighting yields
      `c1 > 0` is asserted explicitly.
+
+     **This gate now has a specific hypothesis to test rather than only a measurement to
+     take.** Measured 2026-08-18 outside any phase: MBTA draws **one** crossing at the
+     shipped `5 / 1 / 0.5 / 0.25 / 10` and **zero** at `w1 = 100`. So the shipped default
+     is the first weight in this project with concrete evidence against it — and the
+     evidence is one-sided, since nothing yet says the higher weight pays for `c1` with
+     `c2`–`c5`. **That is exactly what Pareto over the unweighted vector answers**, and it
+     is why the three weightings pinned here are the deliverable rather than a formality.
+     A fourth weighting raising `w1` alone is **not** added: this phase produces the
+     comparison and `llk-001`'s Phase 8 moves a default, which its own scope forbids
+     collapsing.
   5. **Needs the fetched feed; skips without it. Determinism across processes**,
      extending `llika-gtfs/tests/byte_stability.rs`
      with a case on the new feed. Stated as an extension because that file reads only
@@ -1536,8 +1625,7 @@ Phase 4 and was resolved before it ran.*
   `Instant`, no `criterion` and no `[[bench]]` to produce it under a `cargo test` that
   builds debug. It is a **close-out measurement** instead, taken in release and written
   into `llk-001` OQ-9 — which is where Phase 4 put its own.
-- **Close-out:** commits **`golden/<city>.json` and its provenance file**, not the feed —
-  OQ-8. Updates **`rules/gtfs-import.md`** (Phase 5 raised its cap to 130 and left it at
+- **Close-out:** commits **`golden/mbta.json` and `mbta.md`**, not the feed — OQ-8. Updates **`rules/gtfs-import.md`** (Phase 5 raised its cap to 130 and left it at
   126, so there are four lines of headroom; past that, free one or raise it deliberately)
   and **`README.md`**: the **Status** paragraph's "on BART, **the one real network
   committed here**" is the sentence this phase most directly falsifies — still, and now

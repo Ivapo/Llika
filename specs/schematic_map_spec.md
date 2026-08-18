@@ -1058,8 +1058,10 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   reading, and the layout in fact carries **three** diagonal corridors against 47 on an
   axis — which is the same point about it not reading as a circuit board, counted.
 
-  **That phase now exists: `llk-002` Phase 6, drafted 2026-08-18** — a second city, blocked
-  on that spec's OQ-8, which names the feed. *(It was drafted as Phase 5 against Chicago
+  **That phase now exists: `llk-002` Phase 6, drafted 2026-08-18** — a second city, ~~blocked
+  on that spec's OQ-8, which names the feed~~ **unblocked the same day: OQ-8 resolved to
+  MBTA's feed, fetched and not committed**, and that phase's gate 4 now carries the specific
+  hypothesis this entry's MBTA block states rather than only a demand for a measurement. *(It was drafted as Phase 5 against Chicago
   specifically; its round-1 review measured the CTA archive at 99.6 MB against BART's
   892 KB and split the work in two — `llk-002` Phase 5 now makes a city feed readable at
   all, and the feed choice went back to an open question. The shape argument that picked
