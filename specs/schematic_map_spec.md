@@ -1058,8 +1058,12 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   reading, and the layout in fact carries **three** diagonal corridors against 47 on an
   axis — which is the same point about it not reading as a circuit board, counted.
 
-  **That phase now exists: `llk-002` Phase 5, drafted 2026-08-18** — Chicago's `L`, chosen
-  for a property BART cannot have rather than for being one more city. Its gate produces
+  **That phase now exists: `llk-002` Phase 6, drafted 2026-08-18** — a second city, blocked
+  on that spec's OQ-8, which names the feed. *(It was drafted as Phase 5 against Chicago
+  specifically; its round-1 review measured the CTA archive at 99.6 MB against BART's
+  892 KB and split the work in two — `llk-002` Phase 5 now makes a city feed readable at
+  all, and the feed choice went back to an open question. The shape argument that picked
+  Chicago was also found wrong in part; `llk-002` Phase 6 records how.)* Its gate produces
   this entry's fourth measurement: the criteria vector at the three weightings the
   paragraph above asks for, compared by Pareto dominance and never by `t`. **It does not
   change the weights** — if the vector says they should move, that is a Phase 8 of *this*

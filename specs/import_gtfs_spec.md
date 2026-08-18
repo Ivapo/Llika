@@ -30,7 +30,12 @@ phases:
     shipped: 2026-08-16
     cut: null
     by: null
-  - name: "Phase 5 — a second city, of a different shape"
+  - name: "Phase 5 — the tables are streamed, not collected"
+    reviewed: null
+    shipped: null
+    cut: null
+    by: null
+  - name: "Phase 6 — a second city, of a different shape"
     reviewed: null
     shipped: null
     cut: null
@@ -835,6 +840,50 @@ Nothing else here is a reserved namespace.
   and the vote is unaffected. It stays unbuilt, now on evidence rather than on the
   fixture's inability to witness it, and the next feed is where it can fire.
 
+- **OQ-8** — **Which second feed, and does committing one whole still make sense at city
+  scale?** *(needs-input — a measurement and a licence check.)* **Blocks Phase 6**, the way
+  OQ-4 blocked Phase 4 and was resolved before it ran. Two halves, and the second is the
+  one nobody had asked.
+
+  **The measurement half, taken 2026-08-18 against live `content-length`.** BART's
+  committed archive is **892,312 bytes**. Chicago CTA is **99,567,748 bytes** — 111× —
+  with a `stop_times.txt` of **373 MB / ~6.16 M rows** and a 52 MB `shapes.txt` this spec
+  never opens. MBTA is **18,590,242 bytes**, 21×. Phase 5 makes any of them *readable*; it
+  does nothing about what committing one costs a repository forever.
+
+  **So the second half is a decision OQ-4 made at a scale where it was free.** That
+  question committed BART on two grounds, licensing *and* repository weight, and
+  discharged the weight half at 892 KB without having to argue it.
+  `llika-gtfs/tests/fixtures/bart.md` then forbade trimming — "The bytes are BART's,
+  unmodified… A snapshot that has been edited is no longer evidence of what a publisher
+  publishes" — which is right, and which turns a city feed into a permanent multi-megabyte
+  blob, re-committed on every refresh. Three answers are open and none is obviously right:
+  commit whole and accept the weight; commit a **documented subset** and give up the
+  evidentiary claim `bart.md` makes; or keep the feed out of the tree and fetch it in a
+  gate, which OQ-4 explicitly rejected because CI must run from a fresh clone.
+
+  **Validity windows differ by an order of magnitude and are part of the choice.** BART's
+  committed copy spans 2026-01-12 → 2026-08-30. CTA's `calendar.txt` runs
+  **20260805–20260822** — seventeen days — and it ships no `feed_info.txt`, so a
+  provenance file has no published-validity field to read. Under `bart.md`'s refresh
+  discipline every hand-counted literal moves on each refresh, and since `llk-001` Phase 7
+  the criteria vector moves too. A feed that turns over fortnightly makes that a standing
+  cost rather than an annual one.
+
+  **What the answer must supply for Phase 6 to be plannable**: the feed, its size, its
+  validity window, its licence and whether it grants redistribution, its `route_type`
+  values and whether `ImportParams::default()` selects the intended routes, whether any
+  line revisits a station (Phase 6's gate 3 is removed if none does), and the format
+  hazards OQ-4 left standing. That list is what an earlier draft of Phase 6 tried to
+  predict from outside, and got measurably wrong in two places.
+
+  **Chicago is the standing candidate and is not yet the answer.** It was chosen for shape
+  before any of the above was measured; its licence grants redistribution in terms and
+  ships inside the archive, and its ≈143 rail stations and Loop are what the shape argument
+  wanted. Against it: 99.6 MB, a seventeen-day window, and — measured — no
+  `draws_the_same_line` hazard at all, since CTA publishes eight rail routes with no
+  per-direction split.
+
 ## 4. Implementation phases
 
 Strictly sequential — each depends on the one before. Each is one plan-mode pass
@@ -1058,148 +1107,208 @@ this spec. It is the phase that makes §1's promise true.*
   layout timing in **`llk-001` §3, OQ-9** — a cross-spec write, named here because
   it is the one fact this spec produces that belongs to another.
 
-### Phase 5 — a second city, of a different shape
-*Produces the observable: **yes — a second real city drawn, and the first network in
-this tree that is not a tree.** Phase 4's map was BART: 50 stations, six lines, almost
-entirely bridges. This one is Chicago's `L`, whose core is a closed ring five lines
-circuit. Nothing is added to the importer that a feed does not force, and the picture
-is the point — but this phase is also the measurement `llk-001`'s OQ-2 has now demanded
-three times, and it is the reason the phase is worth its cost rather than being one
-more city for its own sake.*
+### Phase 5 — the tables are streamed, not collected
+*Produces the observable: **no**, and this is the first phase in either spec that does
+not. What it produces is the **ability** for the next one to. The argument is a
+measurement rather than a principle: `llika-gtfs/src/feed.rs:Source::table` reads an
+archive entry whole, its own doc comment defers the consequence — "a city's
+`stop_times.txt` running to hundreds of megabytes is a named Phase 4 hazard rather than
+this phase's problem" — and the CTA feed, measured at drafting, carries a
+**373 MB / ~6.16 M-row** `stop_times.txt`. Phase 6 cannot import a city until this is
+fixed, and folding the fix into Phase 6 would hide a reader rewrite inside a phase whose
+scope reads "acquire a feed and draw it". A phase that produces no observable is argued
+for explicitly (§3), and this is the argument.*
 
-- **Scope:** acquire, licence-check and commit the CTA feed as
-  `llika-gtfs/tests/fixtures/chicago.zip` with a `chicago.md` beside it, run the
-  importer on it and fix what breaks, then draw it and score it. **Two products, and
-  the second is what OQ-2 wants**: the map, and the criteria vector `llk-001`'s weights
-  are judged against on a network that is not BART.
+- **Scope:** `llika-gtfs/src/feed.rs` — `Feed`, `Feed::read`, `Source::table` — so that
+  `stop_times.txt` is **streamed and filtered to the trips the import will actually use**
+  rather than collected whole. **`stop_times` alone**: the other three tables are
+  bounded by the number of stops, routes and trips a system publishes, and BART's are
+  kilobytes where its `stop_times.txt` is 2.7 MB and Chicago's is 373 MB. Widening this
+  to all four would be scope this phase has no measurement for.
 
-  #### Why Chicago, and not simply another feed (decision)
+  **The filter set has to exist before the stream runs, which is the one ordering
+  constraint.** A row is kept when its `trip_id` belongs to a trip whose route survives
+  §2.2's `route_type` filter, so `routes.txt` and `trips.txt` are read first — both
+  small — and `stop_times.txt` is then read once, forward, discarding as it goes.
+  `llika-gtfs/src/convert.rs` iterates `&feed.stop_times` at one site today; whether
+  `Feed` keeps a filtered `Vec` field or hands the converter an iterator is an
+  implementation call this phase does not pin, because both satisfy the gate and only
+  one of them is knowable before the code is written.
 
-  `llk-001` OQ-2 asks for "a second real network of a **different shape**", and the
-  entry does not say what would make one different enough to be worth the acquisition.
-  This phase answers it: **the shape that matters is the one BART cannot produce.**
-  Three properties, each naming shipped code that BART leaves unexercised:
+  **`Source::table`'s doc comment records the borrow that made whole-reading the easy
+  choice** — "`by_name` borrows the archive" — and that constraint is real but not
+  binding: a `ZipFile` is a `Read`, and `csv::Reader` consumes one incrementally, so
+  what the borrow forbids is holding two entries open at once, which this ordering never
+  needs.
 
-  - **A ring core reaches two branches of `llk-001` §2.5 that have never executed.**
-    That section pins the bundling behaviour of a run with **no endpoints** — a closed
-    cycle of degree-2 stations carrying one constant line set — and of a run whose two
-    endpoints are **the same station**, from a line that legally revisits one. It says
-    of both, in terms, "Not reachable on the committed fixture", and BART did not reach
-    them either. The Loop is a ring, and CTA routes circuit it and come back, so this is
-    the feed that runs that code. Neither branch has an assertion behind it today.
-  - **The cluster pass goes quiet where the map is densest.** `llk-001` §2.4 records
-    that "a graph with no bridges — a pure cycle — yields no clusters and an inert
-    pass". BART is bridge-rich end to end. A ring core with branches hanging off it
-    splits the network into a part `cluster.rs` cannot touch and a part it can, which is
-    a materially different exercise of the same code.
-  - **It is the first network that can produce a crossing.** `llk-001` Phase 7's gate
-    records its own structural limit: every weighting that survives its other clauses
-    reaches `c1 = 0` on both fixtures **and** on BART, so nothing in that tree
-    constrains `w_crossings`, and closing it "would need a crossing-bearing real
-    fixture". Whether Chicago is one is not knowable from here — the exit gate reports
-    it either way, because a second network that also never crosses is itself the
-    finding that `w1` may be unpinnable from real feeds.
+  **`ImportReport`'s counts must not change meaning.** `convert.rs` reports
+  `stops_seen` and `routes_seen` as raw row counts; if a streamed `stop_times` makes any
+  reported count a *filtered* one, that is a change to what the binary prints and it is
+  recorded against §2.6 rather than made silently.
+- **Exit gate:** `cargo test --workspace` green, and four assertions.
+  1. **Byte-identical output on both committed feeds.** The synthetic fixture and
+     `bart.zip` must import to exactly the network files they do today — this phase
+     changes how bytes are read, never which ones matter, so any diff is a defect. This
+     is the assertion the phase lives or dies on, and it is keyed to artifacts already in
+     the tree.
+  2. **The zip and directory paths still agree byte for byte**, which
+     `llika-gtfs/tests/byte_stability.rs` already asserts for the unpacked fixture and
+     which the streaming path must not split.
+  3. **Peak memory is bounded by the filtered set, not by the file** — demonstrated on a
+     generated `stop_times.txt` large enough that the old reader would hold it all:
+     at least 2 M rows, of which fewer than 1% belong to kept trips. Generated in the
+     test rather than committed, for `bart.md`'s reason inverted — a synthetic blob is
+     not evidence of anything and must not be mistaken for a fixture. **The pass
+     condition is that the test completes** under the suite's ordinary memory with a
+     file whose whole-read form would exceed it; if that proves unmeasurable in-process,
+     the assertion becomes row-count-based — the reader must visit each row once and
+     retain only kept ones, asserted by a counter — and the substitution is recorded.
+  4. **A row whose `trip_id` matches no kept trip is discarded, not errored**, and a
+     `stop_times` row with no `stop_id` is still passed over as §2.1 says.
+- **Close-out:** updates **`rules/gtfs-import.md`**, whose current text states the live
+  behaviour this phase ends — "An entry is read whole, not streamed, so a huge one is
+  unhandled" — and which is at **115/115 against `max_lines: 115`**, so the rewrite must
+  free a line or raise the cap deliberately. Corrects `Source::table`'s own doc comment,
+  which defers the case this phase closes. **`README.md`: a Phase 5 row on the `llk-002`
+  table.** No `gallery/` change and no `CLAUDE.md` change — no map moves.
 
-  **The licence is a term to satisfy, not a formality.** CTA grants a "limited,
-  non-exclusive, non-assignable, non-transferable and revocable license to use,
-  reproduce, distribute, display, process and create derivative works of CTA Data" —
-  the redistribution grant that makes committing a snapshot legal, and the same shape as
-  the BART grant `bart.md` records. It adds one term BART's does not: the data may be
-  used **"for the sole purpose of assisting mass transportation riders or in
-  furtherance of promoting public transportation"**. A generator that draws a rider a
-  readable diagram of the network is squarely inside that, and `chicago.md` says so in
-  its own words rather than leaving a reader to assume it. *(The clause above is quoted
-  from CTA's published developer licence; the drafting environment could reach neither
-  that page nor the feed URL, both of which returned 403 or timed out, so **verifying
-  the licence text and the download against the live site is this phase's first step**
-  and not a formality it inherits from this paragraph.)*
+### Phase 6 — a second city, of a different shape
+*Produces the observable: **yes** — a second real city drawn, and the measurement
+`llk-001`'s OQ-2 has demanded three times. **Blocked on OQ-8**, which names the feed;
+the phase is not plannable until that question is resolved, exactly as OQ-4 blocked
+Phase 4 and was resolved before it ran.*
 
-  **Five hazards are nameable in advance, and naming them is not designing for them** —
-  they are here so the phase is sized honestly, exactly as Phase 4's four were, and each
-  is a correction recorded against §2.1 or §2.3 if it fires:
+- **Scope:** import the feed OQ-8 names, fix what breaks, draw it, and score it at three
+  weightings. Two products: the map, and the criteria vector `llk-001`'s weights are
+  judged against on a network that is not BART.
 
-  - **`draws_the_same_line` may fire where it must not.** OQ-7's merge folds a route
-    whose station list is equal to or exactly reversed from one already drawn. Two
-    routes running the *same ring in opposite directions* are exactly reversed and are
-    **not** the same line — a rider cannot board either and arrive the same way. Whether
-    CTA publishes such a pair is a question for the feed; that the predicate cannot tell
-    it from BART's `Yellow-N`/`Yellow-S` is a property of the predicate.
-  - **The representative trip may not include the ring.** §2.3 picks the pattern most
-    of a route's trips run. Loop service varies by daypart and some routes run the
-    circuit only part of the day, so the modal pattern may be the one that turns back —
-    which would draw a line that is topologically right and locally wrong.
-  - **A line that revisits a station is legal input and is about to be real.**
-    `llk-001` §2.1 rejects only *consecutive* repeats, and §2.5 carries an offset rule
-    keyed to `(line, position-in-list)` rather than `(line, station)` written for exactly
-    this. First feed that can test it.
-  - **`route_type`.** `ImportParams::default()` is `[0, 1]`. CTA rail is expected at 1,
-    but the `L` is largely elevated and a feed is entitled to disagree; confirm rather
-    than assume, the way `import_bart` documents its own default.
-  - **Scale, and this is the one that could reorder the roadmap.** Chicago is roughly
-    145 stations against BART's 50, where `llk-001` OQ-9's `O(iterations · V · r² · E²)`
-    was measured at **72.9 s release on 200**. BART sat comfortably inside that envelope
-    and OQ-9's conclusion — the delta score is schedulable, not urgent — rests on it.
-    145 does not obviously. **If this phase's timing says otherwise, that is OQ-9's
-    answer arriving, and it is recorded there rather than acted on here.**
+  #### What a "different shape" has to mean, corrected against the tree (decision)
+
+  An earlier draft of this phase argued that a ring core reaches two branches of
+  `llk-001` §2.5 that have never executed. **That argument was wrong in three ways and
+  is recorded rather than quietly replaced**, because it is the reasoning a reader would
+  otherwise reconstruct:
+
+  - §2.5 does **not** say those two run shapes are unreachable. It says they are "legal
+    input rather than corner cases, **both reachable**", and that each carries `n = 1` in
+    any realistic instance, "so what is at stake is **totality rather than a picture**".
+    The "Not reachable on the committed fixture" sentence belongs to §2.5's
+    *(line, position-in-list)* offset bullet, which is a different rule.
+  - `llika-core/src/render/corridor.rs`'s
+    `a_closed_run_is_directed_from_its_lowest_station_towards_its_lower_neighbour`
+    already asserts `direct_closed_run`, which §2.5 makes the shared fallback for **both**
+    shapes. The branch is covered.
+  - **The no-endpoints shape is unreachable by construction on a ring that has
+    branches.** It needs a closed cycle of degree-2 stations carrying one constant line
+    set; any line entering the ring drives its entry station to degree ≥ 3, which
+    `render/corridor.rs:is_collapse` makes a collapse station. A ring core with branches
+    hanging off it — the very shape the argument was reaching for — forecloses it.
+
+  **What survives is narrower and still worth the acquisition.** Three properties, each
+  checkable and none of them the discredited one:
+
+  - **A line that revisits a station** drives §2.5's *coincident-endpoint* run and its
+    `(line, position-in-that-line's-list)` offset rule. `llika-core/src/io.rs` rejects
+    only *consecutive* repeats, so this is legal input; neither committed fixture
+    contains it, and no **integration** test — a real `Network` reaching
+    `station_frames` — covers it. Round-trip services that circle a loop and come back
+    are where it occurs.
+  - **A cycle makes the cluster pass inert where the map is densest.** `llk-001` §2.4:
+    "A graph with no bridges — a pure cycle — yields no clusters and an inert pass."
+    BART is 47 bridges over 50 corridors; a network with a substantial cycle exercises
+    `cluster.rs` differently. *(Not "the first network that is not a tree" — an earlier
+    draft said that and it is false: BART's Oakland Wye and the 17-station fixture both
+    have cyclomatic number 1.)*
+  - **A network that can cross.** `llk-001` Phase 7 records that every weighting
+    surviving its gate reaches `c1 = 0` on both fixtures *and* BART, so nothing in that
+    tree constrains `w_crossings`, and closing it "would need a crossing-bearing real
+    fixture". Whether the chosen feed is one is reported either way — a second network
+    that also never crosses is itself the finding that `w1` may be unpinnable from real
+    feeds.
+
+  **Hazards are named at OQ-8's resolution, not here.** Phase 4's four were nameable in
+  advance because the feed was known; this phase's cannot be, and an earlier draft's
+  list was measurably wrong about the one feed it had in view — it named a
+  `draws_the_same_line` misfire that CTA cannot produce, publishing eight rail routes
+  with no per-direction split, while omitting the `stop_times.txt` scale hazard that is
+  certain to fire and is now Phase 5. **Phase 4's four format hazards carry forward
+  unresolved** — the BOM, the nested archive root, GTFS-Flex `stop_id`, and the scale
+  one Phase 5 closes — because OQ-4 recorded that none fired on BART and "the next feed
+  is where they get their test".
 
   #### What this phase does not do (decision)
 
   **It does not change `llk-001`'s weights.** It produces the comparison; moving a
-  default is `llk-001`'s to do, in a Phase 8 of its own with its own review round, for
-  the reason Phase 7 gave when it refused the mirror image of this — "folding it in here
-  would make a one-literal change into that phase again, and the honest version of this
-  phase is small." If the vector says the weights should move, this phase's close-out
-  names that phase and stops.
+  default is `llk-001`'s own Phase 8, with its own review round — the split Phase 7 used
+  in the mirror direction and refused to collapse. **It does not resolve OQ-2** either:
+  two cities is not a calibration. What it can do is tell a reproducible finding from an
+  artefact of one network, which no judgement before Phase 7 could.
 
-  **It does not resolve OQ-2 by itself either.** Two cities is not a calibration; what
-  it can do is tell a *reproducible* finding from an artefact of one network, which is
-  precisely what neither judgement before Phase 7 could do. OQ-2's positive half closes
-  when a third party can re-derive the answer, and this phase's job is to make that
-  cheap rather than to declare it.
-- **Exit gate:** `cargo test --workspace` green, and seven assertions.
-  1. **The feed imports to hand-counted totals** through `ImportParams::default()`,
-     gated in a new `llika-gtfs/tests/chicago_feed.rs` mirroring
-     `llika-gtfs/tests/real_feed.rs` — stations, lines, routes seen/kept/dropped/merged,
-     stops seen — with `chicago.md` recording source, retrieval date, published validity,
-     size, sha256 and licence, and carrying `bart.md`'s "Refreshing it" section including
-     the amendment `llk-001` Phase 7 added to it.
+  **It does not reopen a shipped decision to "fix what breaks".** If the feed forces a
+  change to OQ-7's merge predicate, to OQ-1's representative-trip selection, or to
+  `feed.rs`'s shape beyond Phase 5, that is a decision and gets its own phase or OQ —
+  not a repair folded in here. Corrections to §2.1's *column* table are in scope and are
+  recorded as corrections, which is Phase 4's precedent.
+- **Exit gate:** `cargo test --workspace` green, and six assertions.
+  1. **The feed imports to literals measured once and then pinned**, in a new
+     `llika-gtfs/tests/<city>_feed.rs` mirroring `llika-gtfs/tests/real_feed.rs`:
+     stations, lines, routes seen/kept/dropped/merged, stops seen. **Measured, not
+     hand-counted** — `stops_seen` is a raw `stops.txt` row count that runs to five
+     figures on a city feed, and Phase 4's "hand-counted" wording does not survive that
+     scale. The import path is whatever OQ-8's resolution names, stated in the test the
+     way `import_bart` states its own.
   2. **`Network::from_input` accepts it and `llika` draws it** — circle count equals the
      station count, path count the line count, as `llika_draws_the_bart_network` asserts.
-  3. **The ring is drawn as a ring.** At least one of `llk-001` §2.5's two unreached
-     branches is asserted **reached** — a run with no endpoints, or one whose two
-     endpoints are the same station — or, if neither is, that is recorded as a finding
-     against the argument above rather than passed over. This is the assertion that
-     makes "a different shape" checkable instead of rhetorical.
-  4. **The criteria vector at no fewer than three weightings**, which is `llk-001`
-     OQ-2's own wording: the shipped `5/1/0.5/0.25/10`, Phase 7's recorded runner-up
-     `5/1/1/0.5/10`, and the pre-Phase-7 `5/1/1/2/5` that BART dominated. Compared by
-     **Pareto dominance over the unweighted `c1..c5`, never by `t`**, for the reason
-     OQ-2 states — `t` is defined by the weights and is not comparable across them.
-     **Whether any weighting yields `c1 > 0` is reported explicitly**, since that is
-     what decides whether `w_crossings` is pinnable from a real feed at all.
-  5. **Layout timing**, release, against BART's 0.13 s and the 72.9 s at 200 — the
-     number OQ-9 is waiting for.
-  6. **Determinism across processes**, delegated to `llika-gtfs/tests/byte_stability.rs`
-     as every phase here has.
-  7. **The human half, and for this phase it is the real test**: open the SVG and judge
-     whether it reads as a poster of Chicago — the Loop legible as a closed ring, the
-     branches radiating from it, the north-side trunk bundled where lines share it.
-     A structurally perfect map whose Loop reads as a squiggle has failed this phase.
-- **Close-out:** commits the feed and `chicago.md`. Updates **`rules/gtfs-import.md`**
-  — the route-type and merge paragraphs if either hazard fired — and **`README.md`**,
-  whose "GTFS import is done too" paragraph names BART as *the* real city and gains a
-  second, plus a Phase 5 row on the `llk-002` table. Adds **`gallery/chicago.svg`** and
-  its row and refresh command to **`gallery/README.md`**, whose "`bart.svg` is the one
-  to judge the output on" sentence is the one this phase most directly moves.
+  3. **The revisited-station path is exercised, or its absence is a stated fact.** The
+     assertion is on the **network**, not on the renderer's private internals: some
+     line's station list contains a repeated id at non-consecutive positions, asserted
+     from the public `InputSchema`. If OQ-8's feed contains none, **this assertion is
+     removed at OQ-8's resolution rather than left to pass vacuously** — a gate item with
+     two passing outcomes is not an assertion, and an earlier draft of this phase had
+     one. `llika-core/src/render/corridor.rs` is a private module, so nothing here can
+     assert that a renderer branch *executed*; that gap is real and is not this phase's
+     to close.
+  4. **The criteria vector at three weightings, pinned as literals to an absolute
+     `1e-6`** — the shipped `5/1/0.5/0.25/10`, Phase 7's runner-up `5/1/1/0.5/10`, and
+     the pre-Phase-7 `5/1/1/2/5` — in the idiom
+     `llika-gtfs/tests/real_feed.rs:bart_draws_to_the_shipped_criteria_vector` already
+     uses. **A committed test, not a one-off measurement**, so the numbers cannot rot
+     silently. Compared by Pareto dominance over the unweighted `c1..c5` — `llk-001`
+     OQ-2's definition, restated here so it is not inherited by pointer: **`≤` on all
+     five and `<` on at least one, with a `1e-9` guard**, never by `t`, which is defined
+     by the weights and is not comparable across them. Whether any weighting yields
+     `c1 > 0` is asserted explicitly.
+  5. **Determinism across processes**, extending `llika-gtfs/tests/byte_stability.rs`
+     with a case on the new feed. Stated as an extension because that file reads only
+     `common::feed_dir()` today and BART was never added to it — "delegated as every
+     phase has" would leave this green without a line of new-feed work.
+  6. **The human half, and for this phase it is the real test**: open the SVG and judge
+     whether it reads as a poster of that city. A structurally perfect map that is
+     unrecognisable has failed this phase.
 
-  **Two cross-spec writes into `llk-001` §3, both of which that spec's questions asked
-  for by name.** The criteria vector and the `c1` finding go to **OQ-2**, which stays
-  open and gains its fourth entry; the timing goes to **OQ-9**, alongside the BART
-  reading `llk-001` Phase 7 already annotated. Precedent is Phase 4's own write into
-  OQ-9 and Phase 7's back into this spec — a fact belongs to the question that owns it,
-  not to the phase that measured it.
+  **Timing is not a gate assertion.** An earlier draft made it one; it states no
+  threshold, the phase's own scope forbids acting on the answer, and the tree has no
+  `Instant`, no `criterion` and no `[[bench]]` to produce it under a `cargo test` that
+  builds debug. It is a **close-out measurement** instead, taken in release and written
+  into `llk-001` OQ-9 — which is where Phase 4 put its own.
+- **Close-out:** commits the feed and its provenance file. Updates **`rules/gtfs-import.md`**
+  (at its cap — free a line or raise it) and **`README.md`**: the **Status** paragraph's
+  "on BART, **the one real network committed here**" is the sentence this phase most
+  directly falsifies, not only the "GTFS import is done too" paragraph further down, plus
+  a Phase 6 row. **`gallery/`**: a new SVG, its table row and refresh command, the
+  "`bart.svg` is the one to judge the output on" sentence, "All three at default
+  parameters" becoming four, and the closing "**a third network is what would settle
+  that**" sentence — which this phase does not settle and must not appear to.
+  **`llika-gtfs/tests/fixtures/bart.md`**: "It is the only third-party data in this
+  repository" is false the moment a second feed lands.
 
-  **Writes `shipped` into `phases[]`** and regenerates both `INDEX.md` files by
-  `spec-lint --write-index`: a new phase moves this spec's rollup `done → partial` on
-  append and back on ship. **`CLAUDE.md`: none needed** — its observable line names no
-  city and no feed.
+  **Two cross-spec writes into `llk-001` §3**, both of which that spec's questions ask for
+  by name: the criteria vector and the `c1` finding to **OQ-2**, which stays open and gains
+  its fourth entry **naming the successor phase that would close it**, since otherwise its
+  positive half is again a question with no phase attached; the timing to **OQ-9**,
+  alongside the BART reading Phase 7 annotated. **`llk-001` OQ-9's BART baseline is
+  re-measured in the same pass** — its 0.13 s / 3 sweeps is pre-Phase-7 and doubles at the
+  shipped weights, so comparing a new city against it would compare across weightings.
+
+  **Writes `shipped` into `phases[]`** and regenerates both indexes. **`CLAUDE.md`: none
+  needed** — its observable line names no city and no feed.
