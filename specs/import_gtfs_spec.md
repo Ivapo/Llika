@@ -31,7 +31,7 @@ phases:
     cut: null
     by: null
   - name: "Phase 5 — the tables are streamed, not collected"
-    reviewed: null
+    reviewed: 2026-08-18
     shipped: null
     cut: null
     by: null
@@ -1108,69 +1108,121 @@ this spec. It is the phase that makes §1's promise true.*
   it is the one fact this spec produces that belongs to another.
 
 ### Phase 5 — the tables are streamed, not collected
-*Produces the observable: **no**, and this is the first phase in either spec that does
-not. What it produces is the **ability** for the next one to. The argument is a
-measurement rather than a principle: `llika-gtfs/src/feed.rs:Source::table` reads an
-archive entry whole, its own doc comment defers the consequence — "a city's
-`stop_times.txt` running to hundreds of megabytes is a named Phase 4 hazard rather than
-this phase's problem" — and the CTA feed, measured at drafting, carries a
-**373 MB / ~6.16 M-row** `stop_times.txt`. Phase 6 cannot import a city until this is
-fixed, and folding the fix into Phase 6 would hide a reader rewrite inside a phase whose
-scope reads "acquire a feed and draw it". A phase that produces no observable is argued
-for explicitly (§3), and this is the argument.*
+*Produces the observable: **no**, argued — the same answer and the same form as `llk-001`
+Phase 2, which is the precedent rather than this being a first. What it produces is the
+**ability** to import a city at all.*
 
-- **Scope:** `llika-gtfs/src/feed.rs` — `Feed`, `Feed::read`, `Source::table` — so that
-  `stop_times.txt` is **streamed and filtered to the trips the import will actually use**
-  rather than collected whole. **`stop_times` alone**: the other three tables are
-  bounded by the number of stops, routes and trips a system publishes, and BART's are
-  kilobytes where its `stop_times.txt` is 2.7 MB and Chicago's is 373 MB. Widening this
-  to all four would be scope this phase has no measurement for.
+*The argument is a measurement, and deliberately **not** "Phase 6 needs it" — that
+justification is contingent on OQ-8, which could resolve toward a committed subset that
+reads whole, and a phase resting on a branch of an open question is a phase that can be
+undercut without anyone noticing. **This phase is not blocked on OQ-8 and does not depend
+on how it resolves.** `llika-gtfs --input <city>.zip` is a shipped user invocation, and
+this document's own frontmatter promises "the schematic map can be drawn from a real city".
+On the CTA archive today that invocation inflates a **372,947,364-byte** `stop_times.txt`
+and retains ~6.2 M `StopTime` rows — a peak of roughly a gigabyte, for a topology importer
+that keeps the rows of one trip per route. The promise is false for a large city regardless
+of what this repository commits, and that is what this phase fixes.*
 
-  **The filter set has to exist before the stream runs, which is the one ordering
-  constraint.** A row is kept when its `trip_id` belongs to a trip whose route survives
-  §2.2's `route_type` filter, so `routes.txt` and `trips.txt` are read first — both
-  small — and `stop_times.txt` is then read once, forward, discarding as it goes.
-  `llika-gtfs/src/convert.rs` iterates `&feed.stop_times` at one site today; whether
-  `Feed` keeps a filtered `Vec` field or hands the converter an iterator is an
-  implementation call this phase does not pin, because both satisfy the gate and only
-  one of them is knowable before the code is written.
+- **Scope:** `llika-gtfs/src/feed.rs` — `Feed`, `Feed::read`, `Source::table` and
+  **`Source::entry`, which is the function that actually reads whole** (`read_to_end` on
+  the `Source::Archive` branch; the `Source::Directory` branch already hands back a
+  streaming `BufReader<File>`, so only the archive path regresses to memory). The goal is
+  that `stop_times.txt` is **streamed and filtered to the trips the import will use**
+  rather than collected.
 
-  **`Source::table`'s doc comment records the borrow that made whole-reading the easy
-  choice** — "`by_name` borrows the archive" — and that constraint is real but not
-  binding: a `ZipFile` is a `Read`, and `csv::Reader` consumes one incrementally, so
-  what the borrow forbids is holding two entries open at once, which this ordering never
-  needs.
+  **`stop_times` alone.** Measured: on CTA the other three tables are 7.7 MB against that
+  file's 373 MB — **2.1%** — and on BART they are 393 KB against 2.7 MB. `trips.txt` is
+  the only one of the three that scales with the timetable rather than the topology (13%
+  of `stop_times` on BART, 1.7% on CTA), and it is still small enough that widening this
+  phase to it would be scope with no measurement behind it.
 
-  **`ImportReport`'s counts must not change meaning.** `convert.rs` reports
-  `stops_seen` and `routes_seen` as raw row counts; if a streamed `stop_times` makes any
-  reported count a *filtered* one, that is a change to what the binary prints and it is
-  recorded against §2.6 rather than made silently.
+  **The filter set has to exist before the stream runs, and that crosses a layer this
+  phase must name.** A row is kept when its `trip_id` belongs to a trip whose route
+  survives **§2.3's** `route_type` filter — and that predicate lives today in
+  `llika-gtfs/src/convert.rs:to_schema`, not in `feed.rs`, which imports only
+  `crate::ImportError` and whose `Feed::read(path)` has no access to `ImportParams`. So
+  this phase **changes `Feed::read`'s signature and its one call site,
+  `llika-gtfs/src/lib.rs:import`** — either taking `&ImportParams` or taking a
+  precomputed kept-trip set. Both are acceptable and neither changes output; what is not
+  acceptable is a second copy of the predicate. **One shared `route_type` test, called
+  from both places**, because §2.3 already anticipates the filter widening and a later
+  divergence would silently truncate a kept line's station list rather than error.
+
+  **The borrow is real and is not binding.** `Source::entry`'s doc records that
+  "`by_name` borrows the archive"; `zip`'s `ZipFile` implements `Read`, and `csv::Reader`
+  consumes one incrementally, so what the borrow forbids is holding two entries open at
+  once — which this ordering never needs, and which `Feed::read` does not do today.
+
+  **Two doc comments stop being true and are corrected here**, not left to a close-out
+  sweep: `feed.rs`'s module doc ("Every table is a `Vec` in **file row order**") and
+  `Feed`'s own ("The four tables, each in file row order"). Once `stop_times` holds a
+  filtered subset, both over-claim.
+
+  *(`ImportReport`'s counts need no guard: `routes_seen` and `stops_seen` are raw
+  `Vec::len()` on tables this phase does not touch and `stations_emitted` counts emitted
+  stations, so no reported number derives from `stop_times`. An earlier draft stated this
+  as a live constraint, which sent a reader looking for a change that is not there.)*
 - **Exit gate:** `cargo test --workspace` green, and four assertions.
-  1. **Byte-identical output on both committed feeds.** The synthetic fixture and
-     `bart.zip` must import to exactly the network files they do today — this phase
-     changes how bytes are read, never which ones matter, so any diff is a defect. This
-     is the assertion the phase lives or dies on, and it is keyed to artifacts already in
-     the tree.
+  1. **Byte-identical output on both committed feeds, against goldens committed by this
+     phase.** The tree holds no expected network file for either feed today, so "the
+     files they produce now" has no referent and the assertion has to bring its own:
+     `llika-gtfs/tests/fixtures/golden/fixture.json` and `golden/bart.json`, generated at
+     this phase's **base commit** and compared byte for byte — the idiom
+     `llika-core/tests/golden.rs` already uses, and captured before the change for the
+     reason that file records. **Generated and asserted at `ImportParams::default()`**,
+     stated because `gallery/README.md` documents BART as `--route-types 1` while
+     `real_feed.rs:import_bart` uses the default: today both select the same twelve
+     routes, but a refreshed feed carrying a `route_type = 0` route would split golden
+     from test for a reason nobody would look for. A one-off pre/post diff is the alternative and is refused:
+     it leaves this phase's load-bearing assertion out of the suite and cannot be
+     reproduced by a second person once the change lands. **`bart.md`'s refresh
+     discipline gains `golden/bart.json` as a moved literal**, and the close-out says so.
   2. **The zip and directory paths still agree byte for byte**, which
-     `llika-gtfs/tests/byte_stability.rs` already asserts for the unpacked fixture and
-     which the streaming path must not split.
-  3. **Peak memory is bounded by the filtered set, not by the file** — demonstrated on a
-     generated `stop_times.txt` large enough that the old reader would hold it all:
-     at least 2 M rows, of which fewer than 1% belong to kept trips. Generated in the
-     test rather than committed, for `bart.md`'s reason inverted — a synthetic blob is
-     not evidence of anything and must not be mistaken for a fixture. **The pass
-     condition is that the test completes** under the suite's ordinary memory with a
-     file whose whole-read form would exceed it; if that proves unmeasurable in-process,
-     the assertion becomes row-count-based — the reader must visit each row once and
-     retain only kept ones, asserted by a counter — and the substitution is recorded.
-  4. **A row whose `trip_id` matches no kept trip is discarded, not errored**, and a
-     `stop_times` row with no `stop_id` is still passed over as §2.1 says.
-- **Close-out:** updates **`rules/gtfs-import.md`**, whose current text states the live
-  behaviour this phase ends — "An entry is read whole, not streamed, so a huge one is
-  unhandled" — and which is at **115/115 against `max_lines: 115`**, so the rewrite must
-  free a line or raise the cap deliberately. Corrects `Source::table`'s own doc comment,
-  which defers the case this phase closes. **`README.md`: a Phase 5 row on the `llk-002`
-  table.** No `gallery/` change and no `CLAUDE.md` change — no map moves.
+     `llika-gtfs/tests/byte_stability.rs` already asserts on the unpacked fixture and
+     which the streaming path must not split — **extended to a generated archive large
+     enough to cross deflate-stream boundaries**, since the branch this phase rewrites is
+     `Source::Archive` and every existing zip case is 48 rows.
+     `llika-gtfs/tests/byte_stability.rs:build_zip` is the idiom for generating one.
+  3. **The reader retains only kept rows, asserted by count.** On a generated **feed** —
+     all four tables, since `Feed::read` returns `MissingTable` otherwise, as
+     `llika-gtfs/tests/byte_stability.rs:an_incomplete_feed_fails_loudly` proves — whose
+     `stop_times.txt` carries at least 2 M rows of which under 1% belong to kept trips, the
+     number of `StopTime` values retained must be within a small constant of the kept
+     count, not of the file's. **This is the assertion, not a fallback to a memory
+     bound** — measured at `opt-level = 0`, whole-reading 2 M rows peaks at ~180 MB RSS
+     and streaming at ~3.5 MB, and nothing in `cargo test` bounds memory anywhere near
+     180 MB, so "the test completes" passes for the implementation this phase exists to
+     replace. Making a whole-read actually exhaust a runner needs ~100 M rows and a
+     multi-GB file, which no suite accepts. The count discriminates cleanly in the same
+     experiment: 2,000,000 retained against 18,000.
+
+     **Generated in the test, never committed** — for `bart.md`'s reason inverted: a
+     synthetic blob is not evidence of what a publisher publishes and must not sit in
+     `fixtures/` where a reader would take it for one. It lives in a new
+     `llika-gtfs/tests/streaming.rs`; note `common::scratch` removes a directory only on
+     the *next* create, so the file outlives the run and the test cleans up after itself.
+     Cost, measured: ~0.7 s to write and ~2.5 s to parse in a debug build, against
+     `llika-gtfs/tests/real_feed.rs`'s ~25 s radius test.
+  4. **A row whose `trip_id` matches no kept trip is discarded, not errored.** Witnessed
+     on the committed fixture — its three `B1_t1` rows belong to the filtered-out bus
+     route, and `llika-gtfs/tests/import.rs:the_route_type_filter_removes_the_bus_route_and_its_stop`
+     already exercises them end to end, so this assertion is that the streaming reader
+     does not turn a working case into an error. *(The empty-`stop_id` half of an earlier
+     draft of this assertion is **dropped**: neither committed feed contains such a row,
+     OQ-5 forbids extending the fixture, and whether it is skipped or an error is a Phase
+     4 hazard still open and carried forward to Phase 6. It was also mis-cited to §2.1,
+     which only types the field `Option`; what says the row is passed over is
+     `feed.rs:StopTime`'s doc.)*
+- **Close-out:** updates **`rules/gtfs-import.md`**, whose line 34 states the behaviour
+  this phase ends — "An entry is read whole, not streamed, so a huge one is unhandled" —
+  and which is at **115/115 against `max_lines: 115`**, so the rewrite must free a line or
+  raise the cap deliberately. Corrects **`Source::entry`'s doc comment**, which defers this
+  case as "a named Phase 4 hazard rather than this phase's problem", plus the two "file row order" claims named in scope. Adds the
+  two golden files and names them in **`llika-gtfs/tests/fixtures/bart.md`**'s refresh
+  section, beside the criteria-vector line `llk-001` Phase 7 added, since a refreshed BART
+  moves `golden/bart.json` too. **`README.md`: a Phase 5 row on the `llk-002` table.** No
+  `gallery/` change and no `CLAUDE.md` change — no map moves, which is the point of
+  assertion 1.
 
 ### Phase 6 — a second city, of a different shape
 *Produces the observable: **yes** — a second real city drawn, and the measurement
