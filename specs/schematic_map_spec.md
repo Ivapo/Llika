@@ -6,7 +6,7 @@ note: >
   schematic map — projection, grid snap, Stott-Rodgers hill-climbing layout and a
   line-bundling renderer, behind a CLI.
 status: accepted
-last_updated: 2026-08-17
+last_updated: 2026-08-18
 
 phases:
   - name: "Phase 1 — thin end-to-end slice: JSON in, SVG out"
@@ -1057,6 +1057,21 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   implementation. One was not: the note that "one 45° connector survives" is a visual
   reading, and the layout in fact carries **three** diagonal corridors against 47 on an
   axis — which is the same point about it not reading as a circuit board, counted.
+
+  **That phase now exists: `llk-002` Phase 5, drafted 2026-08-18** — Chicago's `L`, chosen
+  for a property BART cannot have rather than for being one more city. Its gate produces
+  this entry's fourth measurement: the criteria vector at the three weightings the
+  paragraph above asks for, compared by Pareto dominance and never by `t`. **It does not
+  change the weights** — if the vector says they should move, that is a Phase 8 of *this*
+  spec, which is the split Phase 7 used in the other direction. The pointer is what §4
+  asks for and what this entry has lacked since it was raised: until now nothing in either
+  spec would ever have forced this measurement.
+
+  One thing that phase is expected to settle, which is Phase 7's leftover rather than this
+  entry's: **whether `w_crossings` is pinnable at all.** Every weighting that survives
+  Phase 7's gate reaches `c1 = 0` on both fixtures and on BART, so nothing in this tree
+  constrains `w1`. A ring core can cross where a tree of spurs cannot — and a second
+  network that also never crosses is itself the answer, in the negative.
 - **OQ-3** — ~~Deterministic tie-break when two stations snap to the same grid cell
   before hill-climbing starts. Proposed: spiral search outward to the nearest free
   cell, in a fixed order so the result is reproducible. *(design call.)* **Blocks
