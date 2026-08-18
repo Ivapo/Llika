@@ -41,7 +41,7 @@ phases:
     by: null
   - name: "Phase 7 — the weights, corrected against a real network"
     reviewed: 2026-08-17
-    shipped: null
+    shipped: 2026-08-17
     cut: null
     by: null
 
@@ -102,6 +102,17 @@ requested count would be a lie. At the defaults the same line reads
 `grid 2270m, cost 37.166633 → 11.338720 over 2 iterations`.
 
 Nothing else in the block moved: 17 stations, 3 lines and `grid 900m` were right.
+
+**CORRECTED AGAIN 2026-08-17, at Phase 7's close-out**, beneath the note above rather
+than inside it — the 2026-08-15 figures were right when they were measured, and what
+moved is the thing they were measured against. Phase 7 reweighted
+`LayoutParams::default()` from 5/1/1/2/5 to 5/1/0.5/0.25/10, and `t` is *defined* by the
+weights, so both cost pairs above are now wrong by construction and neither layout
+changed. At §1's flags the line reads
+`cost 48.328948 → 5.357277 over 3 iterations`; at the defaults,
+`grid 2270m, cost 13.539238 → 4.662836 over 2 iterations`. **The fixture's picture is
+bit-identical across the reweight** — `llika-core/tests/golden.rs` is what says so — so
+this correction is arithmetic and nothing about `bayside.svg` moved.
 
 `bayside.svg` opens in any browser and reads as a transit diagram: every edge at or
 near a multiple of 45 degrees, a marker at every stop, and the Red and Green lines
@@ -446,6 +457,14 @@ source means the hard one costs a map with a crossing that `c1`, weighted 5.0 an
 heaviest term in §2.3, is already pushing out. The failure modes are not comparable,
 so the reading that cannot freeze the search is the one to build. See OQ-1 in §3 for
 what remains open about it.
+
+*(**CORRECTED 2026-08-17, at Phase 7.** "the heaviest term in §2.3" was true when it was
+written and is not now: Phase 7 raised `w_octilinearity` to 10.0 against `w_crossings`
+5.0. **The argument is untouched**, because it was always about what one crossing costs,
+and the two criteria are not commensurable — `c1` counts, so a crossing costs 5.0 flat,
+while `c5` sums a deviation of at most `π/8` an edge, so the most expensive single
+off-angle edge costs `10 × π/8 = 3.926991`. A crossing is still the dearer defect. Read
+the sentence as "weighted 5.0, and dearer per occurrence than anything else in §2.3".)*
 
 **The overlap predicate's pair set, pinned — and it is deliberately *not* `c1`'s.**
 Test every edge incident to the moved station against **every other edge in the
@@ -1031,6 +1050,13 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   that an open question with no phase attached is one nothing will ever force. Until such a
   phase exists this question stays open with a *known* answer to its negative half and an
   unforced one to its positive half.
+
+  **Phase 7 shipped `5 / 1 / 0.5 / 0.25 / 10` on 2026-08-17**, this entry's second
+  candidate, and left this question open exactly as the paragraph above says. Every figure
+  the entry carries was reproduced against the shipped tree at that phase's
+  implementation. One was not: the note that "one 45° connector survives" is a visual
+  reading, and the layout in fact carries **three** diagonal corridors against 47 on an
+  axis — which is the same point about it not reading as a circuit board, counted.
 - **OQ-3** — ~~Deterministic tie-break when two stations snap to the same grid cell
   before hill-climbing starts. Proposed: spiral search outward to the nearest free
   cell, in a fixed order so the result is reproducible. *(design call.)* **Blocks
@@ -1314,6 +1340,15 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   or one whose search does not settle in three, still lands on it, and 50 stations is a
   quarter of where the 72.9 s was taken. The delta score is still the fix, and this
   number moves it from urgent to schedulable rather than closing it.
+
+  *(Note, 2026-08-17 at Phase 7 — a note and not a correction, because this is a dated
+  measurement rather than a live promise, which is why §1's block gets the other
+  treatment. The reweight doubles BART's executed sweeps from 3 to 6, so the run is
+  ≈0.26 s at the same ≈43 ms a sweep. **The conclusion is untouched** in both directions:
+  the per-sweep term is what the delta score attacks and it did not move, and a factor of
+  two on a quarter-second run is still schedulable rather than urgent. Worth recording
+  only because it shows the leading factor is a property of the weights too, not of the
+  network alone.)*
 
 ## 4. Implementation phases
 
@@ -1869,6 +1904,13 @@ last thing the roadmap's UI needs from the core.*
     and in `rules/cli.md`, rather than the weights changing first. Reproduced twice
     more since: `r_0` of 1, 2, 3, 5 and 8 give bit-identical positions at
     `t = 11.338720` on the fixture with cluster moves on.
+
+    *(**Reversed 2026-08-17 at Phase 7**, on both halves. The weights did change first
+    after all, and the inertness this fork chose to ship was not a property of the flag
+    but of the fixture: on BART `r_0 = 1` draws a different map from `r_0 ≥ 2`. The
+    `--help` text and `rules/cli.md` both now say saturation rather than inertness, and
+    both halves are gated. Recorded rather than struck, because the fork was decided on
+    the evidence available and it is the evidence that moved.)*
   - **The CLI summary line, and what is actually missing.** ~~It still prints only the
     grid size~~ — it prints station count, line count and grid; the missing clause is
     `cost … → … over N iterations`. And ~~reporting it needs a public way to get `t`

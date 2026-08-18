@@ -13,7 +13,7 @@ for legibility.
 
 ```console
 $ llika --input network.json --output bayside.svg
-wrote bayside.svg — 17 stations, 3 lines, grid 2270m, cost 37.166633 → 11.338720 over 2 iterations
+wrote bayside.svg — 17 stations, 3 lines, grid 2270m, cost 13.539238 → 4.662836 over 2 iterations
 ```
 
 Nothing in the pipeline is specific to a metro. A network is stations and ordered line
@@ -21,13 +21,14 @@ lists, which a tram or bus system satisfies as readily as an underground.
 
 ## Status
 
-**All 6 phases shipped — v1 is complete.** The pipeline runs end to end and reads as a
+**All 7 phases shipped — v1 is complete.** The pipeline runs end to end and reads as a
 transit diagram: stations are snapped to a grid and then hill-climbed against five
 weighted criteria, one station at a time and then in rigid groups, and lines sharing a
 corridor are drawn as parallel strokes that converge to a single point at a real
-interchange. Expect junctions that fan out evenly, lines that do not kink, and bundled
-trunks. Every layout and render parameter has a flag, so a good first result can be
-improved by eye.
+interchange. Expect junctions that fan out evenly, lines that do not kink, bundled
+trunks, and — on BART, the one real network committed here — every one of its 50
+corridors on a multiple of 45 degrees. Every layout and render parameter has a flag, so
+a good first result can be improved by eye.
 
 | Phase | | |
 |---|---|---|
@@ -37,6 +38,7 @@ improved by eye.
 | 4 | Cluster moves | ✅ shipped |
 | 5 | Line-bundling renderer | ✅ shipped |
 | 6 | Full parameter surface | ✅ shipped |
+| 7 | The weights, corrected against a real network | ✅ shipped |
 
 **GTFS import is done too.** A separate spec adds `llika-gtfs`, a second binary that
 turns a published GTFS feed into a network file the one above draws. Platforms collapse
@@ -75,7 +77,7 @@ disk; it never goes to the network — and writes a network file:
 $ llika-gtfs --input llika-gtfs/tests/fixtures/bart.zip --output bart.json --route-types 1
 wrote bart.json — 50 stations, 6 lines, 12 of 14 routes matched, 0 dropped, 6 merged
 $ llika --input bart.json --output bart.svg
-wrote bart.svg — 50 stations, 6 lines, grid 3322m, cost 511.450746 → 112.087766 over 3 iterations
+wrote bart.svg — 50 stations, 6 lines, grid 3322m, cost 234.460102 → 16.746281 over 6 iterations
 ```
 
 That is a real feed and those are real numbers — BART's published archive is
@@ -160,9 +162,10 @@ override the file field by field, so the run above draws at stroke width 10. A
 misspelled key is an error rather than a silent default — the whole point of a knob you
 are tuning by eye is that it took effect.
 
-One knob does nothing at the shipped weights, and says so in `--help`:
-`--initial-radius`. The edge-length criterion prices every move beyond one ring out of
-contention before any other criterion is consulted, so raising it only costs time.
+One knob saturates at the shipped weights, and says so in `--help`: `--initial-radius`.
+Beyond two rings it buys nothing — on BART 2, 3, 5 and 8 draw the same map, and on the
+17-station fixture all of 1 through 8 do — while each extra ring costs `O(r²)`
+candidates a sweep. It is not inert: on BART, `r_0 = 1` is a different map.
 
 ## Input format
 

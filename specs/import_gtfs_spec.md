@@ -7,7 +7,7 @@ note: >
   the schematic map can be drawn from a real city rather than a hand-authored
   fixture.
 status: accepted
-last_updated: 2026-08-16
+last_updated: 2026-08-17
 
 phases:
   - name: "Phase 1 — thin end-to-end slice: a feed becomes a drawable network"
@@ -73,7 +73,7 @@ $ llika-gtfs --input bart.zip --output bart.json --route-types 1
 wrote bart.json — 50 stations, 6 lines, 12 of 14 routes matched, 0 dropped, 6 merged
 
 $ llika --input bart.json --output bart.svg
-wrote bart.svg — 50 stations, 6 lines, grid 3322m, cost 511.450746 → 112.087766 over 3 iterations
+wrote bart.svg — 50 stations, 6 lines, grid 3322m, cost 234.460102 → 16.746281 over 6 iterations
 ```
 
 *(Measured 2026-08-16 at Phase 4, replacing the invented figures this block carried
@@ -84,6 +84,16 @@ guess is kept below rather than deleted, because what it got wrong is the record
 multi-modal city feed with a couple of hundred routes; BART publishes fourteen, and
 the six lines come out of OQ-7's merge rather than out of six route rows. The
 `llika` line's format was right, which is what §1 claimed for it.)*
+
+*(**The `llika` line's cost pair and sweep count re-measured 2026-08-17**, at `llk-001`
+Phase 7, which reweighted `LayoutParams::default()` from 5/1/1/2/5 to 5/1/0.5/0.25/10. The
+2026-08-16 reading was* `cost 511.450746 → 112.087766 over 3 iterations` *and is kept here
+for the same reason the guess above it is. `t` is defined by the weights, so it could not
+survive them; the sweep count doubled because the search now has further to go. Nothing on
+the* `llika-gtfs` *line moved — the import is untouched by a layout weight, which is §1.1's
+whole point. What did change is the picture: BART goes from 48 of 50 corridors octilinear
+to 50 of 50, which is `llk-001` Phase 7's observable and is why that phase corrected this
+block rather than leaving it.)*
 
 **The numbers above are the only measured ones in this document, and every other
 figure in it should be read as illustrative until a phase says otherwise.** This is

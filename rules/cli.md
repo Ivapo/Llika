@@ -5,8 +5,8 @@ sources:
 covers: >
   the flag surface and the rule that names it, the --params file and how flags
   override it, the validation bounds and why they live here, and the summary line
-max_lines: 70
-generated: 2026-08-15
+max_lines: 75
+generated: 2026-08-17
 ---
 
 # CLI
@@ -55,10 +55,13 @@ not in core, where `run_layout` is infallible by design.
 | `bundle_spacing` | finite; 0 is the supported disable seam |
 
 The five weights carry no bound: any real number weights a criterion, zero switches
-it off. `--initial-radius` costs `O(r²)` candidates and buys little: on the fixture 1,
-2, 3, 5 and 8 are bit-identical. Its `--help` generalises that to every network and
-overstates — on BART 1 differs from 2, and 3, 5 and 8 differ from 2 in 8 of 50 stations
-at an identical `t`. Saturation is by cost there, not by position (`llk-001` OQ-2).
+it off. `--initial-radius` costs `O(r²)` candidates and buys little above two rings,
+which is what its `--help` now claims and no more: 2, 3, 5 and 8 are bit-identical on
+BART and 1 is not, differing there in 33 of 50 stations. **That saturation is
+positional only at the Phase 7 weights** — before them, 3, 5 and 8 each differed from 2
+in 8 of 50 at an identical `t`, so the reweight created the property rather than
+revealing it. On the fixture all five agree, which is what the old text over-generalised
+from. Both halves are gated, on BART and on the fixture respectively.
 
 `llika-cli/src/main.rs:Extent` supplies the conditional half of the `margin_cells`
 row, measured on the **projected plane** so a network straddling a pole is judged on

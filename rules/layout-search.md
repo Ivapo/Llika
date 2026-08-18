@@ -9,7 +9,7 @@ covers: >
   exit, the candidate set and its tie-break, the three hard move rejections with their
   predicates, and bridge-side clusters and their rigid translation
 max_lines: 85
-generated: 2026-08-15
+generated: 2026-08-17
 ---
 
 # Layout search
@@ -66,8 +66,10 @@ move.
    is invisible to `c1` by construction. Identity is by position in the corridor list, never
    by comparing endpoint pairs, which are unnormalised.
 
-**Ordinary crossings are not rejected** — they are left to `c1`, weighted heaviest. The
-predicate is `llika-core/src/geometry.rs:segments_overlap` and **not**
+**Ordinary crossings are not rejected** — they are left to `c1`, which still prices a
+crossing above any other single defect even though `w_octilinearity` is the larger weight
+since Phase 7: one crossing costs 5.0 flat, while the worst single off-angle edge costs
+`10 × π/8 = 3.926991`. The predicate is `llika-core/src/geometry.rs:segments_overlap` and **not**
 `llika-core/src/geometry.rs:segments_intersect`, which is closed: using the latter forbids
 every legitimate collinear straight-through and silently restores a hard-crossing
 rejection, freezing the search.

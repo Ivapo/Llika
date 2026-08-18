@@ -2,15 +2,15 @@
 
 # Rules
 
-- **[cli](cli.md)** — generated 2026-08-15 · 1 source · 70/70 lines
+- **[cli](cli.md)** — generated 2026-08-17 · 1 source · 73/75 lines
   the flag surface and the rule that names it, the --params file and how flags override it, the validation bounds and why they live here, and the summary line
 - **[data-model](data-model.md)** — generated 2026-08-14 · 2 sources · 42/50 lines
   station/line/network types, the corridor edge and its line set, the five-condition input error contract, and input order as iteration order
 - **[gtfs-import](gtfs-import.md)** — generated 2026-08-16 · 6 sources · 115/115 lines
   the four GTFS tables read and how their optional columns are typed, the route-type filter and its default, the platform-to-station collapse and the fold it needs, the rule deciding which stops become stations and at which row, which routes are dropped and which are merged into another line, the colour, name and representative-trip conversions, and what the importer reports
-- **[layout-cost](layout-cost.md)** — generated 2026-08-14 · 3 sources · 60/60 lines
+- **[layout-cost](layout-cost.md)** — generated 2026-08-17 · 3 sources · 66/70 lines
   the plane and integer-grid geometry helpers, the five cost criteria and their zero-sets, the c2 target length, and the weights that combine them into t
-- **[layout-search](layout-search.md)** — generated 2026-08-15 · 3 sources · 82/85 lines
+- **[layout-search](layout-search.md)** — generated 2026-08-17 · 3 sources · 84/85 lines
   the hill-climbing sweep and its ordering, the cooling schedule and the convergence exit, the candidate set and its tie-break, the three hard move rejections with their predicates, and bridge-side clusters and their rigid translation
 - **[projection-grid](projection-grid.md)** — generated 2026-08-15 · 3 sources · 61/65 lines
   the equirectangular projection, the derived grid spacing and its fallback, cell rounding, the claim-order and spiral tie-break, and what run_layout produces

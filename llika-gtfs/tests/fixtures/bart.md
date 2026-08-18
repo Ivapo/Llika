@@ -52,3 +52,9 @@ $ shasum -a 256 llika-gtfs/tests/fixtures/bart.zip
 
 Update every row of the table above in the same commit, and say in the message
 which gate literals moved with it.
+
+One of those literals is not a property of the feed at all.
+`tests/real_feed.rs:bart_draws_to_the_shipped_criteria_vector` pins the five cost
+criteria this network **lays out** to, which `llk-001` Phase 7 chose its default
+weights against — so a refreshed BART can fail it with nothing wrong in the code,
+and re-measuring it is part of the refresh rather than a bug to chase.

@@ -7,8 +7,8 @@ sources:
 covers: >
   the plane and integer-grid geometry helpers, the five cost criteria and their
   zero-sets, the c2 target length, and the weights that combine them into t
-max_lines: 60
-generated: 2026-08-14
+max_lines: 70
+generated: 2026-08-17
 ---
 
 # Layout cost
@@ -63,10 +63,16 @@ for collinear opposite offsets at any angle, octilinear or not.
 
 ## The weights
 
-`llika-core/src/layout/mod.rs:LayoutParams` carries `w_crossings` 5.0,
-`w_edge_length` 1.0, `w_angular_resolution` 1.0, `w_straightness` 2.0,
-`w_octilinearity` 5.0 — named for what they weigh, since the names are serde-visible
-and `rules/cli.md` derives a flag from each by kebab-casing it. `Default` is
-**written out, never derived**: a derived one zeroes every weight, making `t ≡ 0` and
-every cost-decrease gate vacuous. The values are provisional (OQ-2) and **dominated on
-BART** — 176 of 324 grid settings beat all five at once; at `w5:w4` = 5:2, `c4` outbids `c5`.
+`llika-core/src/layout/mod.rs:LayoutParams` carries `w_crossings` 5.0, `w_edge_length` 1.0,
+`w_angular_resolution` 0.5, `w_straightness` 0.25, `w_octilinearity` 10.0 — named for what
+they weigh, since the names are serde-visible and `rules/cli.md` derives a flag from each by
+kebab-casing it. `Default` is **written out, never derived**: a derived one zeroes every
+weight, making `t ≡ 0` and every cost-decrease gate vacuous.
+
+**The second set, still provisional (OQ-2).** `5/1/1/2/5` shipped to Phase 7, when BART
+dominated it on all five at once in 176 of 324 grid settings: `c4` and `c5` both price an
+edge's angle, and at `w5:w4` = 5:2 `c4` buys a line straight through a station with an
+off-angle edge. At 10:0.25 BART draws 50 of 50 corridors octilinear at `c5` exactly zero,
+gated by `llika-gtfs/tests/real_feed.rs:bart_draws_to_the_shipped_criteria_vector`. It is a
+round point inside the dominating region, not its argmax, and `w4 = 0.25` is a design call
+— `w4 = 0` draws the same BART layout, so nothing measured argues for keeping `c4`.
