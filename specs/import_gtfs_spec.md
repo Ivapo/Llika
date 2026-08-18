@@ -36,7 +36,7 @@ phases:
     cut: null
     by: null
   - name: "Phase 6 — a second city, of a different shape"
-    reviewed: null
+    reviewed: 2026-08-18
     shipped: null
     cut: null
     by: null
@@ -888,8 +888,9 @@ Nothing else here is a reserved namespace.
   place in the tree is the one that serves as the example, not the one that serves a
   test** — and it is a distinction neither this question nor OQ-4 had drawn. BART does
   three jobs at 892 KB: it is the worked example in `README.md`'s *Importing a real
-  network*, the provenance of `gallery/bart.svg`, and the fixture seven tests read. A
-  second feed would do only the third. **Nothing already committed moves**, and `bart.md`
+  network*, the provenance of `gallery/bart.svg`, and the fixture **eight** tests read —
+  `real_feed.rs`'s seven plus the golden Phase 5 added the same day. A second feed would
+  do only the third. **Nothing already committed moves**, and `bart.md`
   is untouched.
 
   What goes in the tree in its place is the **imported network** — `<city>.json`, tens of
@@ -1432,7 +1433,7 @@ Phase 4 and was resolved before it ran.~~ **Unblocked 2026-08-18: OQ-8 resolved 
 fetched and not committed, and this phase is plannable. It remains `reviewed: null` and
 takes its own review round.*
 
-- **Scope:** import the feed OQ-8 names, fix what breaks, draw it, and score it at three
+- **Scope:** import the feed OQ-8 names, fix what breaks, draw it, and score it at four
   weightings. Two products: the map, and the criteria vector `llk-001`'s weights are
   judged against on a network that is not BART.
 
@@ -1462,15 +1463,39 @@ takes its own review round.*
   where it reads as a filename pattern rather than as an open choice.)*
 
   **So this phase's work happens against a feed on the author's disk**, and the gate below
-  is split accordingly: the two assertions about the *import* read the archive and skip
-  when it is absent; the four about the *layout* read the committed network and run on a
-  fresh clone. That split is OQ-8's argument and not a convenience — a second city exists
+  is split accordingly: the two assertions about the *import* — gates 1 and 5 — read the
+  archive and skip when it is absent; the **three** about the *layout* — gates 2, 4 and 6 —
+  read the committed network and run on a fresh clone. *(Three and not four since gate 3's
+  removal; the count was left behind by that edit.)* That split is OQ-8's argument and not a convenience — a second city exists
   to teach `llk-001` something, and OQ-2's criteria vector is the product this phase is
   for.
 
-  **Skipping is explicit, not silent.** A skipped assertion prints why and names the
-  download command: a test that vanishes when its data is missing is indistinguishable
-  from a test that passed.
+  **The archive lives at `llika-gtfs/tests/fixtures/mbta.zip` and is never committed.**
+  Both feed-reading gates resolve that one path, so they agree on skip-versus-run, and the
+  close-out adds it to `.gitignore` — which today lists only `/target` and `.DS_Store`, so
+  an 18.6 MB untracked archive would otherwise sit beside the committed `bart.zip` waiting
+  for someone's `git add -A`. OQ-8 decided the archive does not land here; the `.gitignore`
+  line is what makes that decision hold against an accident.
+
+  **Skipping is explicit, not silent — and the mechanism is named here because this
+  repository has none.** There is no `build.rs` in the workspace, no `#[ignore]` in any
+  test, and no conditional-skip idiom anywhere in the three `tests/` trees: every test is
+  an unconditional `#[test]`. **The reflex implementation is worse than no gate.** An early
+  `return` after a `println!` reports `1 passed` and prints nothing, because libtest
+  captures the output of passing tests — which is exactly the outcome the paragraph above
+  forbids, arrived at by the obvious route.
+
+  So this phase **adds `llika-gtfs/build.rs`**, ~15 lines: emit
+  `cargo::rustc-cfg=mbta_feed` when `tests/fixtures/mbta.zip` exists, plus
+  `cargo::rerun-if-changed` on that path so fetching the feed re-triggers the build, and
+  `cargo::rustc-check-cfg=cfg(mbta_feed)` so the custom cfg does not warn on this
+  workspace's toolchain — without that line `cargo clippy --all-targets -- -D warnings`,
+  which CI runs, fails on `unexpected_cfgs`. The feed-reading tests then carry
+  `#[cfg_attr(not(mbta_feed), ignore = "fetch <url> to tests/fixtures/mbta.zip")]`: **three
+  attributes for two gates**, since gate 1 splits across `<city>_feed.rs` for its counts
+  and `golden.rs` for its byte comparison. **This is scope**, not an implementation detail:
+  it is a new file, a new build step and a cfg three test attributes read, and a phase that did not name it would have an implementer
+  discover it at the point the gate is written.
 
   #### What a "different shape" has to mean, corrected against the tree (decision)
 
@@ -1567,10 +1592,38 @@ takes its own review round.*
      stations, lines, routes seen/kept/dropped/merged, stops seen. **Measured, not
      hand-counted** — `stops_seen` is a raw `stops.txt` row count that runs to five
      figures on a city feed, and Phase 4's "hand-counted" wording does not survive that
-     scale. The import path is whatever OQ-8's resolution names, stated in the test the
-     way `import_bart` states its own. **It is also what writes the committed network**:
-     this assertion is the only thing in the tree that can say `golden/<city>.json` is
-     what this importer makes of that archive.
+     scale. The import path is `tests/fixtures/mbta.zip`, which the scope fixes above —
+     OQ-8 names the URL and the scope names where it lands — stated in the test the way
+     `import_bart` states its own.
+
+     **And a byte comparison against `golden/mbta.json`, which the counts do not give
+     and which is the half that pins the committed network.** Stated because the two are
+     easily conflated: counts say the importer produced *a* network of that size, and only
+     `to_json(&schema)` compared byte for byte against the committed file says it produced
+     *that* one. Gates 2, 4 and 6 all read `golden/mbta.json`, and it is the whole product
+     of OQ-8's second half, so without this it is never checked against the importer at
+     all. The idiom is `llika-gtfs/tests/golden.rs`, which Phase 5 shipped doing exactly
+     this for BART and the fixture; this assertion extends that file rather than inventing
+     a second way to do it.
+
+     **A stale feed fails loudly rather than skipping, and that is a decision rather than
+     an omission.** `https://cdn.mbta.com/MBTA_GTFS.zip` always serves the current build —
+     the measured copy was rebuilt 2026-08-17 and its window closes 2026-09-05 — so a
+     second person fetching later gets a *different feed* and these literals fail. **That
+     is `bart.md`'s existing discipline, one feed over**: it says in terms that a refreshed
+     BART "can fail it with nothing wrong in the code, and re-measuring it is part of the
+     refresh rather than a bug to chase". `mbta.md` carries the sha256 and says the same,
+     so the failure is diagnosable from the file the test points at.
+
+     **A draft of this phase tried to make the stale case skip too, and it could not be
+     built.** The skip mechanism the scope fixes is compile-time — `build.rs` emits the cfg
+     from the file's *existence* — while a sha mismatch is a runtime condition, and libtest
+     has no runtime skip: the early `return` reports `1 passed` silently, which this phase
+     calls worse than no gate, and a panic is the loud failure the draft was trying to
+     avoid. Folding the hash into `build.rs` would work and is refused on its cost: a
+     `sha2` build-dependency on a crate whose §2.5 enumerates its dependencies by name, for
+     a nicety, and one `ignore = "…"` string cannot carry two different reasons anyway.
+     **Absent skips; stale fails.**
   2. **Reads the committed network. `Network::from_input` accepts it and `llika` draws
      it** — circle count equals the station count, path count the line count, as
      `llika_draws_the_bart_network` asserts.
@@ -1587,9 +1640,10 @@ takes its own review round.*
      asserted that a renderer branch *executed* either; **that gap is real, is now
      unclaimed by any phase, and Chicago is what would close it.**
   4. **Reads the committed network — and this is the assertion the split exists to keep
-     running. The criteria vector at three weightings, pinned as literals to an absolute
-     `1e-6`** — the shipped `5/1/0.5/0.25/10`, Phase 7's runner-up `5/1/1/0.5/10`, and
-     the pre-Phase-7 `5/1/1/2/5` — in the idiom
+     running. The criteria vector at four weightings, pinned as literals to an absolute
+     `1e-6`** — the shipped `5/1/0.5/0.25/10`, Phase 7's runner-up `5/1/1/0.5/10`, the
+     pre-Phase-7 `5/1/1/2/5`, and **`100/1/0.5/0.25/10`, the shipped vector with `w1`
+     raised and nothing else moved** — in the idiom
      `llika-gtfs/tests/real_feed.rs:bart_draws_to_the_shipped_criteria_vector` already
      uses. **A committed test, not a one-off measurement**, so the numbers cannot rot
      silently. Compared by Pareto dominance over the unweighted `c1..c5` — `llk-001`
@@ -1598,16 +1652,29 @@ takes its own review round.*
      by the weights and is not comparable across them. Whether any weighting yields
      `c1 > 0` is asserted explicitly.
 
-     **This gate now has a specific hypothesis to test rather than only a measurement to
-     take.** Measured 2026-08-18 outside any phase: MBTA draws **one** crossing at the
-     shipped `5 / 1 / 0.5 / 0.25 / 10` and **zero** at `w1 = 100`. So the shipped default
-     is the first weight in this project with concrete evidence against it — and the
-     evidence is one-sided, since nothing yet says the higher weight pays for `c1` with
-     `c2`–`c5`. **That is exactly what Pareto over the unweighted vector answers**, and it
-     is why the three weightings pinned here are the deliverable rather than a formality.
-     A fourth weighting raising `w1` alone is **not** added: this phase produces the
-     comparison and `llk-001`'s Phase 8 moves a default, which its own scope forbids
-     collapsing.
+     **The fourth weighting is why this gate is an experiment and not a formality**, and
+     it was missing from the draft that first stated the experiment. Measured 2026-08-18
+     outside any phase: MBTA draws **one** crossing at the shipped `5/1/0.5/0.25/10` and
+     **zero** at `w1 = 100`. So the shipped default is the first weight in this project
+     with concrete evidence against it — and the evidence is one-sided, since nothing yet
+     says the higher weight pays for `c1` with `c2`–`c5`. **Pareto over the unweighted
+     vector is what answers that, and it can only answer it if a `w1`-raised vector is one
+     of the things compared.** The first three weightings all carry `w1 = 5`; comparing
+     them to each other cannot say anything about `w1`, and round 1 measured all three to
+     be mutually non-dominating, so the trio alone yields no verdict at all.
+
+     **Adding it does not collapse the split this phase refuses to collapse.** Scoring a
+     weighting is *producing the comparison*, which the section above names as this
+     phase's job; **moving `LayoutParams::default()` is `llk-001`'s Phase 8**, and nothing
+     here does that. The earlier refusal confused the two — it declined to *measure* on the
+     grounds that it must not *change* — and is corrected rather than quietly dropped
+     because it is the reasoning a reader would otherwise reconstruct.
+
+     **The literals are measured at implementation, not inherited from here.** Round 1
+     scored all four from a throwaway crate outside the repo and its numbers are in
+     `specs/reviews/llk-002.md`; they are evidence that the comparison is non-trivial, not
+     values to copy. A gate keyed to a literal no stated method reproduces passes for the
+     wrong reason.
   5. **Needs the fetched feed; skips without it. Determinism across processes**,
      extending `llika-gtfs/tests/byte_stability.rs`
      with a case on the new feed. Stated as an extension because that file reads only
@@ -1615,7 +1682,11 @@ takes its own review round.*
      phase has" would leave this green without a line of new-feed work. **A skip here
      costs least of the two**: Phase 1's gate 7 already holds the property on the fixture
      and Phase 5's on a generated archive, so what this case adds is the property on a
-     third real feed rather than the property itself.
+     third real feed rather than the property itself. **It costs ≈13 s under a debug
+     `cargo test`** — `byte_stability.rs:import_twice` shells out to the binary twice and
+     the debug binary is ≈6.25 s on this archive — against `real_feed.rs`'s ≈25 s radius
+     test and Phase 5's ≈1.4 s large-zip case. Stated so the price is chosen rather than
+     discovered, which is what those two do.
   6. **The human half, and for this phase it is the real test**: open the SVG and judge
      whether it reads as a poster of that city. A structurally perfect map that is
      unrecognisable has failed this phase.
@@ -1625,7 +1696,9 @@ takes its own review round.*
   `Instant`, no `criterion` and no `[[bench]]` to produce it under a `cargo test` that
   builds debug. It is a **close-out measurement** instead, taken in release and written
   into `llk-001` OQ-9 — which is where Phase 4 put its own.
-- **Close-out:** commits **`golden/mbta.json` and `mbta.md`**, not the feed — OQ-8. Updates **`rules/gtfs-import.md`** (Phase 5 raised its cap to 130 and left it at
+- **Close-out:** commits **`golden/mbta.json` and `mbta.md`**, not the feed — OQ-8 — plus
+  **`llika-gtfs/build.rs`** and the **`.gitignore`** line for
+  `llika-gtfs/tests/fixtures/mbta.zip`. Updates **`rules/gtfs-import.md`** (Phase 5 raised its cap to 130 and left it at
   126, so there are four lines of headroom; past that, free one or raise it deliberately)
   and **`README.md`**: the **Status** paragraph's "on BART, **the one real network
   committed here**" is the sentence this phase most directly falsifies — still, and now
@@ -1644,6 +1717,14 @@ takes its own review round.*
   own output and also a database derived from someone else's, and the two readings differ
   on whether that line needs qualifying.
 
+  **Two statements this phase falsifies elsewhere in its own document**, named because
+  §6.1 gives a stale decision statement a dated note rather than a silent edit: the
+  frontmatter `reference` note's "**It remains one feed**", which stops being true the
+  moment §2.1's field list is validated against a second one; and §2.1's Phase 4 close-out
+  note calling the table "**final for this spec outright**", which sits oddly beside this
+  phase's own reservation that corrections to that table are in scope. Neither is a
+  decision this phase changes — both are dated claims that a second feed dates.
+
   **Two cross-spec writes into `llk-001` §3**, both of which that spec's questions ask for
   by name: the criteria vector and the `c1` finding to **OQ-2**, which stays open and gains
   its fourth entry **naming the successor phase that would close it**, since otherwise its
@@ -1651,6 +1732,13 @@ takes its own review round.*
   alongside the BART reading Phase 7 annotated. **`llk-001` OQ-9's BART baseline is
   re-measured in the same pass** — its 0.13 s / 3 sweeps is pre-Phase-7 and doubles at the
   shipped weights, so comparing a new city against it would compare across weightings.
+
+  **A third `llk-001` entry was corrected at OQ-8's resolution rather than here, and is
+  named so this phase does not re-do it.** `llk-001` **OQ-10** claimed this phase's gate 6
+  was where its Loop failure "becomes visible to a reader" — false once OQ-8 chose Boston,
+  and contradicting that entry's own "attached to no phase yet". It was struck on
+  2026-08-18. **This phase owes OQ-10 nothing**; what it must not do is let the close-out's
+  cross-spec sweep silently re-attach it.
 
   **Writes `shipped` into `phases[]`** and regenerates both indexes. **`CLAUDE.md`: none
   needed** — its observable line names no city and no feed.

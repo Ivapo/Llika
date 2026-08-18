@@ -1439,10 +1439,17 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   so neither can cross a ridge, and untangling two corridors that already cross plausibly
   requires a move that is worse before it is better. Chicago stalls at four crossings from
   25, and stays there under an eighty-fold `w1`, which is what a ridge looks like from
-  outside. **`llk-002`'s Phase 6 is where this becomes visible to a reader** rather than to
-  whoever ran the sweep: that phase's gate 6 asks whether the map reads as a poster of the
-  city, and on Chicago the answer is no *at the Loop*, which is the part of the map a
-  person looks at first.
+  outside. ~~**`llk-002`'s Phase 6 is where this becomes visible to a reader** rather than
+  to whoever ran the sweep: that phase's gate 6 asks whether the map reads as a poster of
+  the city, and on Chicago the answer is no *at the Loop*, which is the part of the map a
+  person looks at first.~~
+
+  *(Struck the same day, 2026-08-18, at `llk-002` OQ-8's resolution — which chose **MBTA**,
+  so that phase draws Boston and its gate 6 will never show the Loop. The struck sentence
+  quietly attached this question to a phase, which contradicted the entry's own "attached
+  to no phase yet" two paragraphs up. **It is unattached, and that is the accurate state**:
+  nothing currently scheduled will force it. Chicago remains the case that shows it, as a
+  local feed that no phase reads.)*
 
   **The control exists, which is what makes this a gap rather than a suspicion.** MBTA,
   measured the same afternoon, goes from 1 crossing to **0** when `w1` rises from the
