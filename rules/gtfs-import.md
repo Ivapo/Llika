@@ -8,13 +8,14 @@ sources:
   - llika-gtfs/src/convert.rs
   - llika-gtfs/src/main.rs
 covers: >
-  the four GTFS tables read and how their optional columns are typed, the
-  route-type filter and its default, the platform-to-station collapse and the
-  fold it needs, the rule deciding which stops become stations and at which row,
+  the four GTFS tables read, which of them streams and what it retains, how
+  their optional columns are typed, the route-type filter and its default, the
+  platform-to-station collapse and the fold it needs, the rule deciding which
+  stops become stations and at which row,
   which routes are dropped and which are merged into another line, the colour,
   name and representative-trip conversions, and what the importer reports
-max_lines: 115
-generated: 2026-08-16
+max_lines: 130
+generated: 2026-08-18
 ---
 # GTFS import
 
@@ -31,7 +32,16 @@ Four tables and no others — `stops.txt`, `routes.txt`, `trips.txt`, `stop_time
 `llika-gtfs/src/feed.rs:Feed`, each a `Vec` in file row order, through
 `llika-gtfs/src/feed.rs:Source`, the one abstraction over the two input forms. Calendars,
 transfers, `shapes.txt` and arrival times are never opened: this is topology, not the
-timetable GTFS is. An entry is read whole, not streamed, so a huge one is unhandled.
+timetable GTFS is.
+
+**`stop_times.txt` streams and is filtered as it reads**, so that table alone is a subset —
+the rows of trips whose route survives the filter — a city's running to hundreds of
+megabytes for an importer that keeps one trip per route.
+`llika-gtfs/src/feed.rs:Source::retained` does both, `table` being its keep-everything case.
+So `llika-gtfs/src/feed.rs:Feed::read` takes `&ImportParams`, the tables reading in a fixed
+order with `stop_times` last so one pass knows the kept trips first; **the params that read
+a feed must be the ones that convert it**, since a wider set reaching `to_schema` would
+truncate a line rather than fail.
 
 **Every column that is not unconditionally Required is an `Option` *and* carries
 `#[serde(default)]`** — the `Option` covers an empty *cell*, the default an absent
@@ -66,11 +76,13 @@ Collapsing makes a trip through two platforms of one station a self-loop, which
 
 ## Which routes and stops survive, and in what order
 
-`llika-gtfs/src/convert.rs:to_schema` keeps the routes whose `route_type` is in
-`llika-gtfs/src/lib.rs:ImportParams`, which **defaults to `0,1`** — tram, streetcar and
-light rail, plus subway and metro. Filtering is mandatory: a city feed is mostly buses, and
-the layout costs `O(iterations · V · r² · E²)`. The field is `Vec<u16>` not `u8`, because
-the Hierarchical Vehicle Type extension puts metro at 401 and runs to 1700.
+`llika-gtfs/src/convert.rs:to_schema` keeps the routes
+`llika-gtfs/src/lib.rs:ImportParams::keeps` accepts — one statement of the rule, called from
+`feed.rs` too, since a second copy would truncate a kept line rather than error — whose
+`route_types` **defaults to `0,1`**, tram, streetcar and light rail plus subway and metro.
+Filtering is mandatory: a city feed is mostly buses, and the layout costs
+`O(iterations · V · r² · E²)`. `Vec<u16>` not `u8`, because the Hierarchical Vehicle Type
+extension puts metro at 401 and runs to 1700.
 
 A kept route falling below two stations after the fold is then **dropped** —
 `llika-gtfs/src/lib.rs:DropReason`, the one live member of `llk-001`'s five conditions —

@@ -53,6 +53,7 @@ in `gallery/bart.svg`.
 | 2 | Platforms collapse to stations | ✅ shipped |
 | 3 | The representative trip | ✅ shipped |
 | 4 | A real city | ✅ shipped |
+| 5 | The tables are streamed, not collected | ✅ shipped |
 
 Out of scope, deliberately: station-name labels, a GUI, and importing from
 OpenStreetMap.

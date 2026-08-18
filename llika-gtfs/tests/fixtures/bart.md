@@ -58,3 +58,13 @@ One of those literals is not a property of the feed at all.
 criteria this network **lays out** to, which `llk-001` Phase 7 chose its default
 weights against — so a refreshed BART can fail it with nothing wrong in the code,
 and re-measuring it is part of the refresh rather than a bug to chase.
+
+`golden/bart.json` beside this file is a moved literal too, and the largest one:
+it is this feed's whole imported network, pinned by `tests/golden.rs` so that a
+change to *how* the feed is read cannot change *what* it imports to. A refresh
+regenerates it in the same commit, with the binary and no `--route-types` flag:
+
+```console
+$ cargo run -p llika-gtfs -- --input llika-gtfs/tests/fixtures/bart.zip \
+    --output llika-gtfs/tests/fixtures/golden/bart.json
+```

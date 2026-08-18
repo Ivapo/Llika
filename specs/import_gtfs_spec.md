@@ -32,7 +32,7 @@ phases:
     by: null
   - name: "Phase 5 — the tables are streamed, not collected"
     reviewed: 2026-08-18
-    shipped: null
+    shipped: 2026-08-18
     cut: null
     by: null
   - name: "Phase 6 — a second city, of a different shape"
