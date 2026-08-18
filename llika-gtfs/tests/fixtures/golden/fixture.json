@@ -1,0 +1,126 @@
+{
+  "stations": [
+    {
+      "id": "CEN",
+      "name": "Central",
+      "lat": 37.78,
+      "lon": -122.41659
+    },
+    {
+      "id": "WST",
+      "name": "Westgate",
+      "lat": 37.788085,
+      "lon": -122.513199
+    },
+    {
+      "id": "OLD",
+      "name": "Old Town",
+      "lat": 37.778653,
+      "lon": -122.466031
+    },
+    {
+      "id": "MKT",
+      "name": "Market",
+      "lat": 37.779102,
+      "lon": -122.392722
+    },
+    {
+      "id": "EAST",
+      "name": "East Bank",
+      "lat": 37.782695,
+      "lon": -122.3701
+    },
+    {
+      "id": "SOU",
+      "name": "Southgate",
+      "lat": 37.758441,
+      "lon": -122.409771
+    },
+    {
+      "id": "NOR",
+      "name": "Northgate",
+      "lat": 37.82267,
+      "lon": -122.493309
+    },
+    {
+      "id": "HIL",
+      "name": "Hillcrest",
+      "lat": 37.802458,
+      "lon": -122.492741
+    },
+    {
+      "id": "RIV",
+      "name": "Riverside",
+      "lat": 37.782246,
+      "lon": -122.489331
+    },
+    {
+      "id": "QUA",
+      "name": "Quayside",
+      "lat": 37.762932,
+      "lon": -122.375674
+    },
+    {
+      "id": "FAI",
+      "name": "Fairview",
+      "lat": 37.799314,
+      "lon": -122.37681
+    }
+  ],
+  "lines": [
+    {
+      "id": "M1",
+      "name": "1",
+      "color": "#0057B8",
+      "stations": [
+        "WST",
+        "OLD",
+        "CEN",
+        "MKT",
+        "EAST"
+      ]
+    },
+    {
+      "id": "M2",
+      "name": "2",
+      "color": "#FF8200",
+      "stations": [
+        "SOU",
+        "CEN",
+        "OLD"
+      ]
+    },
+    {
+      "id": "M3",
+      "name": "3",
+      "color": "#E4002B",
+      "stations": [
+        "RIV",
+        "OLD",
+        "CEN",
+        "SOU"
+      ]
+    },
+    {
+      "id": "M5",
+      "name": "M5",
+      "color": "#FFFFFF",
+      "stations": [
+        "NOR",
+        "HIL",
+        "RIV",
+        "OLD"
+      ]
+    },
+    {
+      "id": "M6",
+      "name": "Bay Loop",
+      "color": "#00A3E0",
+      "stations": [
+        "MKT",
+        "QUA",
+        "FAI"
+      ]
+    }
+  ]
+}
