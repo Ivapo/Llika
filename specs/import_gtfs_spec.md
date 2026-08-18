@@ -840,10 +840,69 @@ Nothing else here is a reserved namespace.
   and the vote is unaffected. It stays unbuilt, now on evidence rather than on the
   fixture's inability to witness it, and the next feed is where it can fire.
 
-- **OQ-8** — **Which second feed, and does committing one whole still make sense at city
-  scale?** *(needs-input — a measurement and a licence check.)* **Blocks Phase 6**, the way
-  OQ-4 blocked Phase 4 and was resolved before it ran. Two halves, and the second is the
-  one nobody had asked.
+- **OQ-8** — **Which second feed?** ~~**And does committing one whole still make sense at
+  city scale?**~~ *(needs-input — a measurement and a licence check.)* **Blocks Phase 6**, the
+  way OQ-4 blocked Phase 4 and was resolved before it ran. Two halves, and the second is
+  the one nobody had asked.
+
+  **The second half — RESOLVED 2026-08-18, input provided: the feed is not committed, and
+  its imported network is.** The rule the input states is that **the feed which earns a
+  place in the tree is the one that serves as the example, not the one that serves a
+  test** — and it is a distinction neither this question nor OQ-4 had drawn. BART does
+  three jobs at 892 KB: it is the worked example in `README.md`'s *Importing a real
+  network*, the provenance of `gallery/bart.svg`, and the fixture seven tests read. A
+  second feed would do only the third. **Nothing already committed moves**, and `bart.md`
+  is untouched.
+
+  What goes in the tree in its place is the **imported network** — `<city>.json`, tens of
+  kilobytes, this project's own derived output — committed in the idiom Phase 5 shipped
+  for `golden/bart.json`, with a provenance file naming the source, the licence, the
+  retrieval date and the download command. That is a **fourth** answer, and the three
+  struck through below did not contain it because Phase 5 had not yet built the thing it
+  rests on.
+
+  **It is what makes OQ-4's objection survivable rather than overridden**, which is the
+  half worth recording. OQ-4 rejected fetch-in-a-gate because CI must run from a fresh
+  clone, and *for the phase whose whole subject is data nobody here authored, a gate that
+  skips by default is most of the phase not running*. That argument is correct and is not
+  waived. What the committed network does is **split Phase 6's gate along the line the
+  objection actually cares about**: the assertions about the *import* need the feed and
+  skip without it; the assertions about the *layout* — `from_input`, the revisited-station
+  path, the criteria vector at three weightings, which is what OQ-2 has demanded three
+  times and what a second city is *for* — read the network and run everywhere. Most of
+  the phase still runs on a fresh clone, and the part that does not is the part whose
+  subject is a file that is not there.
+
+  **What this does not buy, stated so it is not assumed.** The evidentiary claim is
+  preserved rather than transferred: a committed network is evidence of what *this
+  importer produces*, and only a snapshot is evidence of what a publisher publishes. So
+  the second city has no standing witness of the latter, and `bart.md` remains the only
+  one. And the byte-weight objection dies while the **validity-window** one below does
+  not: a fortnightly feed still moves the golden network, the pinned counts and the
+  criteria vector on every refresh, and a refresh now also has to re-fetch before it can
+  regenerate them.
+
+  **The licence half does not go away with the bytes, and that is the trap in this
+  answer.** It changes shape: a committed network is a *derived database*, and a
+  share-alike feed licence — ODbL is the common one and OQ-4 named it as a likely form —
+  can reach a derived database as readily as a copy of the original. So the remaining
+  half of this question still has to check redistribution, and now has to check it for
+  the derived file rather than the archive. It may come out **stricter** than commit-whole
+  would have: a licence granting redistribution of the data verbatim while imposing
+  share-alike on derivatives is worse for this answer than for the one struck through
+  above. The provenance file records which licence governs the committed JSON, not only
+  the feed.
+
+  ~~Three answers are open and none is obviously right: commit whole and accept the
+  weight; commit a **documented subset** and give up the evidentiary claim `bart.md`
+  makes; or keep the feed out of the tree and fetch it in a gate, which OQ-4 explicitly
+  rejected because CI must run from a fresh clone.~~
+
+  **The first half stays open**: *which* feed. It is now a **cleaner** question, and that
+  is a consequence rather than a side effect — with weight off the table, CTA's 99.6 MB
+  stops counting against it and the choice turns on shape, licence and validity window
+  alone. MBTA's 18.6 MB stops counting *for* it by the same stroke, and its shape is
+  unmeasured.
 
   **The measurement half, taken 2026-08-18 against live `content-length`.** BART's
   committed archive is **892,312 bytes**. Chicago CTA is **99,567,748 bytes** — 111× —
@@ -857,10 +916,7 @@ Nothing else here is a reserved namespace.
   `llika-gtfs/tests/fixtures/bart.md` then forbade trimming — "The bytes are BART's,
   unmodified… A snapshot that has been edited is no longer evidence of what a publisher
   publishes" — which is right, and which turns a city feed into a permanent multi-megabyte
-  blob, re-committed on every refresh. Three answers are open and none is obviously right:
-  commit whole and accept the weight; commit a **documented subset** and give up the
-  evidentiary claim `bart.md` makes; or keep the feed out of the tree and fetch it in a
-  gate, which OQ-4 explicitly rejected because CI must run from a fresh clone.
+  blob, re-committed on every refresh.
 
   **Validity windows differ by an order of magnitude and are part of the choice.** BART's
   committed copy spans 2026-01-12 → 2026-08-30. CTA's `calendar.txt` runs
@@ -870,19 +926,22 @@ Nothing else here is a reserved namespace.
   the criteria vector moves too. A feed that turns over fortnightly makes that a standing
   cost rather than an annual one.
 
-  **What the answer must supply for Phase 6 to be plannable**: the feed, its size, its
+  **What the answer must supply for Phase 6 to be plannable**: the feed, ~~its size,~~ its
   validity window, its licence and whether it grants redistribution, its `route_type`
   values and whether `ImportParams::default()` selects the intended routes, whether any
   line revisits a station (Phase 6's gate 3 is removed if none does), and the format
-  hazards OQ-4 left standing. That list is what an earlier draft of Phase 6 tried to
+  hazards OQ-4 left standing. *(Size is struck 2026-08-18: it no longer bears on anything,
+  since the archive does not land in the tree. The validity window still does.)* That list is what an earlier draft of Phase 6 tried to
   predict from outside, and got measurably wrong in two places.
 
   **Chicago is the standing candidate and is not yet the answer.** It was chosen for shape
   before any of the above was measured; its licence grants redistribution in terms and
   ships inside the archive, and its ≈143 rail stations and Loop are what the shape argument
-  wanted. Against it: 99.6 MB, a seventeen-day window, and — measured — no
+  wanted. Against it: ~~99.6 MB,~~ a seventeen-day window, and — measured — no
   `draws_the_same_line` hazard at all, since CTA publishes eight rail routes with no
-  per-direction split.
+  per-direction split. *(Its size is struck for the reason above; the window and the
+  missing hazard are what remain against it, and both are about the feed rather than the
+  repository.)*
 
 ## 4. Implementation phases
 
@@ -1234,6 +1293,27 @@ Phase 4 and was resolved before it ran.*
   weightings. Two products: the map, and the criteria vector `llk-001`'s weights are
   judged against on a network that is not BART.
 
+  #### The feed is fetched; the imported network is committed (OQ-8)
+
+  **No second archive lands in this repository.** OQ-8's second half settles it: the feed
+  which earns a place in the tree is the one that serves as the example, and BART already
+  does. What is committed instead is `llika-gtfs/tests/fixtures/golden/<city>.json` — the
+  imported network, in the idiom Phase 5 shipped for `golden/bart.json` — beside a
+  `<city>.md` provenance file carrying the source URL, licence, retrieval date, sha256,
+  validity window and the exact download-and-regenerate commands, in `bart.md`'s shape
+  minus the redistribution claim it has no bytes to make.
+
+  **So this phase's work happens against a feed on the author's disk**, and the gate below
+  is split accordingly: the two assertions about the *import* read the archive and skip
+  when it is absent; the four about the *layout* read the committed network and run on a
+  fresh clone. That split is OQ-8's argument and not a convenience — a second city exists
+  to teach `llk-001` something, and OQ-2's criteria vector is the product this phase is
+  for.
+
+  **Skipping is explicit, not silent.** A skipped assertion prints why and names the
+  download command: a test that vanishes when its data is missing is indistinguishable
+  from a test that passed.
+
   #### What a "different shape" has to mean, corrected against the tree (decision)
 
   An earlier draft of this phase argued that a ring core reaches two branches of
@@ -1302,16 +1382,21 @@ Phase 4 and was resolved before it ran.*
   not a repair folded in here. Corrections to §2.1's *column* table are in scope and are
   recorded as corrections, which is Phase 4's precedent.
 - **Exit gate:** `cargo test --workspace` green, and six assertions.
-  1. **The feed imports to literals measured once and then pinned**, in a new
+  1. **Needs the fetched feed; skips without it. The feed imports to literals measured
+     once and then pinned**, in a new
      `llika-gtfs/tests/<city>_feed.rs` mirroring `llika-gtfs/tests/real_feed.rs`:
      stations, lines, routes seen/kept/dropped/merged, stops seen. **Measured, not
      hand-counted** — `stops_seen` is a raw `stops.txt` row count that runs to five
      figures on a city feed, and Phase 4's "hand-counted" wording does not survive that
      scale. The import path is whatever OQ-8's resolution names, stated in the test the
-     way `import_bart` states its own.
-  2. **`Network::from_input` accepts it and `llika` draws it** — circle count equals the
-     station count, path count the line count, as `llika_draws_the_bart_network` asserts.
-  3. **The revisited-station path is exercised, or its absence is a stated fact.** The
+     way `import_bart` states its own. **It is also what writes the committed network**:
+     this assertion is the only thing in the tree that can say `golden/<city>.json` is
+     what this importer makes of that archive.
+  2. **Reads the committed network. `Network::from_input` accepts it and `llika` draws
+     it** — circle count equals the station count, path count the line count, as
+     `llika_draws_the_bart_network` asserts.
+  3. **Reads the committed network. The revisited-station path is exercised, or its
+     absence is a stated fact.** The
      assertion is on the **network**, not on the renderer's private internals: some
      line's station list contains a repeated id at non-consecutive positions, asserted
      from the public `InputSchema`. If OQ-8's feed contains none, **this assertion is
@@ -1320,7 +1405,8 @@ Phase 4 and was resolved before it ran.*
      one. `llika-core/src/render/corridor.rs` is a private module, so nothing here can
      assert that a renderer branch *executed*; that gap is real and is not this phase's
      to close.
-  4. **The criteria vector at three weightings, pinned as literals to an absolute
+  4. **Reads the committed network — and this is the assertion the split exists to keep
+     running. The criteria vector at three weightings, pinned as literals to an absolute
      `1e-6`** — the shipped `5/1/0.5/0.25/10`, Phase 7's runner-up `5/1/1/0.5/10`, and
      the pre-Phase-7 `5/1/1/2/5` — in the idiom
      `llika-gtfs/tests/real_feed.rs:bart_draws_to_the_shipped_criteria_vector` already
@@ -1330,10 +1416,14 @@ Phase 4 and was resolved before it ran.*
      five and `<` on at least one, with a `1e-9` guard**, never by `t`, which is defined
      by the weights and is not comparable across them. Whether any weighting yields
      `c1 > 0` is asserted explicitly.
-  5. **Determinism across processes**, extending `llika-gtfs/tests/byte_stability.rs`
+  5. **Needs the fetched feed; skips without it. Determinism across processes**,
+     extending `llika-gtfs/tests/byte_stability.rs`
      with a case on the new feed. Stated as an extension because that file reads only
      `common::feed_dir()` today and BART was never added to it — "delegated as every
-     phase has" would leave this green without a line of new-feed work.
+     phase has" would leave this green without a line of new-feed work. **A skip here
+     costs least of the two**: Phase 1's gate 7 already holds the property on the fixture
+     and Phase 5's on a generated archive, so what this case adds is the property on a
+     third real feed rather than the property itself.
   6. **The human half, and for this phase it is the real test**: open the SVG and judge
      whether it reads as a poster of that city. A structurally perfect map that is
      unrecognisable has failed this phase.
@@ -1343,16 +1433,25 @@ Phase 4 and was resolved before it ran.*
   `Instant`, no `criterion` and no `[[bench]]` to produce it under a `cargo test` that
   builds debug. It is a **close-out measurement** instead, taken in release and written
   into `llk-001` OQ-9 — which is where Phase 4 put its own.
-- **Close-out:** commits the feed and its provenance file. Updates **`rules/gtfs-import.md`**
-  (at its cap — free a line or raise it) and **`README.md`**: the **Status** paragraph's
-  "on BART, **the one real network committed here**" is the sentence this phase most
-  directly falsifies, not only the "GTFS import is done too" paragraph further down, plus
-  a Phase 6 row. **`gallery/`**: a new SVG, its table row and refresh command, the
-  "`bart.svg` is the one to judge the output on" sentence, "All three at default
-  parameters" becoming four, and the closing "**a third network is what would settle
-  that**" sentence — which this phase does not settle and must not appear to.
-  **`llika-gtfs/tests/fixtures/bart.md`**: "It is the only third-party data in this
-  repository" is false the moment a second feed lands.
+- **Close-out:** commits **`golden/<city>.json` and its provenance file**, not the feed —
+  OQ-8. Updates **`rules/gtfs-import.md`** (Phase 5 raised its cap to 130 and left it at
+  126, so there are four lines of headroom; past that, free one or raise it deliberately)
+  and **`README.md`**: the **Status** paragraph's "on BART, **the one real network
+  committed here**" is the sentence this phase most directly falsifies — still, and now
+  because a second *network* lands rather than a second feed — not only the "GTFS import
+  is done too" paragraph further down, plus a Phase 6 row. **`gallery/`**: a new SVG, its
+  table row and refresh command — **which regenerates from the committed network, not
+  from an archive nobody has** — the "`bart.svg` is the one to judge the output on"
+  sentence, "All three at default parameters" becoming four, and the closing "**a third
+  network is what would settle that**" sentence, which this phase does not settle and must
+  not appear to.
+
+  **`llika-gtfs/tests/fixtures/bart.md`'s "It is the only third-party data in this
+  repository" survives, and the phase says why rather than leaving it.** No second archive
+  lands, so the sentence is true of feeds. Whether it is true of a *derived* network is
+  the judgement this phase has to make and record: `golden/<city>.json` is this project's
+  own output and also a database derived from someone else's, and the two readings differ
+  on whether that line needs qualifying.
 
   **Two cross-spec writes into `llk-001` §3**, both of which that spec's questions ask for
   by name: the criteria vector and the `c1` finding to **OQ-2**, which stays open and gains
