@@ -940,7 +940,9 @@ Nothing else here is a reserved namespace.
   since the archive does not land in the tree. The validity window still does.)* That list is what an earlier draft of Phase 6 tried to
   predict from outside, and got measurably wrong in two places.
 
-  **Chicago is the standing candidate and is not yet the answer.** It was chosen for shape
+  **Chicago is the standing candidate and is not yet the answer.** *(Both candidates are
+  measured as of 2026-08-18; see the two findings blocks below. This paragraph's
+  "measured" clause predates them.)* It was chosen for shape
   before any of the above was measured; its licence grants redistribution in terms and
   ships inside the archive, and its ≈143 rail stations and Loop are what the shape argument
   wanted. Against it: ~~99.6 MB,~~ ~~a seventeen-day window,~~ a short window, and —
@@ -999,6 +1001,50 @@ Nothing else here is a reserved namespace.
     your application, computer systems or other storage devices" (§V), which a git history
     cannot honour. **All three engage only on publication.** None bears on holding the
     feed locally to develop the layout, which is how the findings above were taken.
+
+  **The same procedure on MBTA, 2026-08-18 — the comparison this question has never had.**
+  18,590,242 bytes, sha256 `300b21b4f49ce9dfae488dcb06a66d379b4a37902c3fb293950c9d4eb72c51bb`,
+  `last-modified` 2026-08-17, `stop_times.txt` 104,618,614 bytes. Imports in **0.46 s at
+  45.6 MB peak RSS** to `119 stations, 8 lines, 8 of 400 routes matched, 0 dropped, 0
+  merged`. Nothing committed. **Two of the three things this question was waiting on came
+  out the opposite way round from the assumption above.**
+
+  - **The licence is the clean one, and it is BART's almost word for word.** MassDOT's
+    Developers License Agreement §3.1 grants "non-exclusive, limited, and revocable rights
+    to **use, reproduce, and redistribute the Data**" — the same sentence shape OQ-4 relied
+    on. It carries **none** of the three clauses that narrow CTA's: no purpose limitation,
+    no "may not transfer outside your application", and no delete-on-termination. Its
+    obligations are acknowledgement, no logos or trademarks, no misrepresentation, no
+    ownership claim (§4.1), and MassDOT keeps title (§5.4) — every one of which
+    `bart.md` already has a paragraph for. **On the resolved half of this question — a
+    committed derived network — MBTA is materially safer than CTA.**
+  - **The validity window is *worse*, not better, and this paragraph's premise was
+    backwards.** MBTA's `feed_info.txt` declares **20260810 → 20260905, twenty-seven
+    days**, against the corrected CTA figure of ~88 and BART's ~230. This question assumed
+    Chicago was the fortnightly one; measured, Chicago is the middle case and Boston is the
+    fast-moving one. What MBTA has instead is the **`feed_info.txt` this question noted CTA
+    lacks**, so a provenance file has a published-validity field to read rather than a
+    hand-derived one.
+  - **The shape is thinner, and one property goes to zero.** 119 stations, 120 corridors,
+    one component — **cyclomatic number 2**, against CTA's 6 and BART's 1. It **crosses**:
+    1 at the shipped weights, and `llk-001`'s OQ-2 now records that `--w-crossings 100`
+    takes it to **0**, which is the first evidence in this project that `w1` is pinnable at
+    all. But **no line revisits a station** — so choosing MBTA **removes Phase 6's gate 3**,
+    which that gate names this question's resolution as the place to decide. Chicago keeps
+    it, with three.
+  - **Two editorial residues, both of them §1.1's case rather than defects.** All four
+    Green Line branches are separate `route_id`s sharing `route_color` `00843D`, so they
+    draw as four indistinguishable green lines and the western half of the map is a green
+    tangle; and `Red` comes out at 17 stations, one of its two southern branches, because a
+    line is a path and OQ-1's modal pattern picks one. Both are exactly the edits the
+    intermediate file exists for, and neither is a rule this spec would change.
+
+  **So the choice is now a real trade rather than a default.** Chicago is the better
+  *subject* — three shape properties against two, a core that defeats the layout, and gate
+  3 intact. Boston is the better *citizen* — a licence with no clause this repository has
+  to argue around, a published validity field, and a fifth of the bytes to fetch. The
+  window favours Chicago by 3×, which inverts what this question assumed. **Nothing here
+  resolves it; what it removes is the position of having measured one candidate.**
 
 ## 4. Implementation phases
 

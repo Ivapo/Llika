@@ -1077,8 +1077,10 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   constrains `w1`. A ring core can cross where a tree of spurs cannot — and a second
   network that also never crosses is itself the answer, in the negative.
 
-  **ANSWERED 2026-08-18, and in a third way neither branch above anticipated: `w1` is
-  unpinnable on a network that *does* cross.** Measured locally on Chicago's CTA rail
+  **ANSWERED 2026-08-18, and in a third way neither branch above anticipated: ~~`w1` is
+  unpinnable on a network that *does* cross.~~ `w1` is unpinnable *on Chicago*, and the
+  generalisation below was drawn from one city and corrected the same day by a second —
+  see the MBTA block that follows.** Measured locally on Chicago's CTA rail
   network — 141 stations, 146 corridors, imported through the shipped binary at
   `ImportParams::default()`, nothing committed, the provenance in `llk-002`'s OQ-8. It is
   the first network in this tree that crosses at all: the snapped layout carries **25**
@@ -1092,17 +1094,43 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   converges in 14 sweeps and `--iterations 200` is bit-identical to it, so this is a local
   minimum rather than a budget.
 
-  **So the negative half of this entry is now known for a second reason, and the stronger
+  ~~**So the negative half of this entry is now known for a second reason, and the stronger
   one.** It was "no network here crosses, so nothing constrains `w1`". It is now "a network
   here crosses, and `w1` still constrains nothing, because the search saturates before the
   weight can matter". A weighting cannot be calibrated against an outcome the search cannot
   produce at any weight — which means **`llk-002` Phase 6's gate 4 will report `c1 > 0` and
-  still not pin `w1`**, and that phase should expect it rather than read it as a finding.
+  still not pin `w1`**, and that phase should expect it rather than read it as a finding.~~
 
-  *(Recorded against this entry rather than §2.3 because it changes no decision. What it
-  does change is where the problem lives, and that is **OQ-10** below: this is a move-set
-  limitation wearing a weighting question's clothes, and the two would have been confused
-  for one more phase without the measurement.)*
+  **CORRECTED the same day, 2026-08-18, by a second city — and the correction is this
+  entry's own lesson about one network, taken on itself.** MBTA's rapid-transit network,
+  measured by the identical procedure (119 stations, 120 corridors, 8 lines, provenance in
+  `llk-002`'s OQ-8):
+
+  | `--w-crossings` | CTA crossings | MBTA crossings |
+  |---|---|---|
+  | *snapped, no search* | 25 | 29 |
+  | 5 *(shipped default)* | 4 | **1** |
+  | 100 | 4 | **0** |
+  | 400 | 4 | **0** |
+
+  **So `w1` is pinnable, and the shipped default is the first weight in this project with
+  concrete evidence against it.** On MBTA the default leaves one crossing that a higher
+  `w1` removes; `c1` is an integer count, so this is not a tolerance question. What is *not*
+  established is that the higher weight draws a **better** map — `c2`–`c5` may pay for it,
+  and that comparison is Pareto over the unweighted vector, which is exactly `llk-002`
+  Phase 6's gate 4. **This entry now has a specific hypothesis for that gate to test**
+  rather than only a demand for a measurement.
+
+  **And the Chicago reading survives, narrowed to Chicago.** The same knob that takes MBTA
+  from 1 to 0 cannot take CTA from 4 to 3 at eighty times the default. That is no longer
+  "the knob does nothing" — it is a knob that works, defeated by one network's core, which
+  is a sharper statement of **OQ-10** below than the measurement that raised it.
+
+  *(Recorded against this entry rather than §2.3 because it changes no decision yet. Two
+  things it does change: where the problem lives — **OQ-10**, a move-set limitation that
+  wore a weighting question's clothes for exactly one afternoon — and this entry's own
+  standing, since the negative half is now false and the positive half has its first
+  datum.)*
 - **OQ-3** — ~~Deterministic tie-break when two stations snap to the same grid cell
   before hill-climbing starts. Proposed: spiral search outward to the nearest free
   cell, in a fixed order so the result is reproducible. *(design call.)* **Blocks
@@ -1413,6 +1441,13 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   whoever ran the sweep: that phase's gate 6 asks whether the map reads as a poster of the
   city, and on Chicago the answer is no *at the Loop*, which is the part of the map a
   person looks at first.
+
+  **The control exists, which is what makes this a gap rather than a suspicion.** MBTA,
+  measured the same afternoon, goes from 1 crossing to **0** when `w1` rises from the
+  shipped 5 to 100 — so the monotone move set *can* untangle a crossing, and does. Chicago
+  at eighty times the default cannot shed one of four. A knob that works on one network and
+  not on another is not a knob that is too weak; it is a search that cannot reach the
+  arrangement the knob is asking for.
 
   **The branch that would have closed this outright is measured and gone.** The question
   was whether four is a topological floor or a search floor — if the CTA graph simply
