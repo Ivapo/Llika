@@ -154,6 +154,42 @@ fn the_default_parameters_actually_move_stations() {
     assert!(moved > 0, "the search moved nothing at the defaults");
 }
 
+/// `llk-001` Phase 7's gate, the fixture half: `--initial-radius` changes nothing
+/// **here**.
+///
+/// This is the measurement the old `--help` text generalised from, and it still
+/// holds — which is what makes that text explicable rather than merely wrong. The
+/// half that does not generalise lives in
+/// `llika-gtfs/tests/real_feed.rs:the_initial_radius_saturates_above_two_on_bart`,
+/// where `r_0 = 1` draws a different map. Kept here because a shipped `--help`
+/// string asserts both, and an unasserted sentence in one is how the other came
+/// to overstate.
+#[test]
+fn the_initial_radius_changes_nothing_on_the_fixture() {
+    let network = Network::from_input(&sample()).expect("the fixture is valid");
+
+    let at = |r| {
+        run_layout(
+            &network,
+            &LayoutParams {
+                initial_radius: r,
+                ..LayoutParams::default()
+            },
+        )
+        .positions()
+        .to_vec()
+    };
+
+    let one = at(1);
+    for r in [2, 3, 5, 8] {
+        assert_eq!(
+            at(r),
+            one,
+            "r_0 = {r} is not r_0 = 1's layout on the fixture"
+        );
+    }
+}
+
 fn total_of(network: &Network, layout: &SchematicLayout, params: &LayoutParams) -> f64 {
     total_cost(
         network,

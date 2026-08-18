@@ -12,7 +12,7 @@
 
 use std::path::PathBuf;
 
-use llika_core::{InputSchema, LayoutParams, Line, Network, RenderParams, run_layout};
+use llika_core::{InputSchema, LayoutParams, Line, Network, RenderParams, evaluate, run_layout};
 use llika_gtfs::{ImportParams, ImportReport, MergedRoute, import};
 
 fn bart() -> PathBuf {
@@ -142,6 +142,100 @@ fn llika_draws_the_bart_network() {
     assert!(svg.starts_with("<svg"));
     assert_eq!(svg.matches("<circle").count(), schema.stations.len());
     assert_eq!(svg.matches("<path").count(), schema.lines.len());
+}
+
+/// `llk-001` Phase 7's gate: BART draws to the criteria vector its weights were
+/// chosen for.
+///
+/// **All five, because `c1` and `c5` alone would pass for the wrong reason.**
+/// `c5 == 0` is reached by the entire `w4 ≤ 0.5` family, so shipping
+/// `5 / 1 / 0.5 / 0.25 / 5` — the doubling of `w5` omitted, which is the one lever
+/// the reweight's argument names — satisfies both while drawing a materially
+/// worse map (`c2` 1.887302, `c3` 34.557519, `c4` 21.205750). Only `c2`, `c3` and
+/// `c4` tell the shipped point from that near-miss.
+///
+/// **Exact for `c1` and `c5`, tolerant for the rest.** All eight unit cell offsets
+/// give exactly `+0.0` from the octilinear deviation, so a sum over octilinear
+/// edges is exactly zero and a tolerance would only hide a near-miss; `c1` is an
+/// integer count. The other three are sums of transcendentals.
+///
+/// The bound is **absolute and written inline**. `llika-core`'s `common::close` is
+/// a *relative* comparison and does not resolve here — this is the one test in
+/// this crate declaring no `mod common;` — and a relative `1e-6` against a
+/// six-decimal literal is only sound for values `≥ 0.5`, which `c2` at `0.5147`
+/// clears by 27% today and a future re-measure need not.
+///
+/// **This pins a property of the layout to a third-party snapshot that expires.**
+/// `tests/fixtures/bart.md` says so; a refreshed feed can fail this with nothing
+/// wrong in the code.
+#[test]
+fn bart_draws_to_the_shipped_criteria_vector() {
+    let (schema, _) = import_bart();
+    let network = Network::from_input(&schema).expect("BART's imported network is a valid one");
+    let layout = run_layout(&network, &LayoutParams::default());
+    let cost = evaluate(&network, layout.positions(), layout.target_edge_cells());
+
+    assert_eq!(cost.c1, 0.0, "BART's layout gained a crossing");
+    assert_eq!(
+        cost.c5, 0.0,
+        "BART's layout is no longer exactly octilinear"
+    );
+
+    for (name, actual, expected) in [
+        ("c2", cost.c2, 0.51471863),
+        ("c3", cost.c3, 24.60914245),
+        ("c4", cost.c4, 15.70796327),
+    ] {
+        assert!(
+            (actual - expected).abs() < 1e-6,
+            "{name} is {actual}, expected {expected}"
+        );
+    }
+}
+
+/// `llk-001` Phase 7's gate: `--initial-radius` behaves as its `--help` claims.
+///
+/// **Both halves.** That the knob saturates is what the old text asserted, of
+/// every network, on the strength of the 17-station fixture; that `r_0 = 1` is a
+/// different map here is the correction, and a test carrying only the first half
+/// would pass on the wording it replaced. `llika-core/tests/hillclimb.rs` carries
+/// the fixture half, which is what makes the over-general claim explicable rather
+/// than merely wrong.
+///
+/// Position-saturation above two is something the reweight **creates**, not
+/// something it documents: at the weights before it, `r_0` of 3, 5 and 8 each
+/// differed from `r_0 = 2` in 8 of 50 stations while reaching an identical `t`.
+///
+/// **Its cost is accepted rather than unnoticed** — four BART layouts, ≈25 s under
+/// a debug `cargo test` against this file's ≈6 s. It is the price of keeping a
+/// shipped `--help` string honest. Drop `r_0 = 5` before dropping the `r_0 = 1`
+/// comparison, which is the half that carries the correction.
+#[test]
+fn the_initial_radius_saturates_above_two_on_bart() {
+    let (schema, _) = import_bart();
+    let network = Network::from_input(&schema).expect("BART's imported network is a valid one");
+
+    let at = |r| {
+        run_layout(
+            &network,
+            &LayoutParams {
+                initial_radius: r,
+                ..LayoutParams::default()
+            },
+        )
+        .positions()
+        .to_vec()
+    };
+
+    let two = at(2);
+    for r in [3, 5, 8] {
+        assert_eq!(at(r), two, "r_0 = {r} is not r_0 = 2's layout");
+    }
+    assert_ne!(
+        at(1),
+        two,
+        "r_0 = 1 now matches r_0 = 2, and --help's `it is not inert` is stale"
+    );
 }
 
 /// **The merge is not cosmetic, and this is where that is written down.**
