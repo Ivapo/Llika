@@ -1076,6 +1076,33 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   Phase 7's gate reaches `c1 = 0` on both fixtures and on BART, so nothing in this tree
   constrains `w1`. A ring core can cross where a tree of spurs cannot — and a second
   network that also never crosses is itself the answer, in the negative.
+
+  **ANSWERED 2026-08-18, and in a third way neither branch above anticipated: `w1` is
+  unpinnable on a network that *does* cross.** Measured locally on Chicago's CTA rail
+  network — 141 stations, 146 corridors, imported through the shipped binary at
+  `ImportParams::default()`, nothing committed, the provenance in `llk-002`'s OQ-8. It is
+  the first network in this tree that crosses at all: the snapped layout carries **25**
+  crossings and the search takes it to **4**, all four inside the Loop.
+
+  Then the knob does nothing. `--w-crossings` at **5, 25, 100 and 400** — eighty times the
+  shipped default — leaves the count at **4** every time, and so does every structural
+  lever: `--initial-radius 8`, `--iterations 200`, `--grid-spacing 600`, and zeroing
+  `w_straightness` and `w_edge_length` together. Only the changes that make it *worse*
+  move it — `--cluster-moves false` gives 6 and `--initial-radius 1` gives 17. The run
+  converges in 14 sweeps and `--iterations 200` is bit-identical to it, so this is a local
+  minimum rather than a budget.
+
+  **So the negative half of this entry is now known for a second reason, and the stronger
+  one.** It was "no network here crosses, so nothing constrains `w1`". It is now "a network
+  here crosses, and `w1` still constrains nothing, because the search saturates before the
+  weight can matter". A weighting cannot be calibrated against an outcome the search cannot
+  produce at any weight — which means **`llk-002` Phase 6's gate 4 will report `c1 > 0` and
+  still not pin `w1`**, and that phase should expect it rather than read it as a finding.
+
+  *(Recorded against this entry rather than §2.3 because it changes no decision. What it
+  does change is where the problem lives, and that is **OQ-10** below: this is a move-set
+  limitation wearing a weighting question's clothes, and the two would have been confused
+  for one more phase without the measurement.)*
 - **OQ-3** — ~~Deterministic tie-break when two stations snap to the same grid cell
   before hill-climbing starts. Proposed: spiral search outward to the nearest free
   cell, in a fixed order so the result is reproducible. *(design call.)* **Blocks
@@ -1368,6 +1395,54 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   two on a quarter-second run is still schedulable rather than urgent. Worth recording
   only because it shows the leading factor is a property of the weights too, not of the
   network alone.)*
+
+- **OQ-10** — **The search cannot escape a crossing that a dense multi-line core creates,
+  at any weighting.** *(design call, and one measurement has to come first.)* **Blocks
+  nothing, and is attached to no phase yet** — which §4 says is how a question stays
+  unforced, so this entry says plainly what would attach it. Raised 2026-08-18 from a local
+  draw of Chicago, outside any phase; the numbers are in **OQ-2** above and the feed's
+  provenance in `llk-002`'s OQ-8.
+
+  The shape of it: `layout/candidate.rs` offers one station at a time a free cell within a
+  shrinking radius, and `layout/cluster.rs` translates the smaller side of a bridge
+  rigidly. Both are **monotone in the total cost** — a move is taken only if it improves —
+  so neither can cross a ridge, and untangling two corridors that already cross plausibly
+  requires a move that is worse before it is better. Chicago stalls at four crossings from
+  25, and stays there under an eighty-fold `w1`, which is what a ridge looks like from
+  outside. **`llk-002`'s Phase 6 is where this becomes visible to a reader** rather than to
+  whoever ran the sweep: that phase's gate 6 asks whether the map reads as a poster of the
+  city, and on Chicago the answer is no *at the Loop*, which is the part of the map a
+  person looks at first.
+
+  **The branch that would have closed this outright is measured and gone.** The question
+  was whether four is a topological floor or a search floor — if the CTA graph simply
+  admitted no crossing-free drawing, there would be nothing to fix and the shipped weights
+  would be vindicated. **It is planar.** Tested 2026-08-18 on the imported network with a
+  Boyer–Myrvold check: CTA is `V = 141, E = 146`, planar, with a core of 22 nodes and 27
+  edges once degree-2 chains are suppressed; BART is planar too, core 12 and 12. So a
+  crossing-free drawing of this network exists in the plane and the search reaches none at
+  any weighting.
+
+  **One caveat, and it is the whole of what is left of that branch.** Planarity gives a
+  crossing-free drawing with arbitrary vertex positions and curved edges. It does **not**
+  give one that is octilinear, on an integer grid, at a spacing derived from the network's
+  median edge length. So the floor is now known not to be topological, and is either the
+  move set or the grid discipline itself — and those two are separated by a different
+  experiment than this one, since the second would show up as a floor that moves with
+  `--grid-spacing`. It did not: 600 m gives four crossings as 855 m does, which is weak
+  evidence for the move set and not proof.
+
+  If the gap is real, the candidate answers are the ordinary ones and each is a phase:
+  a move that accepts a worsening step under a schedule, an edge- or corridor-level
+  untangling move rather than a station-level one, or a restart from several snapped
+  seeds and keep the best. All three change §2.4's search, all three cost run time against
+  **OQ-9**'s untouched `V · r² · E²` per sweep, and none of them is a weight.
+
+  **Why this is not OQ-2.** That entry is about *what the criteria are worth relative to
+  each other*, and it now records that `w1` cannot be calibrated from Chicago. This one is
+  about *what the search can reach* whatever they are worth. They were the same question
+  until the eighty-fold sweep separated them, and keeping them merged would put a move-set
+  problem behind a slider.
 
 ## 4. Implementation phases
 
