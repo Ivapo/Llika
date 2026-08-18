@@ -77,7 +77,7 @@ pub fn to_schema(
     for route in feed
         .routes
         .iter()
-        .filter(|route| params.route_types.contains(&route.route_type))
+        .filter(|route| params.keeps(route.route_type))
     {
         routes_kept += 1;
 

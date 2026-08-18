@@ -51,6 +51,21 @@ pub struct ImportParams {
     pub route_types: Vec<u16>,
 }
 
+impl ImportParams {
+    /// Whether a route of this `route_type` survives the filter.
+    ///
+    /// **One statement of the rule, and that is deliberate rather than tidy.**
+    /// Two places need it: `convert.rs` to know which routes become lines, and
+    /// `feed.rs` to know which trips' `stop_times` rows to retain while the
+    /// table streams past. §2.3 already anticipates the filter widening to the
+    /// Hierarchical Vehicle Type ranges, and a second copy left behind by that
+    /// widening would not error — it would silently truncate a kept line's
+    /// station list to the rows the reader happened to keep.
+    pub fn keeps(&self, route_type: u16) -> bool {
+        self.route_types.contains(&route_type)
+    }
+}
+
 impl Default for ImportParams {
     /// Tram, streetcar and light rail (`0`) plus subway and metro (`1`) — OQ-2.
     ///
@@ -181,7 +196,7 @@ pub fn import(
     path: &Path,
     params: &ImportParams,
 ) -> Result<(InputSchema, ImportReport), ImportError> {
-    let feed = Feed::read(path)?;
+    let feed = Feed::read(path, params)?;
     convert::to_schema(&feed, params)
 }
 

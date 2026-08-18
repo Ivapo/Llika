@@ -13,15 +13,24 @@
 //! Every table is a `Vec` in **file row order**. §2.5 makes input order the
 //! iteration order here as it is one crate over, and a `HashMap` walked to
 //! produce the `stations` array would vary the output file per process.
+//!
+//! **`stop_times` is a filtered subset of that order, and the other three are
+//! whole.** A city's `stop_times.txt` runs to hundreds of megabytes — 373 MB and
+//! ~6.2 M rows on Chicago's feed, against 7.7 MB for the other three tables put
+//! together — for a topology importer that keeps the rows of one trip per route.
+//! So that one table streams past and only the rows of a kept route's trips are
+//! retained. Row order is untouched by it: a filter preserves order, and every
+//! downstream guarantee still rests on that.
 
+use std::collections::HashSet;
 use std::fs::File;
-use std::io::{BufReader, Cursor, Read};
+use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
-use crate::ImportError;
+use crate::{ImportError, ImportParams};
 
 pub const STOPS: &str = "stops.txt";
 pub const ROUTES: &str = "routes.txt";
@@ -125,12 +134,15 @@ pub struct StopTime {
     pub stop_sequence: u32,
 }
 
-/// The four tables, each in file row order.
+/// The four tables, in file row order — the first three whole, and
+/// `stop_times` filtered to the trips the import will use.
 #[derive(Debug, Clone)]
 pub struct Feed {
     pub stops: Vec<Stop>,
     pub routes: Vec<Route>,
     pub trips: Vec<Trip>,
+    /// The rows of trips whose route survives [`ImportParams::keeps`], and no
+    /// others. See [`Feed::read`] for why the subset is the table.
     pub stop_times: Vec<StopTime>,
 }
 
@@ -140,16 +152,50 @@ impl Feed {
     /// Both, because every published feed is a zip and requiring a manual unzip
     /// in the phase that promises a real network undercuts the point. The two
     /// routes must agree byte for byte, which the exit gate asserts.
-    pub fn read(path: &Path) -> Result<Self, ImportError> {
+    ///
+    /// **`params` is here because `stop_times` is filtered as it streams**, and
+    /// filtering needs the answer before the stream runs. The four tables are
+    /// read in a fixed order with `stop_times` last, so the kept routes and then
+    /// the kept trips are both known by the time it starts — the ordering is
+    /// what makes one pass enough.
+    ///
+    /// **The params that read a feed are the params that must convert it.**
+    /// Nothing in the types enforces that, and a `convert::to_schema` called
+    /// with a *wider* set than the one here would find a newly kept route's rows
+    /// already discarded and truncate its line rather than fail.
+    /// `lib.rs:import` is the one caller and passes the same value to both.
+    pub fn read(path: &Path, params: &ImportParams) -> Result<Self, ImportError> {
         let mut source = Source::open(path)?;
-        // Struct field initialisers evaluate in written order, so the four
-        // tables are read in a fixed one and an error always names the same
-        // table first.
+        // Read in a fixed order, so an error always names the same table first
+        // and so the filter below has its inputs.
+        let stops = source.table(STOPS)?;
+        let routes: Vec<Route> = source.table(ROUTES)?;
+        let trips: Vec<Trip> = source.table(TRIPS)?;
+
+        // Scoped: the two sets borrow `routes` and `trips`, whose drop glue
+        // holds the borrow to the end of the enclosing block, and both vectors
+        // are moved into `Self` below.
+        let stop_times = {
+            let kept_routes: HashSet<&str> = routes
+                .iter()
+                .filter(|route| params.keeps(route.route_type))
+                .map(|route| route.route_id.as_str())
+                .collect();
+            let kept_trips: HashSet<&str> = trips
+                .iter()
+                .filter(|trip| kept_routes.contains(trip.route_id.as_str()))
+                .map(|trip| trip.trip_id.as_str())
+                .collect();
+            source.retained(STOP_TIMES, |row: &StopTime| {
+                kept_trips.contains(row.trip_id.as_str())
+            })?
+        };
+
         Ok(Self {
-            stops: source.table(STOPS)?,
-            routes: source.table(ROUTES)?,
-            trips: source.table(TRIPS)?,
-            stop_times: source.table(STOP_TIMES)?,
+            stops,
+            routes,
+            trips,
+            stop_times,
         })
     }
 }
@@ -179,22 +225,46 @@ impl Source {
         Ok(Self::Archive(Box::new(archive)))
     }
 
+    /// One table, whole.
     fn table<T: DeserializeOwned>(&mut self, name: &str) -> Result<Vec<T>, ImportError> {
+        self.retained(name, |_| true)
+    }
+
+    /// The rows of one table that `keep` accepts.
+    ///
+    /// Rows are deserialized one at a time from a reader that is never
+    /// collected, so the memory cost is the rows kept rather than the size of
+    /// the file: a 373 MB `stop_times.txt` whose kept trips are 0.9% of it costs
+    /// 0.9% of it. Every row is still parsed, which is unavoidable — the
+    /// `trip_id` deciding the row is a field of the row.
+    fn retained<T: DeserializeOwned>(
+        &mut self,
+        name: &str,
+        keep: impl Fn(&T) -> bool,
+    ) -> Result<Vec<T>, ImportError> {
         let reader = self.entry(name)?;
         let mut records = Vec::new();
         for record in csv::Reader::from_reader(reader).into_deserialize() {
-            records.push(record.map_err(|source| ImportError::Csv {
+            let record = record.map_err(|source| ImportError::Csv {
                 table: name.to_string(),
                 source,
-            })?);
+            })?;
+            if keep(&record) {
+                records.push(record);
+            }
         }
         Ok(records)
     }
 
-    /// One table's bytes. The archive entry is read whole rather than streamed:
-    /// `by_name` borrows the archive, and a city's `stop_times.txt` running to
-    /// hundreds of megabytes is a named Phase 4 hazard rather than this phase's
-    /// problem.
+    /// One table's bytes, as a reader.
+    ///
+    /// **The archive entry streams.** `by_name` borrows the archive, which
+    /// forbids holding two entries open at once — and nothing here does, since
+    /// the tables are read one after another. `zip::ZipFile` is a `Read` and
+    /// `csv::Reader` consumes one incrementally, so the bytes never all exist at
+    /// once. A read failing part-way now surfaces as [`ImportError::Csv`] naming
+    /// the table rather than [`ImportError::Io`] naming the entry, since the
+    /// read happens inside `csv`.
     fn entry(&mut self, name: &str) -> Result<Box<dyn Read + '_>, ImportError> {
         match self {
             Self::Directory(dir) => {
@@ -214,19 +284,12 @@ impl Source {
                 Ok(Box::new(BufReader::new(file)))
             }
             Self::Archive(archive) => {
-                let mut entry = archive
+                let entry = archive
                     .by_name(name)
                     .map_err(|_| ImportError::MissingTable {
                         table: name.to_string(),
                     })?;
-                let mut bytes = Vec::new();
-                entry
-                    .read_to_end(&mut bytes)
-                    .map_err(|source| ImportError::Io {
-                        path: name.to_string(),
-                        source,
-                    })?;
-                Ok(Box::new(Cursor::new(bytes)))
+                Ok(Box::new(entry))
             }
         }
     }
