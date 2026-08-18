@@ -45,13 +45,17 @@ pub const CROSSING_OCTILINEAR_AT_SNAP: f64 = 0.6;
 
 /// `t` at Phase 3's shipped layout on the fixture, under the default weights.
 ///
-/// Unlike the positions below this is **not** a capture: it was measured
-/// independently by Phase 4's round-1 reviewer against the shipped
-/// `layout::cost::evaluate`, reproduced by the author, and written into
-/// `specs/schematic_map_spec.md` §3 before any of this phase's code existed. Six
-/// decimal places, so it is compared with a relative tolerance rather than for
-/// equality.
-pub const PHASE3_TOTAL_COST: f64 = 22.505867;
+/// Unlike the positions below this is **not** a capture, and it has been measured
+/// twice. Phase 4's round-1 reviewer measured `22.505867` against the shipped
+/// `layout::cost::evaluate` and wrote it into `specs/schematic_map_spec.md` §3
+/// before any of that phase's code existed. Phase 7 reweighted
+/// `LayoutParams::default()`, and `t` is *defined* by the weights, so the
+/// constant could not survive it — this value was re-measured the same way, at
+/// the same layout, and not adjusted until the test went green. **The layout
+/// itself did not move**: [`PHASE3_POSITIONS`] is bit-identical across the
+/// reweight, which is the half that must never change. Six decimal places, so it
+/// is compared with a relative tolerance rather than for equality.
+pub const PHASE3_TOTAL_COST: f64 = 8.565050;
 
 /// Phase 3's shipped layout on the fixture, in input order.
 ///

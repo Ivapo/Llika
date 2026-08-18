@@ -99,11 +99,35 @@ pub struct LayoutParams {
 /// test would catch and which would then sail through Phase 3's cost-decrease
 /// gate.
 ///
-/// The five values are **provisional** (OQ-2). The source paper gives none, the
-/// criteria have different natural scales, and Phase 3's visual gate is the
-/// first place they can be judged. Crossings and four-gonality lead: a crossing
-/// is the most visually damaging thing on the map, and `c5` carries the whole
-/// octilinear look while being small in magnitude — at most `π/8` per edge.
+/// The five values are **still provisional** (OQ-2), and they are the *second*
+/// set: `5 / 1 / 1 / 2 / 5` shipped from Phase 3 to Phase 7, judged twice by eye
+/// against the 17-station fixture and left standing both times. BART falsified
+/// them — 176 of 324 settings in a coarse grid dominate them on all five
+/// unweighted criteria at once, by a mechanism that is named rather than
+/// guessed. `c4` and `c5` both price what an edge's *angle* does, and at
+/// `w5:w4` = 5:2 `c4` outbids `c5`: the search buys a straight line through a
+/// station by paying for an off-angle edge. Lowering `w4` and raising `w5` takes
+/// BART from 48 of 50 corridors octilinear to 50 of 50, at `c5` exactly zero and
+/// crossings still zero.
+///
+/// **Four-gonality now leads alone, and a crossing is still the most expensive
+/// single thing on the map.** The two are not commensurable: `c1` counts
+/// crossings, so one costs `5.0`, while `c5` sums a deviation of at most `π/8`
+/// per edge, so the most expensive single off-angle edge costs
+/// `10 × π/8 = 3.926991`.
+///
+/// **`w4 = 0.25` is a design call and no measurement here argues for it.** At
+/// this weighting `w4 = 0` and `w4 = 0.25` draw byte-identical BART layouts. `c4`
+/// keeps a low price rather than being switched off because it is one of the five
+/// criteria with its own zero-set, `--w-straightness` is a flag someone can
+/// raise, and a network whose lines bend where BART's do not is the case it
+/// exists for — deleting a criterion because one city cannot see it is
+/// overfitting to that city.
+///
+/// **Provisional, because this is one network and not a calibration.** These are
+/// a *round* setting inside the region that dominates the old one, picked to be
+/// explainable rather than the grid's argmax; a second real network should be
+/// expected to move them again.
 impl Default for LayoutParams {
     fn default() -> Self {
         Self {
@@ -113,9 +137,9 @@ impl Default for LayoutParams {
             cluster_moves: true,
             w_crossings: 5.0,
             w_edge_length: 1.0,
-            w_angular_resolution: 1.0,
-            w_straightness: 2.0,
-            w_octilinearity: 5.0,
+            w_angular_resolution: 0.5,
+            w_straightness: 0.25,
+            w_octilinearity: 10.0,
         }
     }
 }

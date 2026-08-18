@@ -192,9 +192,13 @@ pub fn to_schema(
 /// route published twice pays its bends twice and the search weights its
 /// straightness by how many times its operator wrote it down. On BART that is
 /// not a rounding difference — 50 stations converge to a different arrangement,
-/// at cost `112.087766` over 3 sweeps against `139.911271` over 5. Merging is
-/// what makes the layout depend on the network instead of on the publisher's
-/// bookkeeping.
+/// the merged one at cost `16.746281` against the doubled one's `25.277674`.
+/// Merging is what makes the layout depend on the network instead of on the
+/// publisher's bookkeeping. It is also the *longer* search of the two, 6 executed
+/// sweeps against 3, which is what a map worth more sweeps looks like rather than
+/// a saving. (Measured at `llk-001` Phase 7's weights; the same comparison ran
+/// `112.087766` over 3 against `139.911271` over 5 at the ones before them, so
+/// the direction survived a reweight that inverted the sweep counts.)
 ///
 /// Reversed **and** equal, because two routes with the same list forward draw
 /// coincident strokes for the same reason. A route can absorb at most one other

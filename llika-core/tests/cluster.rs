@@ -41,7 +41,10 @@ fn the_baseline_reproduces_phase_threes_shipped_layout() {
 /// Keyed to the committed 17-station fixture rather than to a purpose-built one,
 /// because OQ-7's resolution measured a real improving cluster move on it: a
 /// rigid move of `parkview`/`lakeside`, the side of the `university`–`parkview`
-/// bridge, takes `t` from the baseline to 16.222682 on its own.
+/// bridge, takes `t` from the baseline to 6.601554 on its own. (That figure is
+/// weight-derived and moved with Phase 7's reweight, from the 16.222682 OQ-7
+/// recorded against the same move. Prose, not a literal — nothing here is keyed
+/// to it.)
 ///
 /// **The direction is not free.** Hill-climbing is path-dependent, so an accepted
 /// cluster move can steer the run to a worse fixed point than the single-station

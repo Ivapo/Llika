@@ -76,9 +76,11 @@ struct Args {
 
     /// Movement radius at the first sweep, in Chebyshev rings (1-64).
     ///
-    /// Inert at the shipped weights: `c2` prices every ring-2-or-further move
-    /// out of contention before any other criterion is consulted, so 1, 2, 3, 5
-    /// and 8 all give bit-identical positions while costing O(r²) candidates.
+    /// Saturated above two at the shipped weights: on BART, 2, 3, 5 and 8 give
+    /// bit-identical positions, so raising it only costs O(r²) candidates a
+    /// sweep. It is not inert — `r_0 = 1` is a different map there, differing in
+    /// 33 of 50 stations. On the 17-station sample fixture all five agree, which
+    /// is why this was once claimed of every network.
     #[arg(long)]
     initial_radius: Option<u32>,
 

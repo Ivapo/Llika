@@ -275,8 +275,9 @@ fn targets_are_free(
 /// preserved. What licenses dropping those pairs is that an intra-cluster edge has
 /// both endpoints inside the side and an external edge has both outside, so such a
 /// pair can never share an endpoint — which makes the dropped pairs exactly `c1`'s
-/// pair set, where the closed test already charges a collinear overlap at the
-/// heaviest weight in the cost function. That is the soft/hard split one level up,
+/// pair set, where the closed test already charges a collinear overlap at `5.0` —
+/// more than any single off-angle edge costs, which is `10 × π/8 = 3.926991` at
+/// `w_octilinearity` = 10.0. That is the soft/hard split one level up,
 /// and it leaves a stated asymmetry: a configuration hard-rejected when a single
 /// station creates it is only *priced* when a cluster move does.
 fn bridge_overlaps(corridors: &[(usize, usize)], positions: &[GridPoint], bridge: usize) -> bool {

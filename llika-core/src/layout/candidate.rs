@@ -6,11 +6,17 @@
 //! network from tearing — everything else about a move is left to the soft cost.
 //!
 //! **Ordinary crossings are not rejected here.** They are left entirely to the
-//! `c1` penalty, which is the heaviest term in the cost function. The two wrong
-//! answers are not comparable: reading the rule as a hard rejection when it is
-//! soft freezes the layout early with edges it was never allowed to improve
-//! through, while reading it as soft when it is hard costs a map with a crossing
-//! `c1` is already pushing out. Only one of them can freeze the search.
+//! `c1` penalty, which still charges more for a crossing than anything else on
+//! the map charges for one defect. `w_octilinearity` is the larger weight since
+//! the Phase 7 reweight, but the two criteria are not commensurable: `c1` counts
+//! crossings, so one costs `5.0` flat, while `c5` sums a deviation of at most
+//! `π/8` per edge, so the most expensive single off-angle edge costs
+//! `10 × π/8 = 3.926991`.
+//!
+//! The two wrong answers are not comparable: reading the rule as a hard rejection
+//! when it is soft freezes the layout early with edges it was never allowed to
+//! improve through, while reading it as soft when it is hard costs a map with a
+//! crossing `c1` is already pushing out. Only one of them can freeze the search.
 
 use crate::geometry::segments_overlap;
 use crate::grid::{GridOccupancy, GridPoint, ring};
