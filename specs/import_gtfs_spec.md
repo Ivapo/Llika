@@ -37,7 +37,7 @@ phases:
     by: null
   - name: "Phase 6 — a second city, of a different shape"
     reviewed: 2026-08-18
-    shipped: null
+    shipped: 2026-08-18
     cut: null
     by: null
 
@@ -53,7 +53,10 @@ reference: >
   discards the timetable it actually is. The field list in §2.1 was validated
   against a real feed at Phase 4 on 2026-08-16 — BART, `llika-gtfs/tests/fixtures/`
   — and stood without a correction, which was the outcome this note allowed for and
-  did not assume. It remains one feed.
+  did not assume. ~~It remains one feed.~~ **Dated 2026-08-18 by Phase 6: it is now
+  two.** MBTA's feed was read at that phase and this list stood a second time without a
+  correction — the outcome this note allowed for twice and has now not had to assume
+  twice. What a second feed does not buy is stated at §2.1's own note.
 ---
 
 # GTFS network import
@@ -241,6 +244,18 @@ its `stops.txt` carries 132 `location_type = 2` entrance rows — every one of t
 coordinates, so the case that motivated the `Option` typing is still unwitnessed
 outside the fixture. The `Option`s stay; a rule that has not yet been needed on one
 feed is not a rule that is wrong.)*
+
+*(Recorded 2026-08-18, at Phase 6's close-out — a **dated note and not a correction**,
+because nothing above is wrong. MBTA's feed did not correct the table either: every
+column is present and reads as typed, and its `stop_sequence` also starts at 0. So
+"final for this spec outright" has survived the second real feed it was asserted
+without. Two things it sharpens rather than changes. The `Option` coordinate typing is
+**still unwitnessed after three feeds** — MBTA carries 332 `location_type = 2` entrance
+rows and 1,921 `location_type = 3` generic nodes, and not one kept row with an empty
+coordinate cell; the `Option`s stay for the reason above, one feed stronger. And
+"outright" was always in tension with Phase 6's own reservation that corrections to this
+table are in scope — which is the right tension to leave standing, since a claim that a
+table can never move again is not one this spec can make about someone else's format.)*
 
 ### 2.2 Station identity is the load-bearing problem (decision, recorded)
 

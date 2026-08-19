@@ -44,6 +44,11 @@ phases:
     shipped: 2026-08-17
     cut: null
     by: null
+  - name: "Phase 8 — w_crossings, re-judged"
+    reviewed: null
+    shipped: null
+    cut: null
+    by: null
 
 extends: null
 supersedes: null
@@ -1133,6 +1138,66 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   wore a weighting question's clothes for exactly one afternoon — and this entry's own
   standing, since the negative half is now false and the positive half has its first
   datum.)*
+
+  **JUDGED A FOURTH TIME 2026-08-18, by `llk-002` Phase 6 — the measurement this entry
+  demanded three times, now taken in a committed test rather than by anybody's afternoon.
+  The verdict is a null one, and that is the finding.** MBTA's 119-station network,
+  committed at `llika-gtfs/tests/fixtures/golden/mbta.json` and scored through the shipped
+  `layout::cost::evaluate` by
+  `llika-gtfs/tests/mbta_feed.rs:mbta_draws_to_the_measured_criteria_vectors`:
+
+  | weighting | `c1` | `c2` | `c3` | `c4` | `c5` |
+  |---|---|---|---|---|---|
+  | **shipped 5/1/0.5/0.25/10** | **1** | 6.77460326 | 64.40264940 | 19.63495408 | 0 |
+  | Phase 7 runner-up 5/1/1/0.5/10 | 1 | 8.94617613 | 59.69026042 | 17.27875959 | 0 |
+  | pre-Phase-7 5/1/1/2/5 | 2 | 6.60303038 | 62.83185307 | 18.84955592 | 0 |
+  | `w1` raised 100/1/0.5/0.25/10 | **0** | 5.94617613 | 63.35545185 | 21.20575041 | 0 |
+
+  **No weighting Pareto-dominates any other**, by this entry's own definition — `≤` on all
+  five unweighted criteria and `<` on at least one, `1e-9` guard, never by `t`. The gate
+  asserts that, so it is a standing claim rather than a reading.
+
+  **What the fourth row buys, and what it costs, to the digit.** Raising `w1` from 5 to 100
+  removes the crossing and improves `c2` by `0.828427` and `c3` by `1.047198`. It pays
+  `1.570796` in `c4` — **exactly `π/2`, one right angle's worth of added bend**. That is
+  the whole trade, and it is why this is a design call rather than an arithmetic one: `c1`
+  is an integer count of the most visually damaging thing on a map, and `c4` is a smooth
+  sum nobody looks at directly.
+
+  **The three `w1 = 5` rows are mutually non-dominating too**, which is what makes the
+  fourth row necessary rather than decorative. A trio that all carry the same `w1` cannot
+  say anything about `w1`, and round 1 of Phase 6's review measured exactly that trio and
+  reached no verdict at all. The phase added the fourth row for that reason and recorded
+  the correction rather than quietly widening the experiment.
+
+  **The finding this entry did not anticipate, and the one that most limits it: MBTA
+  reaches `c5 = 0` at every weighting tested, including the pre-Phase-7 one.** So the
+  criterion that falsified `5/1/1/2/5` on BART — four-gonality, under-priced by the `w5:w4`
+  ratio — is *saturated* on Boston and cannot judge those weights at all. On this network
+  the old weights are not dominated; they are simply not distinguishable on the axis that
+  condemned them. **That is not a reprieve for them.** It is this entry's own lesson about
+  one network, arriving from the other direction: a network that cannot exhibit a defect is
+  no evidence that the defect is absent, and BART remains the only witness that `w5:w4`
+  matters. Two cities is still not a calibration, and now there is a mechanism for why —
+  each of the two is blind to what the other measures.
+
+  **What is settled, and what is not.** Settled: `w_crossings` is pinnable, MBTA is where
+  it was pinned, and the shipped default leaves a crossing that a higher `w1` removes at a
+  named price. Not settled: whether paying `π/2` of `c4` for one crossing draws a **better**
+  map, which is a judgement about pictures and not about vectors. Phase 6 produced the
+  comparison and moved no default, which is the split Phase 7 used in the mirror direction
+  and refused to collapse.
+
+  **The successor phase, named so this entry is not again a question nothing forces.** It is
+  **Phase 8 of this spec — `w_crossings`, re-judged** — appended to §4 on 2026-08-18 with
+  its own review round still to run. It takes the table above as its input and owns the
+  decision this phase declined: whether to move `w_crossings`, and on what evidence beyond
+  one city. **This entry's positive half — *which* replacement is right — is not what
+  Phase 8 closes**, and saying otherwise would repeat the over-reach this question has
+  corrected twice. That half still wants a third network, and this entry says so with no
+  phase attached, deliberately: the two feeds this project can publish from are spent, and
+  proposing a phase whose feed does not exist would attach the question to a placeholder
+  rather than to work.
 - **OQ-3** — ~~Deterministic tie-break when two stations snap to the same grid cell
   before hill-climbing starts. Proposed: spiral search outward to the nearest free
   cell, in a fixed order so the result is reproducible. *(design call.)* **Blocks
@@ -1425,6 +1490,29 @@ seeded at Phase 1's close-out do. A citation added here would rot in exactly the
   two on a quarter-second run is still schedulable rather than urgent. Worth recording
   only because it shows the leading factor is a property of the weights too, not of the
   network alone.)*
+
+  **A second city, measured 2026-08-18 by `llk-002` Phase 6's close-out, and BART
+  re-measured in the same pass so the two are comparable.** Both in release, at the
+  shipped weights, on one machine:
+
+  | | stations | corridors | sweeps | release | per sweep |
+  |---|---|---|---|---|---|
+  | BART | 50 | 50 | 6 | **0.31 s** | ≈52 ms |
+  | MBTA | 119 | 120 | 6 | **2.27 s** | ≈378 ms |
+
+  **The BART row is why the re-measure had to happen.** The 0.13 s / 3 sweeps this entry
+  carried above is pre-Phase-7, and the note before this one predicted ≈0.26 s at the
+  reweight. Measured, it is 0.31 s — so comparing a new city against the old figure would
+  have compared across weightings and overstated the second city by a factor of two.
+
+  **The per-sweep term grew ≈7.3×, where `V · r² · E²` predicts ≈13.7×.** 2.4× the
+  stations and 5.8× the `E²`. So the bound is loose at this size rather than wrong — the
+  crossing term does not dominate a 120-corridor network the way the exponent suggests,
+  and the 72.9 s figure at 200 stations remains the honest statement of where it bites.
+  **The conclusion is unchanged for the third time**: the delta score is still the fix, and
+  a 2.3-second run is still schedulable rather than urgent. What is newly visible is that
+  the early exit is doing even more work than BART showed — a network 2.4× larger still
+  converges in six sweeps, so `iterations` is not what a real city pays.
 
 - **OQ-10** — **The search cannot escape a crossing that a dense multi-line core creates,
   at any weighting.** *(design call, and one measurement has to come first.)* **Blocks
@@ -2474,3 +2562,66 @@ and this one does it by pointing at the picture.*
   and gets one line saying so**: that phase decided "the flag ships with the inertness
   stated … rather than the weights changing first", and this phase takes the other branch
   on both halves.
+
+### Phase 8 — `w_crossings`, re-judged
+*Produces the observable: **decided at the phase, and that is the honest answer rather
+than a dodge.** If the weight moves, it is Phase 7's shape again — the same networks
+drawn differently, argued by pointing at the picture. If it does not, the phase produces
+a recorded refusal and no new map, which has to be argued explicitly against the
+alternative of not running it at all. **Appended 2026-08-18 at `llk-002` Phase 6's
+close-out, unreviewed**, so that OQ-2's `w1` finding is attached to work rather than
+left floating — which §4 of the methodology says is the only way a question gets
+forced.*
+
+- **Scope:** `w_crossings` in `llika-core/src/layout/mod.rs:LayoutParams`'s `Default`
+  impl, and nothing else. **Not the other four**, which have no new evidence: MBTA
+  reaches `c5 = 0` at every weighting tested, so it cannot re-judge the `w5:w4` ratio
+  Phase 7 moved, and OQ-2 records why that silence is not agreement.
+
+  #### The evidence exists and the decision does not follow from it (the whole problem)
+
+  OQ-2's fourth entry is this phase's evidentiary base and is not restated here. What it
+  establishes: MBTA draws **one** crossing at the shipped `w1 = 5` and **zero** at
+  `w1 = 100`, so `w_crossings` is pinnable — the first weight in this project with
+  concrete evidence against its default. What it also establishes, and what makes this a
+  phase rather than an edit: the higher weight is **not** Pareto-better. It buys `c1`,
+  `c2` and `c3` and pays exactly `pi/2` in `c4`. **No arithmetic resolves that**, because
+  `c1` counts the most visually damaging thing on a map and `c4` sums something nobody
+  looks at directly, and the criteria vector is deliberately not commensurable.
+
+  So this phase's real work is **not** finding a number. It is deciding by eye, on
+  pictures, at a small number of candidate values, and recording the judgement with the
+  pictures that produced it — which is what Phase 7 did, and doing it by argmax is what
+  OQ-2 has warned against three times.
+
+  **Chicago is the case that must be looked at before anything moves.** OQ-10 records
+  that CTA holds 4 Loop crossings that `--w-crossings` at 5, 25, 100 and **400** cannot
+  shift. So a raised `w1` is known to buy nothing on the one network where crossings are
+  the visible failure, while costing straightness on every network. **A phase that raises
+  `w1` on Boston's single crossing without answering that has overfitted to one city**,
+  which is the mistake OQ-2 has now corrected three times.
+
+  #### What this phase does not do
+
+  **It does not resolve OQ-2.** That question's positive half — which of the surviving
+  weightings is right — needs a third network, and this phase adds none. It closes the
+  `w1` half or records why it cannot.
+
+  **It does not touch the search.** If the answer turns out to be that `w1` cannot be
+  raised because it does not reach the crossings that matter, the problem is OQ-10's move
+  set and belongs to a phase that changes the search, not the weights.
+
+- **Exit gate:** to be written when this phase is reviewed. It will need, at minimum:
+  `cargo test --workspace` green with every criteria-vector literal in
+  `llika-gtfs/tests/real_feed.rs` and `llika-gtfs/tests/mbta_feed.rs` re-measured if the
+  default moves; both real-city maps in `gallery/` regenerated; and the decision recorded
+  in OQ-2 either way, since a refusal is as much this phase's product as a change.
+
+- **Close-out:** to be written with the gate. It touches `rules/layout-cost.md`, the
+  `--w-crossings` help text, `README.md`'s Tuning section and `gallery/README.md` if the
+  default moves, and OQ-2 and OQ-10 in either case.
+
+  **This phase may be cut, and that is a legitimate outcome rather than a failure.** If
+  its own review round finds that one city's single crossing plus one city's immovable
+  four is not enough to move a shipped default, `cut` is the right field to write. It was
+  appended to attach a finding to work, not to guarantee a change.

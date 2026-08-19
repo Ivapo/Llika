@@ -21,14 +21,20 @@ lists, which a tram or bus system satisfies as readily as an underground.
 
 ## Status
 
-**All 7 phases shipped — v1 is complete.** The pipeline runs end to end and reads as a
+**v1 is complete — all seven of its phases shipped.** The pipeline runs end to end and reads as a
 transit diagram: stations are snapped to a grid and then hill-climbed against five
 weighted criteria, one station at a time and then in rigid groups, and lines sharing a
 corridor are drawn as parallel strokes that converge to a single point at a real
 interchange. Expect junctions that fan out evenly, lines that do not kink, bundled
-trunks, and — on BART, the one real network committed here — every one of its 50
-corridors on a multiple of 45 degrees. Every layout and render parameter has a flag, so
-a good first result can be improved by eye.
+trunks, and — on BART — every one of its 50 corridors on a multiple of 45 degrees.
+Every layout and render parameter has a flag, so a good first result can be improved
+by eye.
+
+**Two real networks are committed here now**, and they are what the weights are judged
+against: BART's 50 stations and the MBTA's 119, both in `gallery/`. The second was
+added because one city cannot calibrate five criterion weights — and it earned its
+keep immediately, by being the first network in this repository that the crossings
+weight can be seen to decide anything about.
 
 | Phase | | |
 |---|---|---|
@@ -39,13 +45,22 @@ a good first result can be improved by eye.
 | 5 | Line-bundling renderer | ✅ shipped |
 | 6 | Full parameter surface | ✅ shipped |
 | 7 | The weights, corrected against a real network | ✅ shipped |
+| 8 | `w_crossings`, re-judged | 📋 drafted, post-v1 |
+
+Phase 8 is **not part of v1** and may yet be cut. It exists because the second real
+network below found the first concrete evidence against a shipped weight — one crossing
+that a higher `--w-crossings` removes, at a measured cost in line straightness — and a
+finding with no phase attached is one nothing will ever force.
 
 **GTFS import is done too.** A separate spec adds `llika-gtfs`, a second binary that
 turns a published GTFS feed into a network file the one above draws. Platforms collapse
 into the stations a rider changes at, so an interchange draws once and the lines through
 it share a corridor, and each route draws the line it is normally operated as. And it
-has now been run on a real city's feed — BART's, committed to this repository, drawn
-in `gallery/bart.svg`.
+has now been run on two real cities: BART's feed, committed to this repository and
+drawn in `gallery/bart.svg`, and the MBTA's, which is **not** committed — at 18.6 MB it
+would be re-committed on every refresh, so what lands instead is the network it imports
+to, in `llika-gtfs/tests/fixtures/golden/mbta.json` with its provenance beside it. That
+one is drawn in `gallery/mbta.svg`.
 
 | Phase | | |
 |---|---|---|
@@ -54,6 +69,7 @@ in `gallery/bart.svg`.
 | 3 | The representative trip | ✅ shipped |
 | 4 | A real city | ✅ shipped |
 | 5 | The tables are streamed, not collected | ✅ shipped |
+| 6 | A second city, of a different shape | ✅ shipped |
 
 Out of scope, deliberately: station-name labels, a GUI, and importing from
 OpenStreetMap.
