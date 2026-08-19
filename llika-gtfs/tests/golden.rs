@@ -75,3 +75,30 @@ fn the_bart_feed_imports_to_the_committed_golden() {
         "BART's imported network moved"
     );
 }
+
+/// Phase 6's gate 1, second half — and it is the half that pins the committed
+/// network rather than merely sizing it.
+///
+/// **Stated because the two are easily conflated.** `mbta_feed.rs`'s counts say
+/// the importer produced *a* network of 119 stations and 8 lines; only
+/// `to_json(&schema)` compared byte for byte against the committed file says it
+/// produced *that* one. Three gates read `golden/mbta.json` — it draws, it scores
+/// at four weightings, and it is what `gallery/mbta.svg` is regenerated from — so
+/// without this assertion the whole product of OQ-8's second half is never
+/// checked against the importer at all.
+///
+/// **Unlike the two above, this one needs a feed that is not in the tree**, which
+/// is the same OQ-8 decision from the other side: the archive is fetched and
+/// `.gitignore`d, so the test says how to get it rather than failing without it.
+#[test]
+#[cfg_attr(
+    not(mbta_feed),
+    ignore = "fetch https://cdn.mbta.com/MBTA_GTFS.zip to llika-gtfs/tests/fixtures/mbta.zip"
+)]
+fn the_mbta_feed_imports_to_the_committed_golden() {
+    assert_eq!(
+        imported(&fixtures().join("mbta.zip")),
+        golden("mbta.json"),
+        "MBTA's imported network moved"
+    );
+}

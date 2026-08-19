@@ -23,6 +23,13 @@
 //! streaming bug cannot show. So the same comparison runs again over a feed
 //! whose `stop_times.txt` crosses many block boundaries and the window they are
 //! written against.
+//!
+//! **Phase 6's gate, assertion 5, adds the property on a third real feed.** Every
+//! case above reads either the hand-authored fixture or an archive generated from
+//! it, so the determinism guarantee has never been stated against a table shape
+//! nobody in this repository chose. MBTA's is fetched rather than committed —
+//! `llk-002` OQ-8 — so that case is `#[ignore]`d without it, via the `mbta_feed`
+//! cfg `build.rs` emits.
 
 mod common;
 
@@ -203,4 +210,32 @@ fn an_incomplete_feed_fails_loudly() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("routes.txt"), "stderr was: {stderr}");
     assert!(!dir.join("never.json").exists(), "no half-written output");
+}
+
+/// Phase 6's gate 5: determinism across processes on a **third** real feed.
+///
+/// **Stated as an extension because this file read only `common::feed_dir()`
+/// until now** — BART was never added to it, so "delegated as every phase has"
+/// would have left this green without a line of new-feed work.
+///
+/// **A skip here costs least of the phase's two feed-reading gates**: the
+/// property itself is already held by `two_separate_processes_write_the_same_bytes`
+/// on the fixture and by the large-zip case above on a generated archive. What
+/// this case adds is the property on a third real feed, at a scale and a column
+/// shape nobody here authored, rather than the property.
+///
+/// **It costs ≈13 s under a debug `cargo test`** — `import_twice` shells out to
+/// the binary twice, and the debug binary is ≈6.25 s on this archive — against
+/// `real_feed.rs`'s ≈25 s radius test and the ≈1.4 s large-zip case above.
+/// Stated so the price is chosen rather than discovered.
+#[test]
+#[cfg_attr(
+    not(mbta_feed),
+    ignore = "fetch https://cdn.mbta.com/MBTA_GTFS.zip to llika-gtfs/tests/fixtures/mbta.zip"
+)]
+fn two_processes_write_the_same_bytes_on_the_mbta_feed() {
+    let dir = scratch("llika-gtfs-mbta-byte-stability");
+    let feed = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/mbta.zip");
+    import_twice(&dir, &feed);
+    std::fs::remove_dir_all(&dir).ok();
 }
