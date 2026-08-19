@@ -1,0 +1,925 @@
+{
+  "stations": [
+    {
+      "id": "place-alfcl",
+      "name": "Alewife",
+      "lat": 42.39583,
+      "lon": -71.141287
+    },
+    {
+      "id": "place-alsgr",
+      "name": "Allston Street",
+      "lat": 42.348701,
+      "lon": -71.137955
+    },
+    {
+      "id": "place-amory",
+      "name": "Amory Street",
+      "lat": 42.350992,
+      "lon": -71.114748
+    },
+    {
+      "id": "place-andrw",
+      "name": "Andrew",
+      "lat": 42.330154,
+      "lon": -71.057655
+    },
+    {
+      "id": "place-aport",
+      "name": "Airport",
+      "lat": 42.374262,
+      "lon": -71.030395
+    },
+    {
+      "id": "place-aqucl",
+      "name": "Aquarium",
+      "lat": 42.359784,
+      "lon": -71.051652
+    },
+    {
+      "id": "place-armnl",
+      "name": "Arlington",
+      "lat": 42.351902,
+      "lon": -71.070893
+    },
+    {
+      "id": "place-asmnl",
+      "name": "Ashmont",
+      "lat": 42.28452,
+      "lon": -71.063777
+    },
+    {
+      "id": "place-astao",
+      "name": "Assembly",
+      "lat": 42.392811,
+      "lon": -71.077257
+    },
+    {
+      "id": "place-babck",
+      "name": "Babcock Street",
+      "lat": 42.351616,
+      "lon": -71.119924
+    },
+    {
+      "id": "place-balsq",
+      "name": "Ball Square",
+      "lat": 42.399889,
+      "lon": -71.111003
+    },
+    {
+      "id": "place-bbsta",
+      "name": "Back Bay",
+      "lat": 42.34735,
+      "lon": -71.075727
+    },
+    {
+      "id": "place-bckhl",
+      "name": "Back of the Hill",
+      "lat": 42.330139,
+      "lon": -71.111313
+    },
+    {
+      "id": "place-bcnfd",
+      "name": "Beaconsfield",
+      "lat": 42.335765,
+      "lon": -71.140455
+    },
+    {
+      "id": "place-bcnwa",
+      "name": "Washington Square",
+      "lat": 42.339394,
+      "lon": -71.13533
+    },
+    {
+      "id": "place-bland",
+      "name": "Blandford Street",
+      "lat": 42.349293,
+      "lon": -71.100258
+    },
+    {
+      "id": "place-bmmnl",
+      "name": "Beachmont",
+      "lat": 42.3975423,
+      "lon": -70.9923194
+    },
+    {
+      "id": "place-bndhl",
+      "name": "Brandon Hall",
+      "lat": 42.340023,
+      "lon": -71.129082
+    },
+    {
+      "id": "place-bomnl",
+      "name": "Bowdoin",
+      "lat": 42.361365,
+      "lon": -71.062037
+    },
+    {
+      "id": "place-boyls",
+      "name": "Boylston",
+      "lat": 42.35302,
+      "lon": -71.06459
+    },
+    {
+      "id": "place-brdwy",
+      "name": "Broadway",
+      "lat": 42.342622,
+      "lon": -71.056967
+    },
+    {
+      "id": "place-brico",
+      "name": "Packard's Corner",
+      "lat": 42.351967,
+      "lon": -71.125031
+    },
+    {
+      "id": "place-brkhl",
+      "name": "Brookline Hills",
+      "lat": 42.331316,
+      "lon": -71.126683
+    },
+    {
+      "id": "place-brmnl",
+      "name": "Brigham Circle",
+      "lat": 42.334229,
+      "lon": -71.104609
+    },
+    {
+      "id": "place-bucen",
+      "name": "Boston University Central",
+      "lat": 42.350082,
+      "lon": -71.106865
+    },
+    {
+      "id": "place-buest",
+      "name": "Boston University East",
+      "lat": 42.349735,
+      "lon": -71.103889
+    },
+    {
+      "id": "place-butlr",
+      "name": "Butler",
+      "lat": 42.272429,
+      "lon": -71.062519
+    },
+    {
+      "id": "place-bvmnl",
+      "name": "Brookline Village",
+      "lat": 42.332608,
+      "lon": -71.116857
+    },
+    {
+      "id": "place-capst",
+      "name": "Capen Street",
+      "lat": 42.267563,
+      "lon": -71.087338
+    },
+    {
+      "id": "place-ccmnl",
+      "name": "Community College",
+      "lat": 42.373622,
+      "lon": -71.069533
+    },
+    {
+      "id": "place-cedgr",
+      "name": "Cedar Grove",
+      "lat": 42.279629,
+      "lon": -71.060394
+    },
+    {
+      "id": "place-cenav",
+      "name": "Central Avenue",
+      "lat": 42.270027,
+      "lon": -71.073444
+    },
+    {
+      "id": "place-chhil",
+      "name": "Chestnut Hill",
+      "lat": 42.326753,
+      "lon": -71.164699
+    },
+    {
+      "id": "place-chill",
+      "name": "Chestnut Hill Avenue",
+      "lat": 42.338169,
+      "lon": -71.15316
+    },
+    {
+      "id": "place-chmnl",
+      "name": "Charles/MGH",
+      "lat": 42.361166,
+      "lon": -71.070628
+    },
+    {
+      "id": "place-chncl",
+      "name": "Chinatown",
+      "lat": 42.352547,
+      "lon": -71.062752
+    },
+    {
+      "id": "place-chswk",
+      "name": "Chiswick Road",
+      "lat": 42.340805,
+      "lon": -71.150711
+    },
+    {
+      "id": "place-clmnl",
+      "name": "Cleveland Circle",
+      "lat": 42.336142,
+      "lon": -71.149326
+    },
+    {
+      "id": "place-cntsq",
+      "name": "Central",
+      "lat": 42.365486,
+      "lon": -71.103802
+    },
+    {
+      "id": "place-coecl",
+      "name": "Copley",
+      "lat": 42.349974,
+      "lon": -71.077447
+    },
+    {
+      "id": "place-cool",
+      "name": "Coolidge Corner",
+      "lat": 42.342116,
+      "lon": -71.121263
+    },
+    {
+      "id": "place-davis",
+      "name": "Davis",
+      "lat": 42.39674,
+      "lon": -71.121815
+    },
+    {
+      "id": "place-denrd",
+      "name": "Dean Road",
+      "lat": 42.337807,
+      "lon": -71.141853
+    },
+    {
+      "id": "place-dwnxg",
+      "name": "Downtown Crossing",
+      "lat": 42.355518,
+      "lon": -71.060225
+    },
+    {
+      "id": "place-eliot",
+      "name": "Eliot",
+      "lat": 42.319045,
+      "lon": -71.216684
+    },
+    {
+      "id": "place-engav",
+      "name": "Englewood Avenue",
+      "lat": 42.337104,
+      "lon": -71.144852
+    },
+    {
+      "id": "place-esomr",
+      "name": "East Somerville",
+      "lat": 42.379467,
+      "lon": -71.086625
+    },
+    {
+      "id": "place-fbkst",
+      "name": "Fairbanks Street",
+      "lat": 42.339725,
+      "lon": -71.131073
+    },
+    {
+      "id": "place-fenwd",
+      "name": "Fenwood Road",
+      "lat": 42.333706,
+      "lon": -71.105728
+    },
+    {
+      "id": "place-fenwy",
+      "name": "Fenway",
+      "lat": 42.345403,
+      "lon": -71.104213
+    },
+    {
+      "id": "place-fldcr",
+      "name": "Fields Corner",
+      "lat": 42.300093,
+      "lon": -71.061667
+    },
+    {
+      "id": "place-forhl",
+      "name": "Forest Hills",
+      "lat": 42.300713,
+      "lon": -71.113943
+    },
+    {
+      "id": "place-gilmn",
+      "name": "Gilman Square",
+      "lat": 42.387928,
+      "lon": -71.096766
+    },
+    {
+      "id": "place-gover",
+      "name": "Government Center",
+      "lat": 42.359705,
+      "lon": -71.059215
+    },
+    {
+      "id": "place-grigg",
+      "name": "Griggs Street",
+      "lat": 42.348545,
+      "lon": -71.134949
+    },
+    {
+      "id": "place-grnst",
+      "name": "Green Street",
+      "lat": 42.310525,
+      "lon": -71.107414
+    },
+    {
+      "id": "place-haecl",
+      "name": "Haymarket",
+      "lat": 42.363021,
+      "lon": -71.05829
+    },
+    {
+      "id": "place-harsq",
+      "name": "Harvard",
+      "lat": 42.373362,
+      "lon": -71.118956
+    },
+    {
+      "id": "place-harvd",
+      "name": "Harvard Avenue",
+      "lat": 42.350243,
+      "lon": -71.131355
+    },
+    {
+      "id": "place-hsmnl",
+      "name": "Heath Street",
+      "lat": 42.328316,
+      "lon": -71.110252
+    },
+    {
+      "id": "place-hwsst",
+      "name": "Hawes Street",
+      "lat": 42.344906,
+      "lon": -71.111145
+    },
+    {
+      "id": "place-hymnl",
+      "name": "Hynes Convention Center",
+      "lat": 42.347888,
+      "lon": -71.087903
+    },
+    {
+      "id": "place-jaksn",
+      "name": "Jackson Square",
+      "lat": 42.323132,
+      "lon": -71.099592
+    },
+    {
+      "id": "place-jfk",
+      "name": "JFK/UMass",
+      "lat": 42.320685,
+      "lon": -71.052391
+    },
+    {
+      "id": "place-kencl",
+      "name": "Kenmore",
+      "lat": 42.348949,
+      "lon": -71.095169
+    },
+    {
+      "id": "place-knncl",
+      "name": "Kendall/MIT",
+      "lat": 42.3624908,
+      "lon": -71.0861765
+    },
+    {
+      "id": "place-kntst",
+      "name": "Kent Street",
+      "lat": 42.344074,
+      "lon": -71.114197
+    },
+    {
+      "id": "place-lake",
+      "name": "Boston College",
+      "lat": 42.340081,
+      "lon": -71.166769
+    },
+    {
+      "id": "place-lech",
+      "name": "Lechmere",
+      "lat": 42.371572,
+      "lon": -71.076584
+    },
+    {
+      "id": "place-lngmd",
+      "name": "Longwood Medical Area",
+      "lat": 42.33596,
+      "lon": -71.100052
+    },
+    {
+      "id": "place-longw",
+      "name": "Longwood",
+      "lat": 42.341702,
+      "lon": -71.109956
+    },
+    {
+      "id": "place-masta",
+      "name": "Massachusetts Avenue",
+      "lat": 42.341512,
+      "lon": -71.083423
+    },
+    {
+      "id": "place-matt",
+      "name": "Mattapan",
+      "lat": 42.26762,
+      "lon": -71.092486
+    },
+    {
+      "id": "place-mdftf",
+      "name": "Medford/Tufts",
+      "lat": 42.407975,
+      "lon": -71.117044
+    },
+    {
+      "id": "place-mfa",
+      "name": "Museum of Fine Arts",
+      "lat": 42.337711,
+      "lon": -71.095512
+    },
+    {
+      "id": "place-mgngl",
+      "name": "Magoun Square",
+      "lat": 42.393682,
+      "lon": -71.1063879
+    },
+    {
+      "id": "place-miltt",
+      "name": "Milton",
+      "lat": 42.270349,
+      "lon": -71.067266
+    },
+    {
+      "id": "place-mispk",
+      "name": "Mission Park",
+      "lat": 42.333195,
+      "lon": -71.109756
+    },
+    {
+      "id": "place-mlmnl",
+      "name": "Malden Center",
+      "lat": 42.426632,
+      "lon": -71.07411
+    },
+    {
+      "id": "place-mvbcl",
+      "name": "Maverick",
+      "lat": 42.3691186,
+      "lon": -71.0395296
+    },
+    {
+      "id": "place-newtn",
+      "name": "Newton Highlands",
+      "lat": 42.322381,
+      "lon": -71.205509
+    },
+    {
+      "id": "place-newto",
+      "name": "Newton Centre",
+      "lat": 42.329443,
+      "lon": -71.192414
+    },
+    {
+      "id": "place-north",
+      "name": "North Station",
+      "lat": 42.365577,
+      "lon": -71.06129
+    },
+    {
+      "id": "place-nuniv",
+      "name": "Northeastern University",
+      "lat": 42.340401,
+      "lon": -71.088806
+    },
+    {
+      "id": "place-ogmnl",
+      "name": "Oak Grove",
+      "lat": 42.43668,
+      "lon": -71.071097
+    },
+    {
+      "id": "place-orhte",
+      "name": "Orient Heights",
+      "lat": 42.386867,
+      "lon": -71.004736
+    },
+    {
+      "id": "place-pktrm",
+      "name": "Park Street",
+      "lat": 42.3563946,
+      "lon": -71.0624242
+    },
+    {
+      "id": "place-portr",
+      "name": "Porter",
+      "lat": 42.3884,
+      "lon": -71.119149
+    },
+    {
+      "id": "place-prmnl",
+      "name": "Prudential",
+      "lat": 42.34557,
+      "lon": -71.081696
+    },
+    {
+      "id": "place-rbmnl",
+      "name": "Revere Beach",
+      "lat": 42.4078425,
+      "lon": -70.9925332
+    },
+    {
+      "id": "place-rcmnl",
+      "name": "Roxbury Crossing",
+      "lat": 42.331397,
+      "lon": -71.095451
+    },
+    {
+      "id": "place-river",
+      "name": "Riverside",
+      "lat": 42.337352,
+      "lon": -71.252685
+    },
+    {
+      "id": "place-rsmnl",
+      "name": "Reservoir",
+      "lat": 42.335088,
+      "lon": -71.148758
+    },
+    {
+      "id": "place-rugg",
+      "name": "Ruggles",
+      "lat": 42.336377,
+      "lon": -71.088961
+    },
+    {
+      "id": "place-rvrwy",
+      "name": "Riverway",
+      "lat": 42.331684,
+      "lon": -71.111931
+    },
+    {
+      "id": "place-sbmnl",
+      "name": "Stony Brook",
+      "lat": 42.317062,
+      "lon": -71.104248
+    },
+    {
+      "id": "place-sdmnl",
+      "name": "Suffolk Downs",
+      "lat": 42.3905007,
+      "lon": -70.9971226
+    },
+    {
+      "id": "place-shmnl",
+      "name": "Savin Hill",
+      "lat": 42.31129,
+      "lon": -71.053331
+    },
+    {
+      "id": "place-smary",
+      "name": "Saint Mary's Street",
+      "lat": 42.345974,
+      "lon": -71.107353
+    },
+    {
+      "id": "place-smmnl",
+      "name": "Shawmut",
+      "lat": 42.2931258,
+      "lon": -71.065738
+    },
+    {
+      "id": "place-sougr",
+      "name": "South Street",
+      "lat": 42.3396,
+      "lon": -71.157661
+    },
+    {
+      "id": "place-spmnl",
+      "name": "Science Park/West End",
+      "lat": 42.366664,
+      "lon": -71.067666
+    },
+    {
+      "id": "place-sstat",
+      "name": "South Station",
+      "lat": 42.352271,
+      "lon": -71.055242
+    },
+    {
+      "id": "place-state",
+      "name": "State",
+      "lat": 42.358978,
+      "lon": -71.057598
+    },
+    {
+      "id": "place-sthld",
+      "name": "Sutherland Road",
+      "lat": 42.341614,
+      "lon": -71.146202
+    },
+    {
+      "id": "place-stpul",
+      "name": "Saint Paul Street",
+      "lat": 42.343327,
+      "lon": -71.116997
+    },
+    {
+      "id": "place-sull",
+      "name": "Sullivan Square",
+      "lat": 42.383975,
+      "lon": -71.076994
+    },
+    {
+      "id": "place-sumav",
+      "name": "Summit Avenue",
+      "lat": 42.34111,
+      "lon": -71.12561
+    },
+    {
+      "id": "place-tapst",
+      "name": "Tappan Street",
+      "lat": 42.338459,
+      "lon": -71.138702
+    },
+    {
+      "id": "place-tumnl",
+      "name": "Tufts Medical Center",
+      "lat": 42.349662,
+      "lon": -71.063917
+    },
+    {
+      "id": "place-unsqu",
+      "name": "Union Square",
+      "lat": 42.377359,
+      "lon": -71.094761
+    },
+    {
+      "id": "place-valrd",
+      "name": "Valley Road",
+      "lat": 42.268347,
+      "lon": -71.081343
+    },
+    {
+      "id": "place-waban",
+      "name": "Waban",
+      "lat": 42.325845,
+      "lon": -71.230609
+    },
+    {
+      "id": "place-wascm",
+      "name": "Washington Street",
+      "lat": 42.343864,
+      "lon": -71.142853
+    },
+    {
+      "id": "place-welln",
+      "name": "Wellington",
+      "lat": 42.40237,
+      "lon": -71.077082
+    },
+    {
+      "id": "place-wimnl",
+      "name": "Wood Island",
+      "lat": 42.3796403,
+      "lon": -71.0228654
+    },
+    {
+      "id": "place-wondl",
+      "name": "Wonderland",
+      "lat": 42.41342,
+      "lon": -70.991648
+    },
+    {
+      "id": "place-woodl",
+      "name": "Woodland",
+      "lat": 42.332902,
+      "lon": -71.243362
+    },
+    {
+      "id": "place-wrnst",
+      "name": "Warren Street",
+      "lat": 42.348343,
+      "lon": -71.140457
+    }
+  ],
+  "lines": [
+    {
+      "id": "Red",
+      "name": "Red Line",
+      "color": "#DA291C",
+      "stations": [
+        "place-alfcl",
+        "place-davis",
+        "place-portr",
+        "place-harsq",
+        "place-cntsq",
+        "place-knncl",
+        "place-chmnl",
+        "place-pktrm",
+        "place-dwnxg",
+        "place-sstat",
+        "place-brdwy",
+        "place-andrw",
+        "place-jfk",
+        "place-shmnl",
+        "place-fldcr",
+        "place-smmnl",
+        "place-asmnl"
+      ]
+    },
+    {
+      "id": "Mattapan",
+      "name": "Mattapan Line",
+      "color": "#DA291C",
+      "stations": [
+        "place-asmnl",
+        "place-cedgr",
+        "place-butlr",
+        "place-miltt",
+        "place-cenav",
+        "place-valrd",
+        "place-capst",
+        "place-matt"
+      ]
+    },
+    {
+      "id": "Orange",
+      "name": "Orange Line",
+      "color": "#ED8B00",
+      "stations": [
+        "place-ogmnl",
+        "place-mlmnl",
+        "place-welln",
+        "place-astao",
+        "place-sull",
+        "place-ccmnl",
+        "place-north",
+        "place-haecl",
+        "place-state",
+        "place-dwnxg",
+        "place-chncl",
+        "place-tumnl",
+        "place-bbsta",
+        "place-masta",
+        "place-rugg",
+        "place-rcmnl",
+        "place-jaksn",
+        "place-sbmnl",
+        "place-grnst",
+        "place-forhl"
+      ]
+    },
+    {
+      "id": "Green-B",
+      "name": "B",
+      "color": "#00843D",
+      "stations": [
+        "place-gover",
+        "place-pktrm",
+        "place-boyls",
+        "place-armnl",
+        "place-coecl",
+        "place-hymnl",
+        "place-kencl",
+        "place-bland",
+        "place-buest",
+        "place-bucen",
+        "place-amory",
+        "place-babck",
+        "place-brico",
+        "place-harvd",
+        "place-grigg",
+        "place-alsgr",
+        "place-wrnst",
+        "place-wascm",
+        "place-sthld",
+        "place-chswk",
+        "place-chill",
+        "place-sougr",
+        "place-lake"
+      ]
+    },
+    {
+      "id": "Green-C",
+      "name": "C",
+      "color": "#00843D",
+      "stations": [
+        "place-gover",
+        "place-pktrm",
+        "place-boyls",
+        "place-armnl",
+        "place-coecl",
+        "place-hymnl",
+        "place-kencl",
+        "place-smary",
+        "place-hwsst",
+        "place-kntst",
+        "place-stpul",
+        "place-cool",
+        "place-sumav",
+        "place-bndhl",
+        "place-fbkst",
+        "place-bcnwa",
+        "place-tapst",
+        "place-denrd",
+        "place-engav",
+        "place-clmnl"
+      ]
+    },
+    {
+      "id": "Green-D",
+      "name": "D",
+      "color": "#00843D",
+      "stations": [
+        "place-unsqu",
+        "place-lech",
+        "place-spmnl",
+        "place-north",
+        "place-haecl",
+        "place-gover",
+        "place-pktrm",
+        "place-boyls",
+        "place-armnl",
+        "place-coecl",
+        "place-hymnl",
+        "place-kencl",
+        "place-fenwy",
+        "place-longw",
+        "place-bvmnl",
+        "place-brkhl",
+        "place-bcnfd",
+        "place-rsmnl",
+        "place-chhil",
+        "place-newto",
+        "place-newtn",
+        "place-eliot",
+        "place-waban",
+        "place-woodl",
+        "place-river"
+      ]
+    },
+    {
+      "id": "Green-E",
+      "name": "E",
+      "color": "#00843D",
+      "stations": [
+        "place-mdftf",
+        "place-balsq",
+        "place-mgngl",
+        "place-gilmn",
+        "place-esomr",
+        "place-lech",
+        "place-spmnl",
+        "place-north",
+        "place-haecl",
+        "place-gover",
+        "place-pktrm",
+        "place-boyls",
+        "place-armnl",
+        "place-coecl",
+        "place-prmnl",
+        "place-nuniv",
+        "place-mfa",
+        "place-lngmd",
+        "place-brmnl",
+        "place-fenwd",
+        "place-mispk",
+        "place-rvrwy",
+        "place-bckhl",
+        "place-hsmnl"
+      ]
+    },
+    {
+      "id": "Blue",
+      "name": "Blue Line",
+      "color": "#003DA5",
+      "stations": [
+        "place-wondl",
+        "place-rbmnl",
+        "place-bmmnl",
+        "place-sdmnl",
+        "place-orhte",
+        "place-wimnl",
+        "place-aport",
+        "place-mvbcl",
+        "place-aqucl",
+        "place-state",
+        "place-gover",
+        "place-bomnl"
+      ]
+    }
+  ]
+}
