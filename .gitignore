@@ -1,2 +1,7 @@
 /target
 .DS_Store
+
+# `llk-002` OQ-8: the second feed is fetched, never committed. Its imported
+# network is what lands, at tests/fixtures/golden/mbta.json, with the source URL
+# and the regenerate commands in tests/fixtures/mbta.md beside it.
+/llika-gtfs/tests/fixtures/mbta.zip
