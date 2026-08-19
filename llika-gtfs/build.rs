@@ -18,6 +18,16 @@ fn main() {
     // Declared unconditionally — the lint fires whether or not the cfg is set.
     println!("cargo::rustc-check-cfg=cfg(mbta_feed)");
     // So fetching the feed re-triggers the build rather than leaving a stale cfg.
+    //
+    // **Both, and the directory is the load-bearing one.** `rerun-if-changed`
+    // compares *mtimes*, while what this script tests is *existence* — so an
+    // archive that reappears carrying an mtime older than the last build (a
+    // restore, a `mv` back, a copy with `-p`) does not re-trigger on the file
+    // alone, and the gates below go on reporting `ignored` with the feed sitting
+    // right there. Measured, not reasoned: that is exactly what happened while
+    // verifying this phase. A directory's mtime moves when an entry is added or
+    // removed, which is the signal this script actually wants.
+    println!("cargo::rerun-if-changed=tests/fixtures");
     println!("cargo::rerun-if-changed=tests/fixtures/mbta.zip");
 
     if std::path::Path::new("tests/fixtures/mbta.zip").exists() {
