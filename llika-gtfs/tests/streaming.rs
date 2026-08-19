@@ -72,8 +72,11 @@ fn write_large_feed(dir: &Path) {
     let mut stop_times = std::io::BufWriter::new(
         std::fs::File::create(dir.join("stop_times.txt")).expect("stop_times.txt is creatable"),
     );
-    writeln!(stop_times, "trip_id,arrival_time,departure_time,stop_id,stop_sequence")
-        .expect("the header is written");
+    writeln!(
+        stop_times,
+        "trip_id,arrival_time,departure_time,stop_id,stop_sequence"
+    )
+    .expect("the header is written");
     for trip in 0..KEPT_TRIPS {
         for (sequence, stop) in ["A", "B", "C"].iter().enumerate() {
             writeln!(stop_times, "M1_t{trip},08:00:00,08:00:00,{stop},{sequence}")

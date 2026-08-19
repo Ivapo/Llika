@@ -144,8 +144,10 @@ fn the_archive_and_the_directory_agree_across_deflate_block_boundaries() {
     let mut stop_times = std::fs::read_to_string(feed.join("stop_times.txt"))
         .expect("the fixture's stop_times is readable");
     for row in 0..FILLER_ROWS {
-        stop_times.push_str(&format!("FILLER_t1,07:00:00,07:00:00,NOR,{row}
-"));
+        stop_times.push_str(&format!(
+            "FILLER_t1,07:00:00,07:00:00,NOR,{row}
+"
+        ));
     }
     std::fs::write(feed.join("stop_times.txt"), &stop_times).expect("the large table is written");
     assert!(
